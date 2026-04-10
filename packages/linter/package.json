@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "files": ["dist"],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -14,7 +15,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "bun test src",
-    "lint": "echo 'no linter configured yet'"
+    "lint": "echo 'no linter configured yet'",
+    "check-package": "bun run scripts/check-package.ts"
   },
   "dependencies": {
     "yaml": "^2.7.1",
