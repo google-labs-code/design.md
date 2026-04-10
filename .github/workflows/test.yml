@@ -2,9 +2,8 @@ name: Test
 
 on:
   push:
-    branches: [ main, feat/linter ]
+    branches: ['**']
   pull_request:
-    branches: [ main ]
 
 jobs:
   test:
