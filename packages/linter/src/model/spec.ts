@@ -1,6 +1,15 @@
 import { z } from 'zod';
 import type { ParsedDesignSystem } from '../parser/spec.js';
 
+export const SeveritySchema = z.enum(['error', 'warning', 'info']);
+export type Severity = z.infer<typeof SeveritySchema>;
+
+export interface Diagnostic {
+  severity: Severity;
+  path?: string;
+  message: string;
+}
+
 // ── RESOLVED VALUE TYPES ───────────────────────────────────────────
 export interface ResolvedColor {
   type: 'color';
@@ -86,16 +95,10 @@ export const ModelErrorCode = z.enum([
 ]);
 
 // ── RESULT ─────────────────────────────────────────────────────────
-export type ModelResult =
-  | { success: true; data: DesignSystemState }
-  | {
-      success: false;
-      error: {
-        code: z.infer<typeof ModelErrorCode>;
-        message: string;
-        recoverable: boolean;
-      };
-    };
+export interface ModelResult {
+  designSystem: DesignSystemState;
+  diagnostics: Diagnostic[];
+}
 
 // ── INTERFACE ──────────────────────────────────────────────────────
 export interface ModelSpec {

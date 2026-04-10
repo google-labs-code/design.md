@@ -20,12 +20,10 @@ export { DEFAULT_RULES } from './linter/rules/index.js';
 export type { LintRule } from './linter/rules/types.js';
 export type { GradedTokenEdits, TokenEditEntry } from './linter/spec.js';
 export {
-  invalidColor,
   brokenRef,
   missingPrimary,
   contrastCheck,
   orphanedTokens,
-  nonStandardUnit,
   tokenSummary,
   missingSections,
 } from './linter/rules/index.js';

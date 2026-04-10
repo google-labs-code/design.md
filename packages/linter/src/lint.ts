@@ -44,18 +44,22 @@ export function lint(content: string, options?: LintOptions): LintReport {
     throw new Error(`Parse failed: ${parseResult.error.message}`);
   }
 
-  const modelResult = model.execute(parseResult.data);
-  if (!modelResult.success) {
-    throw new Error(`Model build failed: ${modelResult.error.message}`);
-  }
+  const { designSystem, diagnostics: modelDiagnostics } = model.execute(parseResult.data);
+  const lintResult = runLinter(designSystem, options?.rules);
+  const tailwindConfig = tailwind.execute(designSystem);
 
-  const lintResult = runLinter(modelResult.data, options?.rules);
-  const tailwindConfig = tailwind.execute(modelResult.data);
+  const diagnostics = [...modelDiagnostics, ...lintResult.diagnostics];
+  const summary = {
+    errors: modelDiagnostics.filter((d) => d.severity === 'error').length + lintResult.summary.errors,
+    warnings: modelDiagnostics.filter((d) => d.severity === 'warning').length + lintResult.summary.warnings,
+    infos: modelDiagnostics.filter((d) => d.severity === 'info').length + lintResult.summary.infos,
+  };
 
   return {
-    designSystem: modelResult.data,
-    diagnostics: lintResult.diagnostics,
-    summary: lintResult.summary,
-    tailwindConfig: tailwindConfig,
+    designSystem,
+    diagnostics,
+    summary,
+    tailwindConfig,
   };
+
 }

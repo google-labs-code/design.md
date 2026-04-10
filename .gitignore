@@ -3,3 +3,4 @@ dist/
 .env
 *.local
 bun.lockb
+*.tgz

@@ -12,21 +12,15 @@ const modelHandler = new ModelHandler();
 function buildState(overrides: Partial<ParsedDesignSystem> = {}): DesignSystemState {
   const parsed: ParsedDesignSystem = { sourceMap: new Map(), ...overrides };
   const result = modelHandler.execute(parsed);
-  if (!result.success) throw new Error(`Model build failed: ${result.error.message}`);
-  return result.data;
+  const hasErrors = result.diagnostics.some(d => d.severity === 'error');
+  if (hasErrors) {
+    throw new Error(`Model build failed: ${result.diagnostics.map(d => d.message).join(', ')}`);
+  }
+  return result.designSystem;
 }
 
 describe('LinterHandler', () => {
-  // ── Cycle 14: E1 — Invalid color emits error ─────────────────────
-  describe('E1: invalid color format', () => {
-    it('emits error for non-hex color values', () => {
-      const state = buildState({ colors: { accent: 'red' } });
-      const result = linter.lint(state);
-      const errors = result.diagnostics.filter((d: Diagnostic) => d.severity === 'error');
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some((d: Diagnostic) => d.message.includes('red') && d.message.includes('hex'))).toBe(true);
-    });
-  });
+
 
   // ── Cycle 15: E3 — Broken reference emits error ──────────────────
   describe('E3: broken token reference', () => {
@@ -127,38 +121,7 @@ describe('LinterHandler', () => {
     });
   });
 
-  // ── W4: Non-standard dimension unit emits warning ────────────────
-  describe('W4: non-standard dimension unit', () => {
-    it('emits warning when typography uses em unit', () => {
-      const state = buildState({
-        colors: { primary: '#000000' },
-        typography: {
-          'headline': { fontFamily: 'Roboto', fontSize: '32px', letterSpacing: '-0.02em' },
-        },
-      });
-      const result = linter.lint(state);
-      const warnings = result.diagnostics.filter(
-        (d: Diagnostic) => d.severity === 'warning' && d.message.includes('non-standard')
-      );
-      expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings[0]!.message).toMatch(/em/);
-      expect(warnings[0]!.message).toMatch(/px|rem/);
-    });
 
-    it('does NOT emit warning for standard px/rem units', () => {
-      const state = buildState({
-        colors: { primary: '#000000' },
-        typography: {
-          'headline': { fontFamily: 'Roboto', fontSize: '32px', letterSpacing: '1.2px' },
-        },
-      });
-      const result = linter.lint(state);
-      const nonStdWarnings = result.diagnostics.filter(
-        (d: Diagnostic) => d.severity === 'warning' && d.message.includes('non-standard')
-      );
-      expect(nonStdWarnings.length).toBe(0);
-    });
-  });
 
   // ── Cycle 19: I1 — Token count summary emits info ────────────────
   describe('I1: token count summary', () => {
@@ -205,21 +168,25 @@ describe('LinterHandler', () => {
     it('groups diagnostics into fixes, improvements, and suggestions', () => {
       const state = buildState({
         colors: {
-          accent: 'red',  // error: invalid color
+          primary: '#647D66',
           secondary: '#ffff00',
           white: '#ffffff',
         },
         components: {
           'button-bad': {
             backgroundColor: '{colors.secondary}',
-            textColor: '{colors.white}',  // warning: low contrast
+            textColor: '{colors.white}',
           },
+          'button-broken': {
+            backgroundColor: '{colors.nonexistent}',
+            textColor: '{colors.white}',
+          }
         },
       });
       const graded = linter.preEvaluate(state);
       expect(graded.fixes.length).toBeGreaterThan(0);
       expect(graded.improvements.length).toBeGreaterThan(0);
-      expect(graded.suggestions.length).toBeGreaterThan(0); // at least the summary info
+      expect(graded.suggestions.length).toBeGreaterThan(0);
     });
   });
 
@@ -227,7 +194,10 @@ describe('LinterHandler', () => {
   describe('summary counts', () => {
     it('correctly counts errors, warnings, and infos', () => {
       const state = buildState({
-        colors: { accent: 'red' },
+        colors: { primary: '#ff0000' },
+        components: {
+          'card': { backgroundColor: '{colors.nonexistent}' }
+        }
       });
       const result = linter.lint(state);
       expect(result.summary.errors).toBe(result.diagnostics.filter((d: Diagnostic) => d.severity === 'error').length);

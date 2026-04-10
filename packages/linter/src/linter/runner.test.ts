@@ -12,8 +12,11 @@ const modelHandler = new ModelHandler();
 function buildState(overrides: Partial<ParsedDesignSystem> = {}): DesignSystemState {
   const parsed: ParsedDesignSystem = { sourceMap: new Map(), ...overrides };
   const result = modelHandler.execute(parsed);
-  if (!result.success) throw new Error(`Model build failed: ${result.error.message}`);
-  return result.data;
+  const hasErrors = result.diagnostics.some(d => d.severity === 'error');
+  if (hasErrors) {
+    throw new Error(`Model build failed: ${result.diagnostics.map(d => d.message).join(', ')}`);
+  }
+  return result.designSystem;
 }
 
 describe('runLinter', () => {
@@ -47,16 +50,24 @@ describe('runLinter', () => {
 describe('preEvaluate', () => {
   it('groups diagnostics into fixes, improvements, and suggestions', () => {
     const state = buildState({
-      colors: { accent: 'red', secondary: '#ffff00', white: '#ffffff' },
+      colors: {
+        primary: '#647D66',
+        secondary: '#ffff00',
+        white: '#ffffff',
+      },
       components: {
         'button-bad': {
           backgroundColor: '{colors.secondary}',
           textColor: '{colors.white}',
         },
+        'button-broken': {
+          backgroundColor: '{colors.nonexistent}',
+          textColor: '{colors.white}',
+        }
       },
     });
     const graded = preEvaluate(state);
-    expect(graded.fixes.length).toBeGreaterThan(0);       // error: invalid color
+    expect(graded.fixes.length).toBeGreaterThan(0);       // error: broken ref
     expect(graded.improvements.length).toBeGreaterThan(0); // warning: contrast
     expect(graded.suggestions.length).toBeGreaterThan(0);  // info: summary
   });

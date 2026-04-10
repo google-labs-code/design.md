@@ -35,11 +35,11 @@ describe('Fixture Test', () => {
     expect(displayLg?.letterSpacing?.value).toBe(-0.02);
     expect(displayLg?.letterSpacing?.unit).toBe('em');
     
-    // Check lint results — should have W4 warning for em units
-    const nonStdWarnings = result.diagnostics.filter(
-      (d: { severity: string; message: string }) => d.severity === 'warning' && d.message.includes('non-standard')
+    // Check lint results — should have error for em units from modeler
+    const unitErrors = result.diagnostics.filter(
+      (d: { severity: string; message: string }) => d.severity === 'error' && d.message.includes('invalid unit')
     );
-    expect(nonStdWarnings.length).toBeGreaterThan(0);
+    expect(unitErrors.length).toBeGreaterThan(0);
     
     // We expect at least the summary info
     expect(result.summary.infos).toBeGreaterThan(0);

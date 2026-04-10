@@ -18,28 +18,30 @@ describe('ModelHandler', () => {
       const result = handler.execute(makeParsed({
         colors: { primary: '#647D66', secondary: '#ff0000' },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const primary = result.data.symbolTable.get('colors.primary');
-        expect(primary).toBeDefined();
-        expect(typeof primary === 'object' && primary !== null && 'type' in primary && primary.type === 'color').toBe(true);
-        if (typeof primary === 'object' && primary !== null && 'hex' in primary) {
-          expect(primary.hex).toBe('#647d66');
-        }
-
-        expect(result.data.colors.size).toBe(2);
+      const primary = result.designSystem.symbolTable.get('colors.primary');
+      expect(primary).toBeDefined();
+      expect(typeof primary === 'object' && primary !== null && 'type' in primary && primary.type === 'color').toBe(true);
+      if (typeof primary === 'object' && primary !== null && 'hex' in primary) {
+        expect(primary.hex).toBe('#647d66');
       }
+
+      expect(result.designSystem.colors.size).toBe(2);
+    });
+    it('emits diagnostic for invalid color format', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: 'invalid-color' },
+      }));
+      expect(result.diagnostics.length).toBe(1);
+      expect(result.diagnostics[0]!.path).toBe('colors.primary');
+      expect(result.diagnostics[0]!.severity).toBe('error');
     });
 
     it('normalizes #RGB shorthand to #RRGGBB', () => {
       const result = handler.execute(makeParsed({
         colors: { accent: '#abc' },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const accent = result.data.colors.get('accent');
-        expect(accent?.hex).toBe('#aabbcc');
-      }
+      const accent = result.designSystem.colors.get('accent');
+      expect(accent?.hex).toBe('#aabbcc');
     });
   });
 
@@ -54,13 +56,10 @@ describe('ModelHandler', () => {
           },
         },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const btn = result.data.components.get('button-primary');
-        expect(btn).toBeDefined();
-        const bg = btn?.properties.get('backgroundColor');
-        expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
-      }
+      const btn = result.designSystem.components.get('button-primary');
+      expect(btn).toBeDefined();
+      const bg = btn?.properties.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
     });
   });
 
@@ -78,14 +77,11 @@ describe('ModelHandler', () => {
           },
         },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const btn = result.data.components.get('button');
-        const bg = btn?.properties.get('backgroundColor');
-        expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
-        if (typeof bg === 'object' && bg !== null && 'hex' in bg) {
-          expect(bg.hex).toBe('#647d66');
-        }
+      const btn = result.designSystem.components.get('button');
+      const bg = btn?.properties.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+      if (typeof bg === 'object' && bg !== null && 'hex' in bg) {
+        expect(bg.hex).toBe('#647d66');
       }
     });
   });
@@ -104,59 +100,90 @@ describe('ModelHandler', () => {
           },
         },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const card = result.data.components.get('card');
-        expect(card?.unresolvedRefs.length).toBeGreaterThan(0);
-      }
+      const card = result.designSystem.components.get('card');
+      expect(card?.unresolvedRefs.length).toBeGreaterThan(0);
     });
   });
 
   // ── Cycle N: Non-standard units are parsed, not dropped ────────────
   describe('non-standard dimension units', () => {
-    it('preserves em units in typography letterSpacing', () => {
+    it('emits diagnostic for non-standard dimension units in typography', () => {
       const result = handler.execute(makeParsed({
         typography: {
           'headline': { fontFamily: 'Roboto', fontSize: '32px', letterSpacing: '-0.02em' },
         },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const headline = result.data.typography.get('headline');
-        expect(headline?.letterSpacing).toBeDefined();
-        expect(headline?.letterSpacing?.value).toBe(-0.02);
-        expect(headline?.letterSpacing?.unit).toBe('em');
-      }
+      expect(result.diagnostics.length).toBe(1);
+      expect(result.diagnostics[0]!.path).toBe('typography.headline.letterSpacing');
+      expect(result.diagnostics[0]!.severity).toBe('error');
+    });
+  });
+  describe('typography validation', () => {
+    it('emits diagnostic when fontFamily is a hex color', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'headline': { fontFamily: '#ffffff' },
+        },
+      }));
+      expect(result.diagnostics.length).toBe(1);
+      expect(result.diagnostics[0]!.path).toBe('typography.headline.fontFamily');
+      expect(result.diagnostics[0]!.severity).toBe('error');
+    });
+
+    it('emits diagnostic when fontWeight is not a number', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'headline': { fontWeight: 'bold' },
+        },
+      }));
+      expect(result.diagnostics.length).toBe(1);
+      expect(result.diagnostics[0]!.path).toBe('typography.headline.fontWeight');
+      expect(result.diagnostics[0]!.severity).toBe('error');
+    });
+  });
+
+  describe('rounded validation', () => {
+    it('emits diagnostic for non-standard units in rounded', () => {
+      const result = handler.execute(makeParsed({
+        rounded: { sm: '2em' },
+      }));
+      expect(result.diagnostics.length).toBe(1);
+      expect(result.diagnostics[0]!.path).toBe('rounded.sm');
+      expect(result.diagnostics[0]!.severity).toBe('error');
     });
   });
 
   // ── Cycle 13: Compute WCAG contrast ratio ─────────────────────────
+
   describe('WCAG contrast ratio', () => {
     it('computes correct contrast ratio for black on white (21:1)', () => {
       const result = handler.execute(makeParsed({
         colors: { black: '#000000', white: '#ffffff' },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const black = result.data.colors.get('black');
-        const white = result.data.colors.get('white');
-        expect(black).toBeDefined();
-        expect(white).toBeDefined();
+      const black = result.designSystem.colors.get('black');
+      const white = result.designSystem.colors.get('white');
+      expect(black).toBeDefined();
+      expect(white).toBeDefined();
 
-        const ratio = contrastRatio(black!, white!);
-        expect(ratio).toBeCloseTo(21, 0);
-      }
+      const ratio = contrastRatio(black!, white!);
+      expect(ratio).toBeCloseTo(21, 0);
     });
 
     it('computes correct contrast for identical colors (1:1)', () => {
       const result = handler.execute(makeParsed({
         colors: { red1: '#ff0000', red2: '#ff0000' },
       }));
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const ratio = contrastRatio(result.data.colors.get('red1')!, result.data.colors.get('red2')!);
-        expect(ratio).toBeCloseTo(1, 1);
-      }
+      const ratio = contrastRatio(result.designSystem.colors.get('red1')!, result.designSystem.colors.get('red2')!);
+      expect(ratio).toBeCloseTo(1, 1);
+    });
+  });
+
+  describe('return signature', () => {
+    it('returns diagnostics array', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#647D66' },
+      }));
+      expect(result.diagnostics).toBeDefined();
     });
   });
 });

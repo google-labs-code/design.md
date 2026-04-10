@@ -1,17 +1,7 @@
-import { z } from 'zod';
-import type { DesignSystemState, ResolvedValue } from '../model/spec.js';
+import type { DesignSystemState, Diagnostic } from '../model/spec.js';
+export type { Diagnostic, Severity } from '../model/spec.js';
 
-// ── SEVERITY ───────────────────────────────────────────────────────
-export const SeveritySchema = z.enum(['error', 'warning', 'info']);
-export type Severity = z.infer<typeof SeveritySchema>;
 
-// ── DIAGNOSTIC ─────────────────────────────────────────────────────
-export interface Diagnostic {
-  severity: Severity;
-  /** Token path, e.g. "colors.primary", "components.button-primary.textColor" */
-  path?: string;
-  message: string;
-}
 
 // ── LINT RESULT ────────────────────────────────────────────────────
 export interface LintResult {

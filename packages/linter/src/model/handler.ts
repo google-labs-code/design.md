@@ -2,13 +2,14 @@ import type { ParsedDesignSystem } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
-  DesignSystemState,
   ResolvedColor,
   ResolvedDimension,
   ResolvedTypography,
   ResolvedValue,
   ComponentDef,
+  Diagnostic,
 } from './spec.js';
+
 import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
 
 const MAX_REFERENCE_DEPTH = 10;
@@ -22,6 +23,7 @@ const MAX_REFERENCE_DEPTH = 10;
 export class ModelHandler implements ModelSpec {
   execute(input: ParsedDesignSystem): ModelResult {
     try {
+      const diagnostics: Diagnostic[] = [];
       const symbolTable = new Map<string, ResolvedValue>();
       const colors = new Map<string, ResolvedColor>();
       const typography = new Map<string, ResolvedTypography>();
@@ -40,7 +42,12 @@ export class ModelHandler implements ModelSpec {
             colors.set(name, resolved);
             symbolTable.set(`colors.${name}`, resolved);
           } else {
-            // Store as-is for linter to catch
+            diagnostics.push({
+              severity: 'error',
+              path: `colors.${name}`,
+              message: `'${raw}' is not a valid color. Expected a hex color code (e.g., #ffffff).`,
+            });
+            // Store as-is for fallback
             symbolTable.set(`colors.${name}`, raw);
           }
         }
@@ -49,7 +56,7 @@ export class ModelHandler implements ModelSpec {
       // Typography
       if (input.typography) {
         for (const [name, props] of Object.entries(input.typography)) {
-          const resolved = parseTypography(props);
+          const resolved = parseTypography(props, `typography.${name}`, diagnostics);
           typography.set(name, resolved);
           symbolTable.set(`typography.${name}`, resolved);
         }
@@ -58,12 +65,28 @@ export class ModelHandler implements ModelSpec {
       // Rounded
       if (input.rounded) {
         for (const [name, raw] of Object.entries(input.rounded)) {
-          if (isParseableDimension(raw)) {
-            const resolved = parseDimension(raw);
-            rounded.set(name, resolved);
-            symbolTable.set(`rounded.${name}`, resolved);
-          } else {
-            symbolTable.set(`rounded.${name}`, raw);
+          if (typeof raw === 'string') {
+            if (isParseableDimension(raw)) {
+              const resolved = parseDimension(raw);
+              if (resolved.unit !== 'px' && resolved.unit !== 'rem') {
+                diagnostics.push({
+                  severity: 'error',
+                  path: `rounded.${name}`,
+                  message: `'${raw}' has an invalid unit '${resolved.unit}'. Only px and rem are allowed.`,
+                });
+              }
+              rounded.set(name, resolved);
+              symbolTable.set(`rounded.${name}`, resolved);
+            } else if (!isTokenReference(raw)) {
+              diagnostics.push({
+                severity: 'error',
+                path: `rounded.${name}`,
+                message: `'${raw}' is not a valid dimension.`,
+              });
+              symbolTable.set(`rounded.${name}`, raw);
+            } else {
+              symbolTable.set(`rounded.${name}`, raw);
+            }
           }
         }
       }
@@ -126,8 +149,7 @@ export class ModelHandler implements ModelSpec {
       }
 
       return {
-        success: true,
-        data: {
+        designSystem: {
           name: input.name,
           description: input.description,
           colors,
@@ -137,15 +159,25 @@ export class ModelHandler implements ModelSpec {
           components,
           symbolTable,
         },
+        diagnostics,
       };
     } catch (error) {
       return {
-        success: false,
-        error: {
-          code: 'UNKNOWN_ERROR',
-          message: error instanceof Error ? error.message : String(error),
-          recoverable: false,
+        designSystem: {
+          colors: new Map(),
+          typography: new Map(),
+          rounded: new Map(),
+          spacing: new Map(),
+          components: new Map(),
+          symbolTable: new Map(),
         },
+        diagnostics: [
+          {
+            severity: 'error',
+            message: `Unexpected error during model building: ${error instanceof Error ? error.message : String(error)
+              }`,
+          },
+        ],
       };
     }
   }
@@ -205,19 +237,56 @@ function parseDimension(raw: string): ResolvedDimension {
 /**
  * Parse a typography properties object into a ResolvedTypography.
  */
-function parseTypography(props: Record<string, string | number>): ResolvedTypography {
+function parseTypography(props: Record<string, string | number>, path: string, diagnostics: Diagnostic[]): ResolvedTypography {
   const result: ResolvedTypography = { type: 'typography' };
 
-  if (typeof props['fontFamily'] === 'string') result.fontFamily = props['fontFamily'];
-  if (typeof props['fontWeight'] === 'number') result.fontWeight = props['fontWeight'];
+  if (typeof props['fontFamily'] === 'string') {
+    const ff = props['fontFamily'];
+    if (isValidColor(ff)) {
+      diagnostics.push({
+        severity: 'error',
+        path: `${path}.fontFamily`,
+        message: `'${ff}' appears to be a color, not a valid font family.`,
+      });
+    }
+    result.fontFamily = ff;
+  }
+  if (props['fontWeight'] !== undefined) {
+    const fw = props['fontWeight'];
+    if (typeof fw !== 'number') {
+      diagnostics.push({
+        severity: 'error',
+        path: `${path}.fontWeight`,
+        message: `'${fw}' is not a valid font weight. Expected a number.`,
+      });
+    } else {
+      result.fontWeight = fw;
+    }
+  }
   if (typeof props['fontFeature'] === 'string') result.fontFeature = props['fontFeature'];
   if (typeof props['fontVariation'] === 'string') result.fontVariation = props['fontVariation'];
 
   const dimensionProps = ['fontSize', 'lineHeight', 'letterSpacing'] as const;
   for (const prop of dimensionProps) {
     const raw = props[prop];
-    if (typeof raw === 'string' && isParseableDimension(raw)) {
-      result[prop] = parseDimension(raw);
+    if (typeof raw === 'string') {
+      if (isParseableDimension(raw)) {
+        const parsed = parseDimension(raw);
+        if (parsed.unit !== 'px' && parsed.unit !== 'rem') {
+          diagnostics.push({
+            severity: 'error',
+            path: `${path}.${prop}`,
+            message: `'${raw}' has an invalid unit '${parsed.unit}'. Only px and rem are allowed.`,
+          });
+        }
+        result[prop] = parsed;
+      } else if (!isTokenReference(raw)) {
+        diagnostics.push({
+          severity: 'error',
+          path: `${path}.${prop}`,
+          message: `'${raw}' is not a valid dimension.`,
+        });
+      }
     }
   }
 
