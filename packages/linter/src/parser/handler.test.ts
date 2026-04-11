@@ -44,6 +44,21 @@ Some explanation text.
         expect(result.data.colors?.['secondary']).toBe('#00ff00');
       }
     });
+
+    it('extracts YAML code blocks with attributes', () => {
+      const input = `# Code block with attributes
+      
+\`\`\`yaml title="theme"
+colors:
+  primary: "#ffffff"
+\`\`\`
+`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.colors?.['primary']).toBe('#ffffff');
+      }
+    });
   });
 
   // ── Cycle 4: Merge multiple code blocks ───────────────────────────

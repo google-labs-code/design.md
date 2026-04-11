@@ -103,6 +103,30 @@ describe('ModelHandler', () => {
       const card = result.designSystem.components.get('card');
       expect(card?.unresolvedRefs.length).toBeGreaterThan(0);
     });
+
+    it('detects long circular reference chains', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'a': '{colors.b}',
+          'b': '{colors.c}',
+          'c': '{colors.d}',
+          'd': '{colors.e}',
+          'e': '{colors.f}',
+          'f': '{colors.g}',
+          'g': '{colors.h}',
+          'h': '{colors.i}',
+          'i': '{colors.j}',
+          'j': '{colors.a}',
+        },
+        components: {
+          'card': {
+            backgroundColor: '{colors.a}',
+          },
+        },
+      }));
+      const card = result.designSystem.components.get('card');
+      expect(card?.unresolvedRefs.length).toBeGreaterThan(0);
+    });
   });
 
   // ── Cycle N: Non-standard units are parsed, not dropped ────────────

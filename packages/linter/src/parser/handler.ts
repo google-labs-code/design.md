@@ -1,5 +1,10 @@
 import YAML from 'yaml';
 import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation } from './spec.js';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkFrontmatter from 'remark-frontmatter';
+import { visit } from 'unist-util-visit';
+import type { Root, Code, Yaml } from 'mdast';
 
 /**
  * Extracts and parses YAML design tokens from DESIGN.md content.
@@ -10,16 +15,38 @@ export class ParserHandler implements ParserSpec {
   execute(input: ParserInput): ParserResult {
     try {
       const { content } = input;
+      const processor = unified()
+        .use(remarkParse)
+        .use(remarkFrontmatter, ['yaml']);
 
-      // Attempt frontmatter extraction first
-      const frontmatterYaml = this.extractFrontmatter(content);
-      if (frontmatterYaml !== null) {
-        return this.parseYamlContent(frontmatterYaml, 'frontmatter');
-      }
+      const ast = processor.parse(content) as Root;
+      const blocks: Array<{ yaml: string; block: 'frontmatter' | number; startLine: number }> = [];
+      let blockIndex = 0;
 
-      // Fall back to code block extraction
-      const codeBlocks = this.extractCodeBlocks(content);
-      if (codeBlocks.length === 0) {
+      visit(ast, (node) => {
+        if (node.type === 'yaml') {
+          const yamlNode = node as Yaml;
+          blocks.push({
+            yaml: yamlNode.value,
+            block: 'frontmatter',
+            startLine: node.position?.start.line ?? 1
+          });
+        }
+
+        if (node.type === 'code') {
+          const codeNode = node as Code;
+          if (codeNode.lang === 'yaml' || codeNode.lang === 'yml') {
+            blocks.push({
+              yaml: codeNode.value,
+              block: blockIndex,
+              startLine: node.position?.start.line ?? 1
+            });
+            blockIndex++;
+          }
+        }
+      });
+
+      if (blocks.length === 0) {
         return {
           success: false,
           error: {
@@ -30,7 +57,7 @@ export class ParserHandler implements ParserSpec {
         };
       }
 
-      return this.mergeCodeBlocks(codeBlocks);
+      return this.mergeCodeBlocks(blocks);
     } catch (error) {
       return {
         success: false,
@@ -44,84 +71,13 @@ export class ParserHandler implements ParserSpec {
   }
 
   /**
-   * Extract YAML from frontmatter delimiters (--- ... ---).
-   * Returns null if no frontmatter is found.
-   */
-  private extractFrontmatter(content: string): string | null {
-    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-    if (!match?.[1]) return null;
-    return match[1];
-  }
-
-  /**
-   * Extract all fenced yaml code blocks from the markdown content.
-   * Returns an array of { yaml: string, startLine: number } objects.
-   */
-  private extractCodeBlocks(content: string): Array<{ yaml: string; blockIndex: number; startLine: number }> {
-    const blocks: Array<{ yaml: string; blockIndex: number; startLine: number }> = [];
-    const regex = /```yaml\r?\n([\s\S]*?)```/g;
-    let match: RegExpExecArray | null;
-    let blockIndex = 0;
-
-    while ((match = regex.exec(content)) !== null) {
-      const yamlContent = match[1];
-      if (yamlContent) {
-        const startLine = content.substring(0, match.index).split('\n').length + 1;
-        blocks.push({ yaml: yamlContent, blockIndex, startLine });
-        blockIndex++;
-      }
-    }
-
-    return blocks;
-  }
-
-  /**
-   * Parse a single YAML string into a ParsedDesignSystem.
-   */
-  private parseYamlContent(yamlStr: string, block: 'frontmatter' | number): ParserResult {
-    try {
-      const parsed = YAML.parse(yamlStr) as Record<string, unknown>;
-      if (!parsed || typeof parsed !== 'object') {
-        return {
-          success: false,
-          error: {
-            code: 'YAML_PARSE_ERROR',
-            message: 'YAML content did not parse to an object.',
-            recoverable: true,
-          },
-        };
-      }
-
-      const sourceMap = new Map<string, SourceLocation>();
-      // Build source map for top-level keys
-      for (const key of Object.keys(parsed)) {
-        sourceMap.set(key, { line: 0, column: 0, block });
-      }
-
-      return {
-        success: true,
-        data: this.toDesignSystem(parsed, sourceMap),
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 'YAML_PARSE_ERROR',
-          message: error instanceof Error ? error.message : String(error),
-          recoverable: true,
-        },
-      };
-    }
-  }
-
-  /**
    * Merge multiple code blocks into a single ParsedDesignSystem.
    * Detects duplicate top-level sections across blocks.
    */
-  private mergeCodeBlocks(blocks: Array<{ yaml: string; blockIndex: number; startLine: number }>): ParserResult {
+  private mergeCodeBlocks(blocks: Array<{ yaml: string; block: 'frontmatter' | number; startLine: number }>): ParserResult {
     const merged: Record<string, unknown> = {};
     const sourceMap = new Map<string, SourceLocation>();
-    const seenSections = new Map<string, number>(); // section → blockIndex
+    const seenSections = new Map<string, 'frontmatter' | number>();
 
     for (const block of blocks) {
       let parsed: Record<string, unknown>;
@@ -143,17 +99,19 @@ export class ParserHandler implements ParserSpec {
       for (const key of Object.keys(parsed)) {
         const previousBlock = seenSections.get(key);
         if (previousBlock !== undefined) {
+          const prevDesc = previousBlock === 'frontmatter' ? 'frontmatter' : `code block ${previousBlock + 1}`;
+          const currDesc = block.block === 'frontmatter' ? 'frontmatter' : `code block ${block.block + 1}`;
           return {
             success: false,
             error: {
               code: 'DUPLICATE_SECTION',
-              message: `Section '${key}' is defined in both code block ${previousBlock + 1} and code block ${block.blockIndex + 1}.`,
+              message: `Section '${key}' is defined in both ${prevDesc} and ${currDesc}.`,
               recoverable: true,
             },
           };
         }
-        seenSections.set(key, block.blockIndex);
-        sourceMap.set(key, { line: block.startLine, column: 0, block: block.blockIndex });
+        seenSections.set(key, block.block);
+        sourceMap.set(key, { line: block.startLine, column: 0, block: block.block });
       }
 
       Object.assign(merged, parsed);
