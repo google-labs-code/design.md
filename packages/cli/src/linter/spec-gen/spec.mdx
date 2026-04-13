@@ -1,5 +1,5 @@
-<!-- Generated from spec.mdx + spec-config.ts | version: alpha -->
-<!-- Do not edit directly. Run `bun run spec:gen` to regenerate. -->
+import { SPEC_VERSION, STANDARD_UNITS, SECTIONS, TYPOGRAPHY_PROPERTIES, COMPONENT_SUB_TOKENS, CORE_COLOR_ROLES, RECOMMENDED_TOKENS, EXAMPLES } from '../spec-config.js'
+import { frontmatterExample, colorsExample, typographyExample, componentsExample, typographyPropertyList, sectionOrderList, componentSubTokenList, recommendedTokens } from './renderers.js'
 
 # DESIGN.md Format
 
@@ -16,23 +16,7 @@ Design tokens are embedded as YAML front matter at the beginning of the file. Th
 
 Example:
 
-```yaml
----
-version: alpha
-name: Heritage
-colors:
-  primary: "#1A1C1E"
-  secondary: "#6C7278"
-  tertiary: "#B8422E"
-typography:
-  h1:
-    fontFamily: Public Sans
-    fontSize: 48px
-    fontWeight: 600
-    lineHeight: 1.1
-    letterSpacing: -0.02em
----
-```
+{frontmatterExample()}
 
 ## Schema
 
@@ -61,17 +45,9 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
 
 **Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
 
-- `fontFamily` (string)
-- `fontSize` (Dimension)
-- `fontWeight` (number) - A numeric font weight value (e.g., `400`, `700`). In YAML, this may be expressed as either a bare number or a quoted string; both are equivalent.
-- `lineHeight` (Dimension | number) - Accepts either a Dimension (e.g., `24px`, `1.5rem`) or a unitless number (e.g., `1.6`). A unitless number represents a multiplier of the element's `fontSize`, which is the recommended CSS practice.
-- `letterSpacing` (Dimension)
-- `fontFeature` (string) - configures
-  [`font-feature-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-feature-settings).
-- `fontVariation` (string) - configures
-  [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings).
+{typographyPropertyList()}
 
-**Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
+**Dimension**: A dimension value is a string with a unit suffix. Valid units are: {STANDARD_UNITS.join(', ')}.
 
 # Sections
 
@@ -81,14 +57,7 @@ The YAML front matter contains machine-readable design tokens. The markdown body
 
 ### Section Order
 
-1. **Overview** (also: "Brand & Style")
-2. **Colors**
-3. **Typography**
-4. **Layout** (also: "Layout & Spacing")
-5. **Elevation & Depth** (also: "Elevation")
-6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+{sectionOrderList()}
 
 ### Prose and Tokens
 
@@ -121,16 +90,10 @@ The palette is rooted in high-contrast neutrals and a single, evocative accent c
 
 ### Design Tokens
 
-```yaml
-colors:
-  primary: "#1A1C1E"
-  secondary: "#6C7278"
-  tertiary: "#B8422E"
-  neutral: "#F7F5F2"
-```
+{colorsExample()}
 
 The colors section defines the color design tokens. It is a
-map\<string, Color>, that maps the name of the color token to the value.
+map\<string, Color\>, that maps the name of the color token to the value.
 
 ## Typography
 
@@ -157,29 +120,10 @@ the narrative and **Space Grotesk** for technical data.
 
 ### Design Tokens
 
-```yaml
-typography:
-  h1:
-    fontFamily: Public Sans
-    fontSize: 48px
-    fontWeight: 600
-    lineHeight: 1.1
-    letterSpacing: -0.02em
-  body-md:
-    fontFamily: Public Sans
-    fontSize: 16px
-    fontWeight: 400
-    lineHeight: 1.6
-  label-caps:
-    fontFamily: Space Grotesk
-    fontSize: 12px
-    fontWeight: 500
-    lineHeight: 1
-    letterSpacing: 0.1em
-```
+{typographyExample()}
 
 The typography section defines the typography design tokens. It is a
-map\<string, Typography>
+map\<string, Typography\>
 
 ## Layout
 
@@ -215,7 +159,7 @@ spacing:
 ```
 
 The spacing section defines the spacing design tokens. It is a
-map\<string, Dimension | number> that maps the spacing scale identifier to a dimension value or a unitless number (e.g., column counts or ratios).
+map\<string, Dimension | number\> that maps the spacing scale identifier to a dimension value or a unitless number (e.g., column counts or ratios).
 
 ## Elevation & Depth
 
@@ -262,30 +206,21 @@ buttons, cards, and other rectangular shapes.
 
 Provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
 
-* **Buttons**: Covers primary, secondary, and tertiary variants, including sizing, padding, and states.
-* **Chips**: Covers selection chips, filter chips, and action chips.
-* **Lists**: Covers styling for list items, dividers, and leading/trailing elements.
-* **Tooltips**: Covers positioning, colors, and timing.
-* **Checkboxes**: Covers checked, unchecked, and indeterminate states.
-* **Radio buttons**: Covers selected and unselected states.
-* **Input fields**: Covers text inputs, text areas, labels, helper text, and error states.
+- **Buttons**: Covers primary, secondary, and tertiary variants, including sizing, padding, and states.
+- **Chips**: Covers selection chips, filter chips, and action chips.
+- **Lists**: Covers styling for list items, dividers, and leading/trailing elements.
+- **Tooltips**: Covers positioning, colors, and timing.
+- **Checkboxes**: Covers checked, unchecked, and indeterminate states.
+- **Radio buttons**: Covers selected and unselected states.
+- **Input fields**: Covers text inputs, text areas, labels, helper text, and error states.
 
 > **Note:** The components specification is actively evolving. The current structure provides intentional flexibility for domain-specific component definitions while the spec matures.
 
 ### Design Tokens
 
-```yaml
-components:
-  button-primary:
-    backgroundColor: "{colors.primary-60}"
-    textColor: "{colors.primary-20}"
-    rounded: "{rounded.md}"
-    padding: 12px
-  button-primary-hover:
-    backgroundColor: "{colors.primary-70}"
-```
+{componentsExample()}
 
-The components section defines a collection of design tokens used to ensure consistent styling of common components. It's a map\<string, map\<string, string>> that maps a component identifier to a group of sub token names and values. The design token values may be literal values, or references to previously defined design tokens.
+The components section defines a collection of design tokens used to ensure consistent styling of common components. It's a map\<string, map\<string, string\>\> that maps a component identifier to a group of sub token names and values. The design token values may be literal values, or references to previously defined design tokens.
 
 **Variants**. A component may have a variant for different UI states such as active, hover, pressed, etc. You may define those variant components under a different but related key, for example, "button-primary", "button-primary-hover", "button-primary-active". The agent will consider all variants and make the appropriate styling decisions.
 
@@ -293,14 +228,7 @@ The components section defines a collection of design tokens used to ensure cons
 
 Each component has a set of properties that are themselves design tokens:
 
-- backgroundColor: \<Color\>
-- textColor: \<Color\>
-- typography: \<Typography\>
-- rounded: \<Dimension\>
-- padding: \<Dimension\>
-- size: \<Dimension\>
-- height: \<Dimension\>
-- width: \<Dimension\>
+{componentSubTokenList()}
 
 ## Do's and Don'ts
 
@@ -319,11 +247,7 @@ Practical guidelines and common pitfalls. These act as guardrails when creating 
 
 The following names are commonly used across design systems. They are not required but are provided as guidance for consistency.
 
-**Typography:** `headline-display`, `headline-lg`, `headline-md`, `body-lg`, `body-md`, `body-sm`, `label-lg`, `label-md`, `label-sm`
-
-**Spacing:** `unit`, `gutter`, `margin`, `xs`, `sm`, `md`, `lg`, `xl`
-
-**Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
+{recommendedTokens()}
 
 # Consumer Behavior for Unknown Content
 

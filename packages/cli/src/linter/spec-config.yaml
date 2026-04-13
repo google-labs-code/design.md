@@ -1,0 +1,131 @@
+# DESIGN.md Spec Configuration
+# This file is the single source of truth for the DESIGN.md format specification.
+# Edit this file, then run `bun run spec:gen` to regenerate docs/spec.md.
+
+version: alpha
+
+units:
+  - px
+  - em
+  - rem
+
+sections:
+  - canonical: Overview
+    aliases:
+      - Brand & Style
+  - canonical: Colors
+  - canonical: Typography
+  - canonical: Layout
+    aliases:
+      - Layout & Spacing
+  - canonical: Elevation & Depth
+    aliases:
+      - Elevation
+  - canonical: Shapes
+  - canonical: Components
+  - canonical: "Do's and Don'ts"
+
+typography_properties:
+  - name: fontFamily
+    type: string
+  - name: fontSize
+    type: Dimension
+  - name: fontWeight
+    type: number
+    description: "A numeric font weight value (e.g., `400`, `700`). In YAML, this may be expressed as either a bare number or a quoted string; both are equivalent."
+  - name: lineHeight
+    type: "Dimension | number"
+    description: "Accepts either a Dimension (e.g., `24px`, `1.5rem`) or a unitless number (e.g., `1.6`). A unitless number represents a multiplier of the element's `fontSize`, which is the recommended CSS practice."
+  - name: letterSpacing
+    type: Dimension
+  - name: fontFeature
+    type: string
+    description: "configures\n  [`font-feature-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-feature-settings)."
+  - name: fontVariation
+    type: string
+    description: "configures\n  [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings)."
+
+component_sub_tokens:
+  - name: backgroundColor
+    type: Color
+  - name: textColor
+    type: Color
+  - name: typography
+    type: Typography
+  - name: rounded
+    type: Dimension
+  - name: padding
+    type: Dimension
+  - name: size
+    type: Dimension
+  - name: height
+    type: Dimension
+  - name: width
+    type: Dimension
+
+color_roles:
+  - primary
+  - secondary
+  - tertiary
+  - neutral
+
+recommended_tokens:
+  typography:
+    - headline-display
+    - headline-lg
+    - headline-md
+    - body-lg
+    - body-md
+    - body-sm
+    - label-lg
+    - label-md
+    - label-sm
+  spacing:
+    - unit
+    - gutter
+    - margin
+    - xs
+    - sm
+    - md
+    - lg
+    - xl
+  rounded:
+    - none
+    - sm
+    - md
+    - lg
+    - xl
+    - full
+
+examples:
+  colors:
+    primary: "#1A1C1E"
+    secondary: "#6C7278"
+    tertiary: "#B8422E"
+    neutral: "#F7F5F2"
+  typography:
+    h1:
+      fontFamily: Public Sans
+      fontSize: 48px
+      fontWeight: 600
+      lineHeight: 1.1
+      letterSpacing: "-0.02em"
+    body-md:
+      fontFamily: Public Sans
+      fontSize: 16px
+      fontWeight: 400
+      lineHeight: 1.6
+    label-caps:
+      fontFamily: Space Grotesk
+      fontSize: 12px
+      fontWeight: 500
+      lineHeight: 1.0
+      letterSpacing: "0.1em"
+  components:
+    button-primary:
+      backgroundColor: "{colors.primary-60}"
+      textColor: "{colors.primary-20}"
+      rounded: "{rounded.md}"
+      padding: 12px
+    button-primary-hover:
+      backgroundColor: "{colors.primary-70}"

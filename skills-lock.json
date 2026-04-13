@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-dx-cli-scale": {
+      "source": "jpoehnelt/skills",
+      "sourceType": "github",
+      "computedHash": "1d2aa0d3cfa03501af8656283631b61f572f6458ed7958f232f8acd5601386fa"
+    },
+    "ink": {
+      "source": "vercel-labs/json-render",
+      "sourceType": "github",
+      "computedHash": "127794ab4d276c5dd3fba93d06d041edbb46481032b315b8b5bd24994e7bcff8"
+    },
+    "opentui": {
+      "source": "msmps/opentui-skill",
+      "sourceType": "github",
+      "computedHash": "2915038bb3297e759f740f9e6bfa885ed80a4a7fe945825f5874b48db9ce0fd2"
+    }
+  }
+}
