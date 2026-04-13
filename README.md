@@ -262,6 +262,7 @@ The linter runs seven rules against a parsed DESIGN.md. Each rule produces findi
 | `orphaned-tokens` | warning | Color tokens defined but never referenced by any component |
 | `token-summary` | info | Summary of how many tokens are defined in each section |
 | `missing-sections` | info | Optional sections (spacing, rounded) absent when other tokens exist |
+| `missing-typography` | warning | Colors are defined but no typography tokens exist — agents will use default fonts |
 | `section-order` | warning | Sections appear out of the canonical order defined by the spec |
 
 ### Programmatic API
