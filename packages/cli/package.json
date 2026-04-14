@@ -1,6 +1,17 @@
 {
   "name": "@google/design.md",
   "version": "0.1.0",
+  "description": "A design.md CLI tool by Google Stitch.",
+  "keywords": [
+    "design.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/google-labs-code/design.md.git"
+  },
+  "bugs": {
+    "url": "https://github.com/google-labs-code/design.md/issues"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
