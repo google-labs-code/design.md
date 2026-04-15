@@ -4,3 +4,4 @@ dist/
 *.local
 bun.lockb
 *.tgz
+.turbo/
