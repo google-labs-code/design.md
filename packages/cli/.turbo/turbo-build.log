@@ -1,0 +1,6 @@
+$ bun build src/index.ts src/linter/index.ts --outdir dist --target node && bun x tsc --project tsconfig.build.json --emitDeclarationOnly --skipLibCheck && cp src/linter/spec-config.yaml dist/linter/ && cp src/linter/spec-config.yaml dist/ && cp ../../docs/spec.md dist/linter/
+Bundled 221 modules in 49ms
+
+  index.js        0.77 MB  (entry point)
+  linter/index.js  0.65 MB  (entry point)
+

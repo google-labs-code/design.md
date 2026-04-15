@@ -1,0 +1,394 @@
+$ bun test
+bun test v1.3.12 (700fc117)
+
+src/commands/spec.test.ts:
+Loading spec config from: /usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.yaml
+(pass) spec command > outputs spec markdown by default [3.86ms]
+(pass) spec command > outputs spec and rules table when --rules is passed [0.29ms]
+(pass) spec command > outputs only rules table when --rules-only is passed [0.15ms]
+(pass) spec command > outputs JSON when --format json is passed [0.44ms]
+(pass) spec command > outputs JSON with rules when --format json and --rules are passed [0.39ms]
+
+src/linter/index.test.ts:
+(pass) Integration: full pipeline > processes a frontmatter DESIGN.md through the complete pipeline [13.50ms]
+(pass) Integration: full pipeline > processes a code-block DESIGN.md with components [3.31ms]
+(pass) Integration: full pipeline > correctly detects errors in a broken DESIGN.md [1.36ms]
+
+src/linter/spec-config.test.ts:
+Loading spec config from: /usr/local/google/home/xkxx/design.md/packages/cli/non-existent.yaml
+Failed to load spec config from /usr/local/google/home/xkxx/design.md/packages/cli/non-existent.yaml: 47 | export function loadSpecConfig(filePath?: string) {
+48 |   const currentDir = dirname(fileURLToPath(import.meta.url));
+49 |   const yamlPath = filePath ? resolve(filePath) : resolve(currentDir, './spec-config.yaml');
+50 |   console.log(`Loading spec config from: ${yamlPath}`);
+51 |   try {
+52 |     const raw = parse(readFileSync(yamlPath, 'utf-8'));
+                           ^
+ENOENT: no such file or directory, open '/usr/local/google/home/xkxx/design.md/packages/cli/non-existent.yaml'
+    path: "/usr/local/google/home/xkxx/design.md/packages/cli/non-existent.yaml",
+ syscall: "open",
+   errno: -2,
+    code: "ENOENT"
+
+      at loadSpecConfig (/usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.ts:52:23)
+      at <anonymous> (/usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.test.ts:24:55)
+
+(pass) spec-config loader > throws when file does not exist [2.54ms]
+Loading spec config from: /usr/local/google/home/xkxx/design.md/packages/cli/__test_malformed.yaml
+Failed to load spec config from /usr/local/google/home/xkxx/design.md/packages/cli/__test_malformed.yaml: 65 |         this.onError = (source, code, message, warning) => {
+66 |             const pos = getErrorPos(source);
+67 |             if (warning)
+68 |                 this.warnings.push(new errors.YAMLWarning(pos, code, message));
+69 |             else
+70 |                 this.errors.push(new errors.YAMLParseError(pos, code, message));
+                                      ^
+YAMLParseError: Nested mappings are not allowed in compact mappings at line 1, column 10:
+
+invalid: yaml: :
+         ^
+
+     pos: [
+  9, 10
+],
+ linePos: [
+  [Object ...], [Object ...]
+],
+    code: "BLOCK_AS_IMPLICIT_KEY"
+
+      at <anonymous> (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/compose/composer.js:70:34)
+      at resolveBlockMap (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/compose/resolve-block-map.js:78:21)
+      at resolveCollection (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/compose/compose-collection.js:13:27)
+      at composeNode (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/compose/compose-node.js:34:42)
+      at composeDoc (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/compose/compose-doc.js:35:23)
+      at next (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/compose/composer.js:150:40)
+      at compose (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/compose/composer.js:132:20)
+      at parseDocument (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/public-api.js:46:16)
+      at parse (/usr/local/google/home/xkxx/design.md/node_modules/.bun/yaml@2.8.3/node_modules/yaml/dist/public-api.js:68:17)
+      at loadSpecConfig (/usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.ts:52:17)
+
+(pass) spec-config loader > throws when YAML is malformed [1.54ms]
+Loading spec config from: /usr/local/google/home/xkxx/design.md/packages/cli/__test_incomplete.yaml
+Failed to load spec config from /usr/local/google/home/xkxx/design.md/packages/cli/__test_incomplete.yaml: 34 |         return {
+35 |             success: false,
+36 |             get error() {
+37 |                 if (this._error)
+38 |                     return this._error;
+39 |                 const error = new ZodError(ctx.common.issues);
+                                   ^
+ZodError: [
+  {
+    "code": "invalid_type",
+    "expected": "array",
+    "received": "undefined",
+    "path": [
+      "sections"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "array",
+    "received": "undefined",
+    "path": [
+      "typography_properties"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "array",
+    "received": "undefined",
+    "path": [
+      "component_sub_tokens"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "array",
+    "received": "undefined",
+    "path": [
+      "color_roles"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "received": "undefined",
+    "path": [
+      "recommended_tokens"
+    ],
+    "message": "Required"
+  },
+  {
+    "code": "invalid_type",
+    "expected": "object",
+    "received": "undefined",
+    "path": [
+      "examples"
+    ],
+    "message": "Required"
+  }
+]
+    issues: [
+  [Object ...], [Object ...], [Object ...], [Object ...], [Object ...], [Object ...]
+],
+  addIssue: [Function],
+ addIssues: [Function],
+
+      at error (/usr/local/google/home/xkxx/design.md/node_modules/.bun/zod@3.25.76/node_modules/zod/v3/types.js:39:31)
+      at parse (/usr/local/google/home/xkxx/design.md/node_modules/.bun/zod@3.25.76/node_modules/zod/v3/types.js:114:15)
+      at loadSpecConfig (/usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.ts:53:25)
+      at <anonymous> (/usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.test.ts:41:42)
+
+Loading spec config from: /usr/local/google/home/xkxx/design.md/packages/cli/__test_empty_sections.yaml
+(pass) spec-config loader > throws when required fields are missing [3.17ms]
+Failed to load spec config from /usr/local/google/home/xkxx/design.md/packages/cli/__test_empty_sections.yaml: 34 |         return {
+35 |             success: false,
+36 |             get error() {
+37 |                 if (this._error)
+38 |                     return this._error;
+39 |                 const error = new ZodError(ctx.common.issues);
+                                   ^
+ZodError: [
+  {
+    "code": "too_small",
+    "minimum": 1,
+    "type": "array",
+    "inclusive": true,
+    "exact": false,
+    "message": "Array must contain at least 1 element(s)",
+    "path": [
+      "sections"
+    ]
+  }
+]
+    issues: [
+  [Object ...]
+],
+  addIssue: [Function],
+ addIssues: [Function],
+
+      at error (/usr/local/google/home/xkxx/design.md/node_modules/.bun/zod@3.25.76/node_modules/zod/v3/types.js:39:31)
+      at parse (/usr/local/google/home/xkxx/design.md/node_modules/.bun/zod@3.25.76/node_modules/zod/v3/types.js:114:15)
+      at loadSpecConfig (/usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.ts:53:25)
+      at <anonymous> (/usr/local/google/home/xkxx/design.md/packages/cli/src/linter/spec-config.test.ts:63:42)
+
+(pass) spec-config loader > throws when sections array is empty [2.48ms]
+(pass) spec-config structural invariants > sections are non-empty [0.04ms]
+(pass) spec-config structural invariants > section canonical names are unique [0.06ms]
+(pass) spec-config structural invariants > no alias collides with a canonical name [0.13ms]
+(pass) spec-config structural invariants > aliases are unique across all sections [0.06ms]
+(pass) spec-config structural invariants > typography property names are unique [0.05ms]
+(pass) spec-config structural invariants > component sub-token names are unique [0.04ms]
+(pass) spec-config structural invariants > color roles are unique [0.02ms]
+(pass) spec-config structural invariants > units are non-empty and unique [0.02ms]
+(pass) spec-config structural invariants > recommended token categories are non-empty [0.04ms]
+(pass) spec-config structural invariants > examples covers colors, typography, and components [0.04ms]
+(pass) spec-config derived constants > CANONICAL_ORDER length matches SECTIONS length [0.02ms]
+(pass) spec-config derived constants > resolveAlias returns canonical for known alias [0.06ms]
+(pass) spec-config derived constants > resolveAlias returns input for unknown heading [0.03ms]
+(pass) spec-config derived constants > VALID_TYPOGRAPHY_PROPS length matches TYPOGRAPHY_PROPERTIES [0.02ms]
+(pass) spec-config derived constants > VALID_COMPONENT_SUB_TOKENS length matches COMPONENT_SUB_TOKENS [0.01ms]
+(pass) spec-config derived constants > SECTION_ALIASES maps every alias to a canonical name [0.05ms]
+
+src/linter/fixture.test.ts:
+(pass) Fixture Test > processes DESIGN-test.md [20.69ms]
+
+src/linter/parser/handler.test.ts:
+(pass) ParserHandler > frontmatter extraction > extracts YAML from frontmatter delimiters [3.29ms]
+(pass) ParserHandler > code block extraction > extracts YAML from fenced yaml code blocks [1.13ms]
+(pass) ParserHandler > code block extraction > extracts YAML code blocks with attributes [1.12ms]
+(pass) ParserHandler > merging multiple code blocks > merges separate YAML blocks into one tree [1.18ms]
+(pass) ParserHandler > duplicate section detection > returns DUPLICATE_SECTION when same top-level key appears in multiple blocks [1.00ms]
+(pass) ParserHandler > malformed YAML > returns YAML_PARSE_ERROR on invalid YAML syntax [0.91ms]
+(pass) ParserHandler > malformed YAML > returns NO_YAML_FOUND when no YAML content exists [0.41ms]
+
+src/linter/parser/spec.test.ts:
+(pass) ParserInputSchema > rejects empty content [0.13ms]
+(pass) ParserInputSchema > accepts non-empty content [0.06ms]
+(pass) ParserInputSchema > rejects missing content field [0.07ms]
+
+src/linter/tailwind/handler.test.ts:
+(pass) TailwindEmitterHandler > colors mapping > maps resolved colors to theme.extend.colors [1.48ms]
+(pass) TailwindEmitterHandler > typography mapping > maps typography scales to fontFamily and fontSize [0.17ms]
+(pass) TailwindEmitterHandler > dimensions mapping > maps rounded to borderRadius and spacing to spacing [0.10ms]
+(pass) TailwindEmitterHandler > empty state > produces a valid config with empty extend sections [0.04ms]
+
+src/linter/fixer/handler.test.ts:
+(pass) FixerHandler > should reorder sections to canonical order [1.23ms]
+(pass) FixerHandler > should preserve prelude at the top [0.07ms]
+(pass) FixerHandler > should append unknown sections at the end [0.06ms]
+(pass) FixerHandler > should recognize "Brand & Style" as a known section via alias [0.08ms]
+(pass) FixerHandler > should recognize "Layout & Spacing" as a known section via alias [0.06ms]
+(pass) FixerHandler > should handle a full real-world section order with aliases [0.16ms]
+
+src/linter/dtcg/handler.test.ts:
+(pass) DtcgEmitterHandler > empty state produces valid DTCG file with $schema [0.23ms]
+(pass) DtcgEmitterHandler > name and description → top-level $description [0.04ms]
+(pass) DtcgEmitterHandler > name without description → $description uses name [0.05ms]
+(pass) DtcgEmitterHandler > colors → DTCG color tokens with sRGB components in 0–1 range [0.18ms]
+(pass) DtcgEmitterHandler > spacing → DTCG dimension tokens with { value, unit } [0.10ms]
+(pass) DtcgEmitterHandler > rounded → DTCG dimension tokens under "rounded" group [0.05ms]
+(pass) DtcgEmitterHandler > typography → DTCG typography composite tokens [0.12ms]
+(pass) DtcgEmitterHandler > typography with missing fields omits them from $value [0.07ms]
+
+src/linter/dtcg/conformance.test.ts:
+(pass) DTCG Conformance > Terrazzo can parse our DTCG output and generate CSS [2853.02ms]
+
+src/linter/model/handler.test.ts:
+(pass) ModelHandler > symbol table from colors > resolves valid hex colors into the symbol table [1.15ms]
+(pass) ModelHandler > symbol table from colors > emits diagnostic for invalid color format [0.08ms]
+(pass) ModelHandler > symbol table from colors > normalizes #RGB shorthand to #RRGGBB [0.06ms]
+(pass) ModelHandler > single-level token reference resolution > resolves a direct {section.token} reference in components [0.09ms]
+(pass) ModelHandler > chained token reference resolution > resolves chained refs: {a} → {b} → #value [0.09ms]
+(pass) ModelHandler > circular reference detection > detects circular refs and records them as unresolved [0.07ms]
+(pass) ModelHandler > circular reference detection > detects long circular reference chains [0.18ms]
+(pass) ModelHandler > non-standard dimension units > emits diagnostic for non-standard dimension units in typography [0.14ms]
+(pass) ModelHandler > typography validation > emits diagnostic when fontFamily is a hex color [0.07ms]
+(pass) ModelHandler > typography validation > emits diagnostic when fontWeight is not a number or valid number string [0.07ms]
+(pass) ModelHandler > typography validation > accepts string representations of numbers for fontWeight [0.06ms]
+(pass) ModelHandler > rounded validation > emits diagnostic for non-standard units in rounded [0.07ms]
+(pass) ModelHandler > WCAG contrast ratio > computes correct contrast ratio for black on white (21:1) [0.09ms]
+(pass) ModelHandler > WCAG contrast ratio > computes correct contrast for identical colors (1:1) [0.05ms]
+(pass) ModelHandler > return signature > returns findings array [0.06ms]
+
+src/linter/model/spec.test.ts:
+(pass) isValidColor > accepts valid hex color: #ff0000 [0.03ms]
+(pass) isValidColor > accepts valid hex color: #FF0000
+(pass) isValidColor > accepts valid hex color: #abc
+(pass) isValidColor > accepts valid hex color: #ABC
+(pass) isValidColor > accepts valid hex color: #647D66
+(pass) isValidColor > accepts valid hex color: #000
+(pass) isValidColor > accepts valid hex color: #fff
+(pass) isValidColor > rejects invalid color: red [0.02ms]
+(pass) isValidColor > rejects invalid color: blue
+(pass) isValidColor > rejects invalid color: #gg0000
+(pass) isValidColor > rejects invalid color: #12345
+(pass) isValidColor > rejects invalid color: 647D66
+(pass) isValidColor > rejects invalid color: #1234567
+(pass) isValidColor > rejects invalid color: 
+(pass) isValidColor > rejects invalid color: #
+(pass) isStandardDimension > accepts standard dimension: 12px [0.05ms]
+(pass) isStandardDimension > accepts standard dimension: 1.5rem [0.01ms]
+(pass) isStandardDimension > accepts standard dimension: 0px
+(pass) isStandardDimension > accepts standard dimension: 42px
+(pass) isStandardDimension > accepts standard dimension: 0.75rem
+(pass) isStandardDimension > accepts standard dimension: 100px
+(pass) isStandardDimension > accepts standard dimension: 12em
+(pass) isStandardDimension > accepts standard dimension: -0.02em
+(pass) isStandardDimension > rejects non-standard dimension: 42 [0.04ms]
+(pass) isStandardDimension > rejects non-standard dimension: px
+(pass) isStandardDimension > rejects non-standard dimension: rem
+(pass) isStandardDimension > rejects non-standard dimension: 12vh
+(pass) isStandardDimension > rejects non-standard dimension: 
+(pass) isStandardDimension > rejects non-standard dimension: 12 px
+(pass) isStandardDimension > rejects non-standard dimension: 12vw
+(pass) isParseableDimension > accepts parseable dimension: 12px [0.02ms]
+(pass) isParseableDimension > accepts parseable dimension: 1.5rem
+(pass) isParseableDimension > accepts parseable dimension: -0.02em
+(pass) isParseableDimension > accepts parseable dimension: 100vh
+(pass) isParseableDimension > accepts parseable dimension: 50%
+(pass) isParseableDimension > accepts parseable dimension: 0.75rem
+(pass) isParseableDimension > accepts parseable dimension: 1em
+(pass) isParseableDimension > accepts parseable dimension: 12vw
+(pass) isParseableDimension > accepts parseable dimension: 10cqi
+(pass) isParseableDimension > accepts parseable dimension: 20lvh
+(pass) isParseableDimension > accepts parseable dimension: 30dvw [0.02ms]
+(pass) isParseableDimension > accepts parseable dimension: 5cqmin
+(pass) isParseableDimension > rejects unparseable dimension: 42 [0.02ms]
+(pass) isParseableDimension > rejects unparseable dimension: px
+(pass) isParseableDimension > rejects unparseable dimension: rem
+(pass) isParseableDimension > rejects unparseable dimension: 
+(pass) isParseableDimension > rejects unparseable dimension: 12 px
+(pass) isParseableDimension > rejects unparseable dimension: auto [0.02ms]
+(pass) isParseableDimension > rejects unparseable dimension: inherit
+(pass) parseDimensionParts > parses standard dimensions [0.05ms]
+(pass) parseDimensionParts > parses leading-zero-free decimals (.5rem) [0.03ms]
+(pass) parseDimensionParts > returns null for bare numbers without a unit [0.03ms]
+(pass) parseDimensionParts > returns null for CSS keywords [0.02ms]
+(pass) isTokenReference > recognizes curly-brace token references [0.04ms]
+(pass) isTokenReference > rejects non-references [0.04ms]
+
+src/linter/linter/handler.test.ts:
+(pass) LinterHandler > E3: broken token reference > emits error when a component references a non-existent token [0.40ms]
+(pass) LinterHandler > E4: circular reference > emits error when circular references are detected [0.19ms]
+(pass) LinterHandler > W1: missing primary color > emits warning when no primary color is defined [0.10ms]
+(pass) LinterHandler > W1: missing primary color > does NOT emit warning when primary color IS defined [0.08ms]
+(pass) LinterHandler > W2: WCAG contrast failure > emits warning for low contrast backgroundColor/textColor pair [0.19ms]
+(pass) LinterHandler > W2: WCAG contrast failure > does NOT emit warning for high contrast pair [0.19ms]
+(pass) LinterHandler > I1: token count summary > emits an info diagnostic summarizing the token counts [0.21ms]
+(pass) LinterHandler > clean document > produces zero errors for a valid design system [0.21ms]
+(pass) LinterHandler > preEvaluate graded menu > groups findings into fixes, improvements, and suggestions [0.25ms]
+(pass) LinterHandler > summary counts > correctly counts errors, warnings, and infos [0.15ms]
+
+src/linter/linter/runner.test.ts:
+(pass) runLinter > runs default rules when none specified [2.92ms]
+(pass) runLinter > runs only the specified subset of rules [0.68ms]
+(pass) runLinter > returns empty findings for empty rules array [0.15ms]
+(pass) preEvaluate > groups findings into fixes, improvements, and suggestions [0.31ms]
+(pass) preEvaluate > accepts custom rules [0.11ms]
+
+src/linter/spec-gen/compiler.test.ts:
+(pass) compileMdx > passes plain markdown through unchanged [4.34ms]
+(pass) compileMdx > evaluates inline expressions [4.01ms]
+(pass) compileMdx > evaluates expressions with scope variables [1.81ms]
+(pass) compileMdx > evaluates block expressions that produce multi-line content [5.57ms]
+(pass) compileMdx > strips import statements from output [2.53ms]
+(pass) compileMdx > preserves expressions inside fenced code blocks [1.12ms]
+(pass) compileMdx > compiles the full spec.mdx with spec-config scope [34.68ms]
+
+src/linter/spec-gen/spec-helpers.test.ts:
+(pass) getRulesTable > returns a markdown table with rule details [0.08ms]
+(pass) getRulesTable > getSpecContent returns spec content [3.77ms]
+
+src/linter/linter/rules/token-summary.test.ts:
+(pass) tokenSummary > emits info diagnostic with token counts [0.36ms]
+(pass) tokenSummary > returns empty for completely empty state [0.09ms]
+
+src/linter/linter/rules/missing-sections.test.ts:
+(pass) missingSections > emits info when spacing is missing but colors exist [0.32ms]
+(pass) missingSections > returns empty when all sections present [0.11ms]
+(pass) missingSections > returns empty when no colors exist (nothing to compare against) [0.07ms]
+
+src/linter/linter/rules/contrast-ratio.test.ts:
+(pass) contrastCheck > emits warning for low contrast pair [0.18ms]
+(pass) contrastCheck > returns empty for high contrast pair [0.08ms]
+
+src/linter/linter/rules/types.test.ts:
+(pass) LintRule type > accepts a function that takes state and returns findings [1.30ms]
+(pass) LintRule type > accepts a RuleDescriptor object [0.05ms]
+(pass) LintRule type > has all rules in DEFAULT_RULE_DESCRIPTORS [0.07ms]
+
+src/linter/linter/rules/section-order.test.ts:
+(pass) sectionOrder > should warn when sections are out of order [0.10ms]
+(pass) sectionOrder > should not warn when sections are in order [0.04ms]
+(pass) sectionOrder > should ignore unknown sections [0.03ms]
+(pass) sectionOrder > should resolve "Brand & Style" as "Overview" [0.03ms]
+(pass) sectionOrder > should resolve "Layout & Spacing" as "Layout" [0.03ms]
+(pass) sectionOrder > should resolve "Elevation" as "Elevation & Depth" [0.03ms]
+(pass) sectionOrder > should detect out-of-order aliased sections [0.03ms]
+(pass) sectionOrder > should handle mixed aliases and canonical names [0.06ms]
+(pass) resolveAlias > should resolve known aliases [0.03ms]
+(pass) resolveAlias > should pass through canonical names unchanged [0.03ms]
+(pass) resolveAlias > should pass through unknown names unchanged [0.02ms]
+
+src/linter/linter/rules/missing-primary.test.ts:
+(pass) missingPrimary > emits warning when colors exist but no primary [0.94ms]
+(pass) missingPrimary > returns empty when primary IS defined [0.07ms]
+(pass) missingPrimary > returns empty when no colors defined [0.03ms]
+
+src/linter/linter/rules/broken-ref.test.ts:
+(pass) brokenRef > emits error for unresolved token reference [0.12ms]
+(pass) brokenRef > returns empty when all references resolve [0.06ms]
+(pass) brokenRef > emits warning (not error) for unknown component sub-tokens [0.10ms]
+(pass) brokenRef > has a valid rule descriptor [0.03ms]
+
+src/linter/linter/rules/orphaned-tokens.test.ts:
+(pass) orphanedTokens > emits warning for color not referenced by any component [1.19ms]
+(pass) orphanedTokens > returns empty when no components exist [0.05ms]
+
+ 182 pass
+ 0 fail
+ 391 expect() calls
+Ran 182 tests across 24 files. [3.37s]
