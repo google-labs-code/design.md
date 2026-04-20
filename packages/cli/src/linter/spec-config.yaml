@@ -70,6 +70,14 @@ color_roles:
   - neutral
 
 recommended_tokens:
+  colors:
+    - primary
+    - secondary
+    - tertiary
+    - neutral
+    - surface
+    - on-surface
+    - error
   typography:
     - headline-display
     - headline-lg
@@ -80,15 +88,6 @@ recommended_tokens:
     - label-lg
     - label-md
     - label-sm
-  spacing:
-    - unit
-    - gutter
-    - margin
-    - xs
-    - sm
-    - md
-    - lg
-    - xl
   rounded:
     - none
     - sm

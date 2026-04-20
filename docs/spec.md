@@ -335,9 +335,9 @@ This section provides practical guidelines and common pitfalls. These act as gua
 
 The following names are commonly used across design systems. They are not required but are provided as guidance for consistency.
 
-**Typography:** `headline-display`, `headline-lg`, `headline-md`, `body-lg`, `body-md`, `body-sm`, `label-lg`, `label-md`, `label-sm`
+**Colors:** `primary`, `secondary`, `tertiary`, `neutral`, `surface`, `on-surface`, `error`
 
-**Spacing:** `unit`, `gutter`, `margin`, `xs`, `sm`, `md`, `lg`, `xl`
+**Typography:** `headline-display`, `headline-lg`, `headline-md`, `body-lg`, `body-md`, `body-sm`, `label-lg`, `label-md`, `label-sm`
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
