@@ -7,7 +7,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/google-labs-code/design.md.git"
+    "url": "git+https://github.com/google-labs-code/design.md.git",
+    "directory": "packages/cli"
   },
   "bugs": {
     "url": "https://github.com/google-labs-code/design.md/issues"
@@ -15,9 +16,14 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
-  "private": true,
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "design.md": "./dist/index.js"
