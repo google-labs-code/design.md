@@ -289,3 +289,8 @@ DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.desig
 ## Status
 
 The DESIGN.md format is at version `alpha`. The spec, token schema, and CLI are under active development. Expect changes to the format as it matures.
+
+## Disclaimer
+
+This project is not eligible for the [Google Open Source Software Vulnerability
+Rewards Program](https://bughunters.google.com/open-source-security).
