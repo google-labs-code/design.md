@@ -41,3 +41,14 @@ jobs:
 
     - name: Node.js Smoke Test
       run: node packages/cli/dist/index.js lint examples/atmospheric-glass/DESIGN.md
+
+    - name: Tarball Smoke Test
+      run: |
+        cd packages/cli && npm pack
+        mkdir -p /tmp/designmd-smoke && cd /tmp/designmd-smoke
+        npm init -y
+        npm install $GITHUB_WORKSPACE/packages/cli/google-design.md-*.tgz
+        echo -e '---\ncolors:\n  primary: "#0000ff"\n---' > DESIGN.md
+        npx design.md lint DESIGN.md
+        node -e "import('@google/design.md/linter').then(m => console.log('OK:', Object.keys(m).length, 'exports'))"
+
