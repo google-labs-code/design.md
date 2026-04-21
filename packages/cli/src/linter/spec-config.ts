@@ -61,30 +61,27 @@ const ConfigSchema = z.object({
 export function loadSpecConfig(filePath?: string) {
   const currentDir = dirname(fileURLToPath(import.meta.url));
   const yamlPath = filePath ? resolve(filePath) : resolve(currentDir, './spec-config.yaml');
-  console.log(`Loading spec config from: ${yamlPath}`);
-  try {
-    const raw = parse(readFileSync(yamlPath, 'utf-8'));
-    return ConfigSchema.parse(raw);
-  } catch (e) {
-    console.error(`Failed to load spec config from ${yamlPath}:`, e);
-    throw e;
-  }
+  const raw = parse(readFileSync(yamlPath, 'utf-8'));
+  return ConfigSchema.parse(raw);
 }
 
-const parsedConfig = loadSpecConfig();
+// ── Lazy singleton ───────────────────────────────────────────────────
+// Config is loaded on first access, not at module evaluation time.
+// This prevents redundant file reads and provides a clean entry point
+// for programmatic consumers who want to defer loading.
 
-// ── Version ───────────────────────────────────────────────────────────
+type ParsedConfig = ReturnType<typeof loadSpecConfig>;
+let _cachedConfig: ParsedConfig | undefined;
 
-/** Current spec version. Appears in the schema and the front matter example. */
-export const SPEC_VERSION = parsedConfig.version;
+/** Return the parsed spec config, loading and caching it on first call. */
+export function getSpecConfig(): ParsedConfig {
+  if (!_cachedConfig) {
+    _cachedConfig = loadSpecConfig();
+  }
+  return _cachedConfig;
+}
 
-// ── Units ─────────────────────────────────────────────────────────────
-
-/** Units the spec formally supports for Dimension values. */
-export const STANDARD_UNITS = parsedConfig.units;
-export type StandardUnit = (typeof STANDARD_UNITS)[number];
-
-// ── Sections ──────────────────────────────────────────────────────────
+// ── Interfaces ───────────────────────────────────────────────────────
 
 export interface SectionDef {
   /** The canonical section heading. */
@@ -92,10 +89,6 @@ export interface SectionDef {
   /** Acceptable alternative headings that resolve to this section. */
   aliases?: readonly string[] | undefined;
 }
-
-export const SECTIONS = parsedConfig.sections;
-
-// ── Typography ────────────────────────────────────────────────────────
 
 export interface TypographyPropertyDef {
   /** Property name as it appears in YAML. */
@@ -106,10 +99,6 @@ export interface TypographyPropertyDef {
   description?: string | undefined;
 }
 
-export const TYPOGRAPHY_PROPERTIES: readonly TypographyPropertyDef[] = parsedConfig.typography_properties;
-
-// ── Components ────────────────────────────────────────────────────────
-
 export interface ComponentSubTokenDef {
   /** Sub-token property name. */
   name: string;
@@ -119,27 +108,35 @@ export interface ComponentSubTokenDef {
   description?: string | undefined;
 }
 
-export const COMPONENT_SUB_TOKENS: readonly ComponentSubTokenDef[] = parsedConfig.component_sub_tokens;
+// ── Constant exports ─────────────────────────────────────────────────
+// These are eagerly initialized from the lazy singleton on first import.
+// The singleton cache ensures the YAML file is read exactly once.
 
-// ── Color Roles ──────────────────────────────────────────────────────
+const config = getSpecConfig();
+
+/** Current spec version. Appears in the schema and the front matter example. */
+export const SPEC_VERSION = config.version;
+
+/** Units the spec formally supports for Dimension values. */
+export const STANDARD_UNITS = config.units;
+export type StandardUnit = (typeof STANDARD_UNITS)[number];
+
+export const SECTIONS = config.sections;
+
+export const TYPOGRAPHY_PROPERTIES: readonly TypographyPropertyDef[] = config.typography_properties;
+
+export const COMPONENT_SUB_TOKENS: readonly ComponentSubTokenDef[] = config.component_sub_tokens;
 
 /** Core color roles that every design system should define. */
-export const CORE_COLOR_ROLES = parsedConfig.color_roles;
-
-// ── Recommended Token Names ──────────────────────────────────────────
+export const CORE_COLOR_ROLES = config.color_roles;
 
 /** Non-normative recommended token names, organized by category. */
-export const RECOMMENDED_TOKENS = parsedConfig.recommended_tokens;
+export const RECOMMENDED_TOKENS = config.recommended_tokens;
 
-// ── Canonical Examples ───────────────────────────────────────────────
-// These examples appear in the generated spec document.
-// Keeping them here ensures they stay in sync with the schema.
-
-export const EXAMPLES = parsedConfig.examples;
+/** Canonical examples that appear in the generated spec document. */
+export const EXAMPLES = config.examples;
 
 // ── Derived constants ─────────────────────────────────────────────────
-// These are computed from the config above for convenience.
-// Consumers should prefer these over re-deriving.
 
 /** Ordered list of canonical section names. */
 export const CANONICAL_ORDER = SECTIONS.map(s => s.canonical);

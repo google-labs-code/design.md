@@ -16,6 +16,7 @@ import { describe, it, expect } from 'bun:test';
 import { writeFileSync, unlinkSync } from 'node:fs';
 import {
   loadSpecConfig,
+  getSpecConfig,
   SPEC_VERSION,
   STANDARD_UNITS,
   SECTIONS,
@@ -78,6 +79,38 @@ describe('spec-config loader', () => {
     } finally {
       unlinkSync(path);
     }
+  });
+
+  it('does not write to stdout or stderr', () => {
+    const originalLog = console.log;
+    const originalError = console.error;
+    const logs: string[] = [];
+    console.log = (...args: unknown[]) => logs.push(args.join(' '));
+    console.error = (...args: unknown[]) => logs.push(args.join(' '));
+    try {
+      loadSpecConfig();
+      expect(logs.length).toBe(0);
+    } finally {
+      console.log = originalLog;
+      console.error = originalError;
+    }
+  });
+});
+
+// ── Lazy loading ──────────────────────────────────────────────────────
+
+describe('spec-config lazy loading', () => {
+  it('getSpecConfig returns a valid config object', () => {
+    const config = getSpecConfig();
+    expect(config.version).toBeString();
+    expect(config.units.length).toBeGreaterThan(0);
+    expect(config.sections.length).toBeGreaterThan(0);
+  });
+
+  it('getSpecConfig returns the same cached instance on subsequent calls', () => {
+    const first = getSpecConfig();
+    const second = getSpecConfig();
+    expect(first).toBe(second);
   });
 });
 
