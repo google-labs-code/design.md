@@ -27,7 +27,7 @@ import { compileMdx } from './compiler.js';
 import { SPEC_CONFIG } from '../spec-config.js';
 import * as renderers from './renderers.js';
 
-const ROOT = resolve(import.meta.dir, '../../../../');
+const ROOT = resolve(import.meta.dir, '../../../../../');
 const MDX_PATH = resolve(import.meta.dir, 'spec.mdx');
 const OUTPUT_PATH = resolve(ROOT, 'docs/spec.md');
 

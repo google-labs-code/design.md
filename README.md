@@ -220,19 +220,19 @@ npx @google/design.md diff DESIGN.md DESIGN-v2.md
 
 Exit code `1` if regressions are detected (more errors or warnings in the "after" file).
 
-### `tailwind`
+### `export`
 
-Generate a Tailwind CSS `theme.extend` configuration from a DESIGN.md file.
+Export DESIGN.md tokens to other formats (tailwind, dtcg).
 
 ```bash
-npx @google/design.md tailwind DESIGN.md > tailwind.theme.json
+npx @google/design.md export --format tailwind DESIGN.md > tailwind.theme.json
+npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 ```
 
 | Option | Type | Default | Description |
 |:-------|:-----|:--------|:------------|
-| `file` | positional | required | Path to DESIGN.md |
-
-Outputs a JSON object with `theme.extend` containing `colors`, `fontFamily`, `fontSize`, `borderRadius`, and `spacing` mapped from the design tokens.
+| `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
+| `--format` | `tailwind` \| `dtcg` | required | Output format |
 
 ### `spec`
 

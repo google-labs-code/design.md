@@ -1,2 +1,4 @@
 LICENSE
 README.md
+smoke-test/
+*.tgz
