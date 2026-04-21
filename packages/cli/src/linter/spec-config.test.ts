@@ -17,7 +17,6 @@ import { writeFileSync, unlinkSync } from 'node:fs';
 import {
   loadSpecConfig,
   getSpecConfig,
-  SPEC_VERSION,
   STANDARD_UNITS,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,

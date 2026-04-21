@@ -35,3 +35,9 @@ jobs:
       
     - name: Run tests
       run: bun test
+
+    - name: Build CLI
+      run: cd packages/cli && bun run build
+
+    - name: Node.js Smoke Test
+      run: node packages/cli/dist/index.js lint examples/atmospheric-glass/DESIGN.md
