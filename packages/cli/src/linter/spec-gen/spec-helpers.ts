@@ -17,27 +17,51 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { RuleDescriptor } from '../linter/rules/types.js';
 
-export function getSpecContent(): string {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  
-  // Candidate paths based on different execution contexts
-  const candidates = [
-    resolve(currentDir, '../spec.md'), // Original assumption
-    resolve(currentDir, './linter/spec.md'), // Running from dist/index.js
-    resolve(currentDir, './spec.md'), // Running from dist/linter/index.js
-    resolve(currentDir, '../../../../../docs/spec.md'), // Dev path from src/linter/spec-gen/
-    resolve(currentDir, '../../../docs/spec.md'), // Dev path from dist/
-  ];
-
-  for (const p of candidates) {
-    try {
-      return readFileSync(p, 'utf-8');
-    } catch {
-      // try next
-    }
+/**
+ * Load the DESIGN.md format specification document.
+ *
+ * @param specPath - Explicit absolute path to spec.md. When provided, this
+ *   path is used directly with no fallback. Useful for tests and codegen
+ *   scripts that know exactly where the file lives.
+ *
+ * When no path is given, resolution uses two deterministic strategies:
+ *   1. Bundle path:  <currentDir>/spec.md — the build copies docs/spec.md here.
+ *   2. Dev path:     <repo>/docs/spec.md — relative from src/linter/spec-gen/.
+ *
+ * This replaces the previous 5-candidate shotgun approach with clear,
+ * auditable paths that work across OSes and execution contexts.
+ */
+export function getSpecContent(specPath?: string): string {
+  // Explicit path: use it or fail. No guessing.
+  if (specPath) {
+    return readFileSync(specPath, 'utf-8');
   }
 
-  throw new Error(`Failed to load spec.md. Tried: ${candidates.join(', ')}`);
+  const currentDir = dirname(fileURLToPath(import.meta.url));
+
+  // Strategy 1: Bundled spec.md alongside the executing module.
+  // After `bun run build`, spec.md is copied to dist/ and dist/linter/.
+  const bundledPath = resolve(currentDir, 'spec.md');
+  try {
+    return readFileSync(bundledPath, 'utf-8');
+  } catch {
+    // Not a bundle context — fall through to dev path.
+  }
+
+  // Strategy 2: Development — spec.md lives at <repo>/docs/spec.md.
+  // From src/linter/spec-gen/ that's ../../../docs/spec.md (3 levels up to packages/cli/).
+  // Then 2 more to the repo root, then into docs/.
+  const devPath = resolve(currentDir, '../../../../../docs/spec.md');
+  try {
+    return readFileSync(devPath, 'utf-8');
+  } catch {
+    throw new Error(
+      `Failed to load spec.md.\n` +
+      `  Bundled path: ${bundledPath}\n` +
+      `  Dev path:     ${devPath}\n` +
+      `If running from a built bundle, ensure the build script copies docs/spec.md into dist/.`
+    );
+  }
 }
 
 export function getRulesTable(rules: RuleDescriptor[]): string {

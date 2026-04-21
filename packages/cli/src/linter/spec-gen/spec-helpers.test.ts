@@ -38,9 +38,29 @@ describe('getRulesTable', () => {
     expect(table).toContain('| rule-1 | error | Description 1 |');
     expect(table).toContain('| rule-2 | warning | Description 2 |');
   });
+});
 
-  it('getSpecContent returns spec content', () => {
+describe('getSpecContent', () => {
+  it('returns spec content with expected heading', () => {
     const content = getSpecContent();
     expect(content).toContain('# DESIGN.md Format');
+  });
+
+  it('returns consistent content on repeated calls', () => {
+    const first = getSpecContent();
+    const second = getSpecContent();
+    expect(first).toBe(second);
+  });
+
+  it('content has substantial length (not a stub)', () => {
+    const content = getSpecContent();
+    // The spec doc is a real document, at least a few KB
+    expect(content.length).toBeGreaterThan(1000);
+  });
+
+  it('accepts an explicit specPath override', () => {
+    // This tests the explicit-path contract. If someone passes a path,
+    // it should use that path exactly — no guessing.
+    expect(() => getSpecContent('/nonexistent/fake.md')).toThrow();
   });
 });

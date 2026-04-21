@@ -26,7 +26,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.0.0"
   },
   "bin": {
     "design.md": "./dist/index.js"
@@ -43,7 +43,7 @@
   },
   "scripts": {
     "prepublishOnly": "bun run build",
-    "build": "bun build src/index.ts src/linter/index.ts --outdir dist --target node && npx tsc --project tsconfig.build.json --emitDeclarationOnly --skipLibCheck && cp src/linter/spec-config.yaml dist/linter/ && cp src/linter/spec-config.yaml dist/ && cp ../../docs/spec.md dist/linter/ && cp ../../README.md . && cp ../../LICENSE .",
+    "build": "bun build src/index.ts src/linter/index.ts --outdir dist --target node && npx tsc --project tsconfig.build.json --emitDeclarationOnly --skipLibCheck && cp src/linter/spec-config.yaml dist/linter/ && cp src/linter/spec-config.yaml dist/ && cp ../../docs/spec.md dist/linter/ && cp ../../docs/spec.md dist/ && cp ../../README.md . && cp ../../LICENSE .",
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "check-package": "bun run scripts/check-package.ts"
