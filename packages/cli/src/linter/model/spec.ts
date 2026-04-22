@@ -36,6 +36,8 @@ export interface ResolvedColor {
   r: number;
   g: number;
   b: number;
+  /** Alpha channel from 0 to 1. Optional, defaults to 1 if not present. */
+  a?: number;
   /** WCAG relative luminance */
   luminance: number;
 }
@@ -146,10 +148,10 @@ export function parseDimensionParts(raw: string): { value: number; unit: string 
 }
 
 /**
- * Validate a hex color string. Accepts #RGB and #RRGGBB.
+ * Validate a hex color string. Accepts #RGB, #RGBA, #RRGGBB, and #RRGGBBAA.
  */
 export function isValidColor(raw: string): boolean {
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw);
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(raw);
 }
 
 /**
