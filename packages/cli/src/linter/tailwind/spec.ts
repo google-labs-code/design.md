@@ -15,6 +15,7 @@
 import { z } from 'zod';
 import type { Config } from 'tailwindcss';
 import type { DesignSystemState } from '../model/spec.js';
+import type { HermesExportOptions } from '../export/hermes.js';
 
 // ── TAILWIND CONFIG SCHEMA ──────────────────────────────────────────
 export const TailwindThemeExtendSchema = z.object({
@@ -27,7 +28,10 @@ export const TailwindThemeExtendSchema = z.object({
 
 export type TailwindThemeExtend = z.infer<typeof TailwindThemeExtendSchema>;
 
-
+export const TailwindHermesPayloadSchema = z.object({
+  metadata: z.record(z.unknown()).optional(),
+  platformComponents: z.record(z.record(z.unknown())).optional(),
+});
 
 export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
   z.object({
@@ -35,7 +39,8 @@ export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
     data: z.object({
       theme: z.object({
         extend: TailwindThemeExtendSchema
-      })
+      }),
+      _hermes: TailwindHermesPayloadSchema.optional(),
     })
   }),
   z.object({
@@ -51,5 +56,5 @@ export type TailwindEmitterResult = z.infer<typeof TailwindEmitterResultSchema>;
 
 // ── INTERFACE ──────────────────────────────────────────────────────
 export interface TailwindEmitterSpec {
-  execute(state: DesignSystemState): TailwindEmitterResult;
+  execute(state: DesignSystemState, options?: HermesExportOptions): TailwindEmitterResult;
 }

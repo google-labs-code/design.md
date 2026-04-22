@@ -14,6 +14,7 @@
 
 import { z } from 'zod';
 import type { DesignSystemState } from '../model/spec.js';
+import type { HermesExportOptions } from '../export/hermes.js';
 
 // ── DTCG Value Types (W3C Design Tokens Format Module 2025.10) ────
 
@@ -53,6 +54,7 @@ export interface DtcgGroup {
 /** The complete tokens.json output file. */
 export interface DtcgTokenFile extends DtcgGroup {
   $schema?: string;
+  $extensions?: Record<string, unknown>;
 }
 
 // ── Result ─────────────────────────────────────────────────────────
@@ -76,5 +78,5 @@ export type DtcgEmitterResult = z.infer<typeof DtcgEmitterResultSchema>;
 // ── Interface ──────────────────────────────────────────────────────
 
 export interface DtcgEmitterSpec {
-  execute(state: DesignSystemState): DtcgEmitterResult;
+  execute(state: DesignSystemState, options?: HermesExportOptions): DtcgEmitterResult;
 }

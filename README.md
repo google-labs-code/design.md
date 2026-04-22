@@ -227,12 +227,22 @@ Export DESIGN.md tokens to other formats (tailwind, dtcg).
 ```bash
 npx @google/design.md export --format tailwind DESIGN.md > tailwind.theme.json
 npx @google/design.md export --format dtcg DESIGN.md > tokens.json
+npx @google/design.md export --format tailwind --include-hermes-metadata DESIGN.md
 ```
 
 | Option | Type | Default | Description |
 |:-------|:-----|:--------|:------------|
 | `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
 | `--format` | `tailwind` \| `dtcg` | required | Output format |
+| `--include-hermes-metadata` | boolean | `false` | Add Hermes `agent`, `accessibility`, and raw `platformOverrides` data to an explicit extension field |
+| `--include-platform-components` | boolean | `false` | Add Hermes merged platform component views to an explicit extension field |
+
+Default export remains upstream-safe: Hermes-only metadata and merged platform component views are omitted unless one of the explicit Hermes flags is provided.
+
+When enabled, Hermes extras are emitted in format-specific extension fields:
+
+- Tailwind: `_hermes`
+- DTCG: `$extensions.hermes`
 
 ### `spec`
 
@@ -285,6 +295,8 @@ DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.desig
 
 - **Tailwind theme config** — `npx @google/design.md export --format tailwind DESIGN.md`
 - **DTCG tokens.json** ([W3C Design Tokens Format Module](https://tr.designtokens.org/format/)) — `npx @google/design.md export --format dtcg DESIGN.md`
+
+Hermes-only metadata and merged platform component views stay out of the default export output. Use `--include-hermes-metadata` and/or `--include-platform-components` to surface them explicitly in the exporter extension fields.
 
 ## Status
 

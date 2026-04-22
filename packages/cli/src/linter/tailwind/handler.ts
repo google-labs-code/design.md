@@ -14,13 +14,17 @@
 
 import type { TailwindEmitterSpec, TailwindEmitterResult } from './spec.js';
 import type { DesignSystemState, ResolvedDimension } from '../model/spec.js';
+import { buildHermesExportPayload } from '../export/hermes.js';
+import type { HermesExportOptions } from '../export/hermes.js';
 
 /**
  * Pure function mapping DesignSystemState → Tailwind theme.extend config.
  * No side effects.
  */
 export class TailwindEmitterHandler implements TailwindEmitterSpec {
-  execute(state: DesignSystemState): TailwindEmitterResult {
+  execute(state: DesignSystemState, options?: HermesExportOptions): TailwindEmitterResult {
+    const hermes = buildHermesExportPayload(state, options);
+
     return {
       success: true,
       data: {
@@ -33,6 +37,7 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
             spacing: this.mapDimensions(state.spacing),
           },
         },
+        ...(hermes ? { _hermes: hermes } : {}),
       }
     };
   }

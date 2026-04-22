@@ -14,6 +14,8 @@
 
 import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue } from './spec.js';
 import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography } from '../model/spec.js';
+import { buildHermesExportPayload } from '../export/hermes.js';
+import type { HermesExportOptions } from '../export/hermes.js';
 
 const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.json';
 
@@ -22,7 +24,7 @@ const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.jso
  * No side effects.
  */
 export class DtcgEmitterHandler implements DtcgEmitterSpec {
-  execute(state: DesignSystemState): DtcgEmitterResult {
+  execute(state: DesignSystemState, options?: HermesExportOptions): DtcgEmitterResult {
     const file: DtcgTokenFile = {
       $schema: DTCG_SCHEMA_URL,
     };
@@ -42,6 +44,11 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
 
     const typographyGroup = this.mapTypography(state);
     if (typographyGroup) file['typography'] = typographyGroup;
+
+    const hermes = buildHermesExportPayload(state, options);
+    if (hermes) {
+      file.$extensions = { hermes };
+    }
 
     return { success: true, data: file as Record<string, unknown> };
   }

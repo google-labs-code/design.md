@@ -191,4 +191,74 @@ describe('DtcgEmitterHandler', () => {
     expect(value['lineHeight']).toBeUndefined();
     expect(value['letterSpacing']).toBeUndefined();
   });
+
+  test('Hermes exports keep extensions opt-in and place extras under $extensions.hermes', () => {
+    const result = handler.execute(emptyState({
+      profile: 'hermes',
+      declaredProfile: 'hermes-v1',
+      agent: { mode: 'strict' },
+      accessibility: { contrast: { bodyText: 'AA' } },
+      platformOverrides: {
+        mobile: {
+          components: {
+            button: { minHeight: '44px' },
+          },
+        },
+      },
+      mergedPlatformComponents: new Map([
+        ['mobile', new Map([
+          ['button', {
+            properties: new Map([['backgroundColor', '#2563eb']]),
+            extensionProperties: new Map([['minHeight', '44px']]),
+            unresolvedRefs: [],
+          }],
+        ])],
+      ]),
+    }));
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data['$extensions']).toBeUndefined();
+
+    const hermesResult = handler.execute(emptyState({
+      profile: 'hermes',
+      declaredProfile: 'hermes-v1',
+      agent: { mode: 'strict' },
+      accessibility: { contrast: { bodyText: 'AA' } },
+      platformOverrides: {
+        mobile: {
+          components: {
+            button: { minHeight: '44px' },
+          },
+        },
+      },
+      mergedPlatformComponents: new Map([
+        ['mobile', new Map([
+          ['button', {
+            properties: new Map([['backgroundColor', '#2563eb']]),
+            extensionProperties: new Map([['minHeight', '44px']]),
+            unresolvedRefs: [],
+          }],
+        ])],
+      ]),
+    }), {
+      includeHermesMetadata: true,
+      includePlatformComponents: true,
+    });
+
+    expect(hermesResult.success).toBe(true);
+    if (!hermesResult.success) return;
+
+    const extensions = hermesResult.data['$extensions'] as Record<string, unknown>;
+    const hermes = extensions['hermes'] as Record<string, unknown>;
+    const metadata = hermes['metadata'] as Record<string, unknown>;
+    const platformComponents = hermes['platformComponents'] as Record<string, unknown>;
+    const mobile = platformComponents['mobile'] as Record<string, unknown>;
+    const button = mobile['button'] as Record<string, unknown>;
+    const extensionProperties = button['extensionProperties'] as Record<string, unknown>;
+
+    expect(metadata['profile']).toBe('hermes');
+    expect((metadata['agent'] as Record<string, unknown>)['mode']).toBe('strict');
+    expect(extensionProperties['minHeight']).toBe('44px');
+  });
 });

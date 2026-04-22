@@ -16,6 +16,7 @@ import { defineCommand } from 'citty';
 import { lint, TailwindEmitterHandler } from '../linter/index.js';
 import { DtcgEmitterHandler } from '../linter/dtcg/handler.js';
 import { readInput } from '../utils.js';
+import type { HermesExportOptions } from '../linter/export/hermes.js';
 
 const FORMATS = ['tailwind', 'dtcg'] as const;
 type ExportFormat = typeof FORMATS[number];
@@ -36,9 +37,21 @@ export default defineCommand({
       description: `Output format: ${FORMATS.join(', ')}`,
       required: true,
     },
+    includeHermesMetadata: {
+      type: 'boolean',
+      description: 'Include Hermes metadata in an explicit extension field.',
+    },
+    includePlatformComponents: {
+      type: 'boolean',
+      description: 'Include merged Hermes platform component views in an explicit extension field.',
+    },
   },
   async run({ args }) {
     const format = args.format as string;
+    const exportOptions: HermesExportOptions = {
+      includeHermesMetadata: Boolean(args.includeHermesMetadata),
+      includePlatformComponents: Boolean(args.includePlatformComponents),
+    };
 
     // Validate --format against closed enum
     if (!FORMATS.includes(format as ExportFormat)) {
@@ -54,7 +67,7 @@ export default defineCommand({
 
     if (format === 'tailwind') {
       const handler = new TailwindEmitterHandler();
-      const result = handler.execute(report.designSystem);
+      const result = handler.execute(report.designSystem, exportOptions);
 
       if (!result.success) {
         console.error(JSON.stringify({ error: result.error.message }));
@@ -65,7 +78,7 @@ export default defineCommand({
       console.log(JSON.stringify(result.data, null, 2));
     } else if (format === 'dtcg') {
       const handler = new DtcgEmitterHandler();
-      const result = handler.execute(report.designSystem);
+      const result = handler.execute(report.designSystem, exportOptions);
 
       if (!result.success) {
         console.error(JSON.stringify({ error: result.error.message }));
