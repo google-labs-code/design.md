@@ -150,46 +150,13 @@ export class ModelHandler implements ModelSpec {
       const components = new Map<string, ComponentDef>();
       if (input.components) {
         for (const [compName, props] of Object.entries(input.components)) {
-          const properties = new Map<string, ResolvedValue>();
-          const extensionProperties = new Map<string, unknown>();
-          const unresolvedRefs: string[] = [];
-
-          for (const [propName, rawValue] of Object.entries(props)) {
-            if (profile === 'hermes' && HERMES_COMPONENT_EXTENSION_PROPS.has(propName)) {
-              extensionProperties.set(propName, rawValue);
-              continue;
-            }
-
-            if (typeof rawValue !== 'string') {
-              findings.push({
-                severity: 'error',
-                path: `components.${compName}.${propName}`,
-                message: `Component property '${propName}' must be a string in the ${profile} profile.`,
-              });
-              continue;
-            }
-
-            if (isTokenReference(rawValue)) {
-              const refPath = rawValue.slice(1, -1);
-              const resolved = resolveReference(symbolTable, refPath, new Set());
-              if (resolved !== null) {
-                properties.set(propName, resolved);
-              } else {
-                unresolvedRefs.push(rawValue);
-                properties.set(propName, rawValue);
-              }
-            } else if (isValidColor(rawValue)) {
-              properties.set(propName, parseColor(rawValue));
-            } else if (isParseableDimension(rawValue)) {
-              properties.set(propName, parseDimension(rawValue));
-            } else {
-              properties.set(propName, rawValue);
-            }
-          }
-
-          components.set(compName, { properties, extensionProperties, unresolvedRefs });
+          components.set(compName, buildComponentDef(compName, props, profile, symbolTable, findings));
         }
       }
+
+      const mergedPlatformComponents = profile === 'hermes'
+        ? buildMergedPlatformComponents(input.platformOverrides, components, profile, symbolTable, findings)
+        : undefined;
 
       return {
         designSystem: {
@@ -205,6 +172,7 @@ export class ModelHandler implements ModelSpec {
           agent: input.agent,
           accessibility: input.accessibility,
           platformOverrides: input.platformOverrides,
+          mergedPlatformComponents,
           symbolTable,
           sections: input.sections,
         },
@@ -222,6 +190,7 @@ export class ModelHandler implements ModelSpec {
           agent: input.agent,
           accessibility: input.accessibility,
           platformOverrides: input.platformOverrides,
+          mergedPlatformComponents: new Map(),
           symbolTable: new Map(),
         },
         findings: [
@@ -234,6 +203,145 @@ export class ModelHandler implements ModelSpec {
       };
     }
   }
+}
+
+function buildComponentDef(
+  compName: string,
+  props: Record<string, unknown>,
+  profile: LintProfile,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): ComponentDef {
+  const properties = new Map<string, ResolvedValue>();
+  const extensionProperties = new Map<string, unknown>();
+  const unresolvedRefs: string[] = [];
+
+  for (const [propName, rawValue] of Object.entries(props)) {
+    if (profile === 'hermes' && HERMES_COMPONENT_EXTENSION_PROPS.has(propName)) {
+      extensionProperties.set(propName, rawValue);
+      continue;
+    }
+
+    const resolved = resolveComponentProp(compName, propName, rawValue, profile, symbolTable, findings);
+    if (resolved === undefined) continue;
+    if (typeof rawValue === 'string' && isTokenReference(rawValue) && typeof resolved === 'string') {
+      unresolvedRefs.push(rawValue);
+    }
+    properties.set(propName, resolved);
+  }
+
+  return { properties, extensionProperties, unresolvedRefs };
+}
+
+function resolveComponentProp(
+  compName: string,
+  propName: string,
+  rawValue: unknown,
+  profile: LintProfile,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): ResolvedValue | undefined {
+  if (typeof rawValue !== 'string') {
+    findings.push({
+      severity: 'error',
+      path: `components.${compName}.${propName}`,
+      message: `Component property '${propName}' must be a string in the ${profile} profile.`,
+    });
+    return undefined;
+  }
+
+  if (isTokenReference(rawValue)) {
+    const refPath = rawValue.slice(1, -1);
+    const resolved = resolveReference(symbolTable, refPath, new Set());
+    return resolved ?? rawValue;
+  }
+  if (isValidColor(rawValue)) return parseColor(rawValue);
+  if (isParseableDimension(rawValue)) return parseDimension(rawValue);
+  return rawValue;
+}
+
+function buildMergedPlatformComponents(
+  rawOverrides: Record<string, unknown> | undefined,
+  baseComponents: Map<string, ComponentDef>,
+  profile: LintProfile,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): Map<string, Map<string, ComponentDef>> {
+  const merged = new Map<string, Map<string, ComponentDef>>();
+  if (!rawOverrides || typeof rawOverrides !== 'object' || Array.isArray(rawOverrides)) {
+    return merged;
+  }
+
+  for (const [platform, rawOverride] of Object.entries(rawOverrides)) {
+    if (!rawOverride || typeof rawOverride !== 'object' || Array.isArray(rawOverride)) continue;
+    const override = rawOverride as Record<string, unknown>;
+    if (!override['components'] || typeof override['components'] !== 'object' || Array.isArray(override['components'])) continue;
+
+    const mergedComponents = new Map<string, ComponentDef>();
+    for (const [componentName, rawComponentOverride] of Object.entries(override['components'] as Record<string, unknown>)) {
+      const baseComponent = baseComponents.get(componentName);
+      if (!baseComponent) continue;
+      if (!rawComponentOverride || typeof rawComponentOverride !== 'object' || Array.isArray(rawComponentOverride)) continue;
+
+      const nextProperties = new Map(baseComponent.properties);
+      const nextExtensionProperties = new Map(baseComponent.extensionProperties);
+      const nextUnresolvedRefs = [...baseComponent.unresolvedRefs];
+
+      for (const [propName, rawValue] of Object.entries(rawComponentOverride as Record<string, unknown>)) {
+        if (profile === 'hermes' && HERMES_COMPONENT_EXTENSION_PROPS.has(propName)) {
+          if (propName === 'states') {
+            nextExtensionProperties.set(propName, mergeStateMaps(nextExtensionProperties.get(propName), rawValue));
+          } else {
+            nextExtensionProperties.set(propName, rawValue);
+          }
+          continue;
+        }
+
+        const resolved = resolveComponentProp(componentName, propName, rawValue, profile, symbolTable, findings);
+        if (resolved === undefined) continue;
+        if (typeof rawValue === 'string' && isTokenReference(rawValue) && typeof resolved === 'string') {
+          nextUnresolvedRefs.push(rawValue);
+        }
+        nextProperties.set(propName, resolved);
+      }
+
+      mergedComponents.set(componentName, {
+        properties: nextProperties,
+        extensionProperties: nextExtensionProperties,
+        unresolvedRefs: nextUnresolvedRefs,
+      });
+    }
+
+    merged.set(platform, mergedComponents);
+  }
+
+  return merged;
+}
+
+function mergeStateMaps(baseStates: unknown, overrideStates: unknown): unknown {
+  const base = baseStates && typeof baseStates === 'object' && !Array.isArray(baseStates)
+    ? { ...(baseStates as Record<string, unknown>) }
+    : {};
+  if (!overrideStates || typeof overrideStates !== 'object' || Array.isArray(overrideStates)) {
+    return overrideStates;
+  }
+
+  for (const [stateName, stateValue] of Object.entries(overrideStates as Record<string, unknown>)) {
+    const baseState = base[stateName];
+    if (
+      baseState && typeof baseState === 'object' && !Array.isArray(baseState) &&
+      stateValue && typeof stateValue === 'object' && !Array.isArray(stateValue)
+    ) {
+      base[stateName] = {
+        ...(baseState as Record<string, unknown>),
+        ...(stateValue as Record<string, unknown>),
+      };
+    } else {
+      base[stateName] = stateValue;
+    }
+  }
+
+  return base;
 }
 
 // ── Pure utility functions ─────────────────────────────────────────

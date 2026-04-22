@@ -80,6 +80,7 @@ export interface DesignSystemState {
   agent?: Record<string, unknown> | undefined;
   accessibility?: Record<string, unknown> | undefined;
   platformOverrides?: Record<string, unknown> | undefined;
+  mergedPlatformComponents?: Map<string, Map<string, ComponentDef>> | undefined;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
