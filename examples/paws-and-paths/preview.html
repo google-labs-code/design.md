@@ -1,0 +1,1237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paws &amp; Paths - DESIGN.md Show</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&family=Noto+Serif:wght@400;700&display=swap');
+
+    :root {
+      --bg-dark: #242424;
+      --board-bg: #e2e2db;
+      --board-border: #7951ff;
+      --card-bg: #f5f5f0;
+      --text-main: #333333;
+      --text-muted: #888888;
+      --radius-xl: 1.5rem;
+      --radius-lg: 1rem;
+      --radius-md: 0.75rem;
+      --radius-sm: 0.5rem;
+      --radius-pill: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Manrope", sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-dark);
+      background-image: radial-gradient(#3a3a3a 1px, transparent 0);
+      background-size: 20px 20px;
+      padding: 2rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      padding: 0 1rem;
+    }
+
+    .page-title {
+      font-weight: 700;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .page-title svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .page-actions {
+      display: flex;
+      gap: 0.5rem;
+      color: #999;
+    }
+
+    .page-actions svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+
+    .board-container {
+      border: 4px solid var(--board-border);
+      border-radius: var(--radius-xl);
+      background: var(--board-bg);
+      padding: 1.5rem;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid rgba(0,0,0,0.05);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.5rem 0.25rem;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -0.5rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      border-bottom-color: var(--board-border);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Column layouts for Overview */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Masonry layout for inner tabs */
+    .masonry {
+      column-count: 4;
+      column-gap: 1.5rem;
+    }
+    .masonry > * {
+      break-inside: avoid;
+      margin-bottom: 1.5rem;
+    }
+    
+    .grid-auto {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Color Card */
+    .color-card {
+      padding: 0;
+      gap: 0;
+    }
+    .color-main {
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 0.9rem;
+      min-height: 120px;
+    }
+    .color-shades {
+      display: flex;
+      height: 36px;
+    }
+    .color-shades i {
+      flex: 1;
+      background: var(--shade);
+    }
+
+    /* Typography Card */
+    .type-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+    }
+    .type-sample {
+      margin: 0;
+      text-align: center;
+      font-size: 6.5rem;
+      line-height: 1;
+      color: #333;
+      padding-bottom: 1.5rem;
+    }
+
+    /* Dimension Rows */
+    .dim-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      align-items: center;
+    }
+    .dim-bar {
+      grid-column: 1 / -1;
+      height: 6px;
+      border-radius: var(--radius-pill);
+      background: rgba(0,0,0,0.05);
+      margin-bottom: 1rem;
+    }
+    .dim-bar i {
+      display: block;
+      height: 100%;
+      border-radius: var(--radius-pill);
+      background: #5d665b;
+      width: var(--width);
+    }
+    .rounded-chip {
+      height: 32px;
+      background: rgba(0,0,0,0.1);
+      border-radius: var(--radius);
+      margin-top: 0.25rem;
+    }
+
+    /* Components */
+    .component-prop {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .component-prop:last-child {
+      border-bottom: none;
+    }
+    .component-prop strong {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .diagnostics {
+      margin-bottom: 1rem;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      background: #ffebee;
+      color: #c62828;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 1200px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      body { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-title">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      Paws &amp; Paths
+    </div>
+    <div class="page-actions">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+      <svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
+    </div>
+  </header>
+
+  <div class="board-container">
+    <div class="diagnostics">
+    <p style="margin:0 0 0.5rem;font-weight:bold;">Diagnostics: 0 errors, 33 warnings</p>
+    <ul style="margin:0;padding-left:1.5rem;"><li>[colors.surface] &#39;surface&#39; is defined but never referenced by any component.</li><li>[colors.surface-dim] &#39;surface-dim&#39; is defined but never referenced by any component.</li><li>[colors.surface-bright] &#39;surface-bright&#39; is defined but never referenced by any component.</li><li>[colors.surface-container] &#39;surface-container&#39; is defined but never referenced by any component.</li><li>[colors.surface-container-highest] &#39;surface-container-highest&#39; is defined but never referenced by any component.</li><li>[colors.on-surface-variant] &#39;on-surface-variant&#39; is defined but never referenced by any component.</li></ul>
+  </div>
+    
+    <nav class="tabs">
+      <button class="tab-btn active" onclick="showTab(event, 'tab-overview')">Overview</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-colors')">Colors (47)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-typography')">Typography (8)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-layout')">Layout (8)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-shapes')">Shapes (6)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-components')">Components (10)</button>
+    </nav>
+
+    <main class="board">
+      
+      <!-- OVERVIEW TAB -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="grid-4">
+          <div class="column">
+            <article class="card color-card">
+      <div class="color-main" style="background-color: #f9f9ff; color: #000000;">
+        <span>background</span>
+        <span>#F9F9FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3e3e40"></i><i style="--shade:#707073"></i><i style="--shade:#a2a2a6"></i><i style="--shade:#d4d4d9"></i><i style="--shade:#f9f9ff"></i><i style="--shade:#fafaff"></i><i style="--shade:#fbfbff"></i><i style="--shade:#fdfdff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ba1a1a; color: #ffffff;">
+        <span>error</span>
+        <span>#BA1A1A</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#2f0707"></i><i style="--shade:#540c0c"></i><i style="--shade:#791111"></i><i style="--shade:#9e1616"></i><i style="--shade:#ba1a1a"></i><i style="--shade:#c84848"></i><i style="--shade:#d67676"></i><i style="--shade:#e3a3a3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffdad6; color: #000000;">
+        <span>error-container</span>
+        <span>#FFDAD6</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#403736"></i><i style="--shade:#736260"></i><i style="--shade:#a68e8b"></i><i style="--shade:#d9b9b6"></i><i style="--shade:#ffdad6"></i><i style="--shade:#ffe1de"></i><i style="--shade:#ffe9e6"></i><i style="--shade:#fff0ef"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ebf1ff; color: #000000;">
+        <span>inverse-on-surface</span>
+        <span>#EBF1FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3b3c40"></i><i style="--shade:#6a6c73"></i><i style="--shade:#999da6"></i><i style="--shade:#c8cdd9"></i><i style="--shade:#ebf1ff"></i><i style="--shade:#eff4ff"></i><i style="--shade:#f3f7ff"></i><i style="--shade:#f7f9ff"></i>
+      </div>
+    </article>
+          </div>
+          <div class="column">
+            <article class="card">
+        <div class="type-header">
+          <span>body-lg</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>body-md</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article>
+          </div>
+          <div class="column">
+            <div class="card">
+              <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">Spacing</h3>
+              <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">base</strong>
+          <span style="color:var(--text-muted);">8px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:17.6px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">gutter</strong>
+          <span style="color:var(--text-muted);">16px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:35.2px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">lg</strong>
+          <span style="color:var(--text-muted);">40px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:88px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">margin</strong>
+          <span style="color:var(--text-muted);">24px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:52.800000000000004px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">md</strong>
+          <span style="color:var(--text-muted);">24px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:52.800000000000004px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">sm</strong>
+          <span style="color:var(--text-muted);">12px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:26.400000000000002px"></i></div>
+      </div>
+            </div>
+            <article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">badge-status</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#1abdff</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>4px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>9999px</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#004966</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Plus Jakarta Sans 12px/16px (500)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#855300</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>24px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Plus Jakarta Sans 14px/20px (600)</span>
+      </div>
+      </div>
+    </article>
+          </div>
+          <div class="column">
+            <div class="card">
+              <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">Rounded</h3>
+              <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">DEFAULT</strong>
+          <span style="color:var(--text-muted);">0.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.5rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">full</strong>
+          <span style="color:var(--text-muted);">9999px</span>
+        </div>
+        <div class="rounded-chip" style="--radius:9999px"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">lg</strong>
+          <span style="color:var(--text-muted);">1rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">md</strong>
+          <span style="color:var(--text-muted);">0.75rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.75rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">sm</strong>
+          <span style="color:var(--text-muted);">0.25rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.25rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">xl</strong>
+          <span style="color:var(--text-muted);">1.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1.5rem"></div>
+      </div>
+            </div>
+            <article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary-hover</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#f59e0b</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#613b00</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-secondary</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#0058be</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>24px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Plus Jakarta Sans 14px/20px (600)</span>
+      </div>
+      </div>
+    </article>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLORS TAB -->
+      <div id="tab-colors" class="tab-content">
+        <div class="grid-auto">
+          <article class="card color-card">
+      <div class="color-main" style="background-color: #f9f9ff; color: #000000;">
+        <span>background</span>
+        <span>#F9F9FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3e3e40"></i><i style="--shade:#707073"></i><i style="--shade:#a2a2a6"></i><i style="--shade:#d4d4d9"></i><i style="--shade:#f9f9ff"></i><i style="--shade:#fafaff"></i><i style="--shade:#fbfbff"></i><i style="--shade:#fdfdff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ba1a1a; color: #ffffff;">
+        <span>error</span>
+        <span>#BA1A1A</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#2f0707"></i><i style="--shade:#540c0c"></i><i style="--shade:#791111"></i><i style="--shade:#9e1616"></i><i style="--shade:#ba1a1a"></i><i style="--shade:#c84848"></i><i style="--shade:#d67676"></i><i style="--shade:#e3a3a3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffdad6; color: #000000;">
+        <span>error-container</span>
+        <span>#FFDAD6</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#403736"></i><i style="--shade:#736260"></i><i style="--shade:#a68e8b"></i><i style="--shade:#d9b9b6"></i><i style="--shade:#ffdad6"></i><i style="--shade:#ffe1de"></i><i style="--shade:#ffe9e6"></i><i style="--shade:#fff0ef"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ebf1ff; color: #000000;">
+        <span>inverse-on-surface</span>
+        <span>#EBF1FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3b3c40"></i><i style="--shade:#6a6c73"></i><i style="--shade:#999da6"></i><i style="--shade:#c8cdd9"></i><i style="--shade:#ebf1ff"></i><i style="--shade:#eff4ff"></i><i style="--shade:#f3f7ff"></i><i style="--shade:#f7f9ff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffb95f; color: #000000;">
+        <span>inverse-primary</span>
+        <span>#FFB95F</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#402e18"></i><i style="--shade:#73532b"></i><i style="--shade:#a6783e"></i><i style="--shade:#d99d51"></i><i style="--shade:#ffb95f"></i><i style="--shade:#ffc77f"></i><i style="--shade:#ffd59f"></i><i style="--shade:#ffe3bf"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #2a313d; color: #ffffff;">
+        <span>inverse-surface</span>
+        <span>#2A313D</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0b0c0f"></i><i style="--shade:#13161b"></i><i style="--shade:#1b2028"></i><i style="--shade:#242a34"></i><i style="--shade:#2a313d"></i><i style="--shade:#555a64"></i><i style="--shade:#7f838b"></i><i style="--shade:#aaadb1"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #151c27; color: #ffffff;">
+        <span>on-background</span>
+        <span>#151C27</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#05070a"></i><i style="--shade:#090d12"></i><i style="--shade:#0e1219"></i><i style="--shade:#121821"></i><i style="--shade:#151c27"></i><i style="--shade:#444952"></i><i style="--shade:#73777d"></i><i style="--shade:#a1a4a9"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffffff; color: #000000;">
+        <span>on-error</span>
+        <span>#FFFFFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#404040"></i><i style="--shade:#737373"></i><i style="--shade:#a6a6a6"></i><i style="--shade:#d9d9d9"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #93000a; color: #ffffff;">
+        <span>on-error-container</span>
+        <span>#93000A</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#250003"></i><i style="--shade:#420005"></i><i style="--shade:#600007"></i><i style="--shade:#7d0009"></i><i style="--shade:#93000a"></i><i style="--shade:#a9333b"></i><i style="--shade:#be666c"></i><i style="--shade:#d4999d"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffffff; color: #000000;">
+        <span>on-primary</span>
+        <span>#FFFFFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#404040"></i><i style="--shade:#737373"></i><i style="--shade:#a6a6a6"></i><i style="--shade:#d9d9d9"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #613b00; color: #ffffff;">
+        <span>on-primary-container</span>
+        <span>#613B00</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#180f00"></i><i style="--shade:#2c1b00"></i><i style="--shade:#3f2600"></i><i style="--shade:#523200"></i><i style="--shade:#613b00"></i><i style="--shade:#816233"></i><i style="--shade:#a08966"></i><i style="--shade:#c0b199"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #2a1700; color: #ffffff;">
+        <span>on-primary-fixed</span>
+        <span>#2A1700</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0b0600"></i><i style="--shade:#130a00"></i><i style="--shade:#1b0f00"></i><i style="--shade:#241400"></i><i style="--shade:#2a1700"></i><i style="--shade:#554533"></i><i style="--shade:#7f7466"></i><i style="--shade:#aaa299"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #653e00; color: #ffffff;">
+        <span>on-primary-fixed-variant</span>
+        <span>#653E00</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#191000"></i><i style="--shade:#2d1c00"></i><i style="--shade:#422800"></i><i style="--shade:#563500"></i><i style="--shade:#653e00"></i><i style="--shade:#846533"></i><i style="--shade:#a38b66"></i><i style="--shade:#c1b299"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffffff; color: #000000;">
+        <span>on-secondary</span>
+        <span>#FFFFFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#404040"></i><i style="--shade:#737373"></i><i style="--shade:#a6a6a6"></i><i style="--shade:#d9d9d9"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #fefcff; color: #000000;">
+        <span>on-secondary-container</span>
+        <span>#FEFCFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#403f40"></i><i style="--shade:#727173"></i><i style="--shade:#a5a4a6"></i><i style="--shade:#d8d6d9"></i><i style="--shade:#fefcff"></i><i style="--shade:#fefdff"></i><i style="--shade:#fefdff"></i><i style="--shade:#fffeff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #001a42; color: #ffffff;">
+        <span>on-secondary-fixed</span>
+        <span>#001A42</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#000711"></i><i style="--shade:#000c1e"></i><i style="--shade:#00112b"></i><i style="--shade:#001638"></i><i style="--shade:#001a42"></i><i style="--shade:#334868"></i><i style="--shade:#66768e"></i><i style="--shade:#99a3b3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #004395; color: #ffffff;">
+        <span>on-secondary-fixed-variant</span>
+        <span>#004395</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#001125"></i><i style="--shade:#001e43"></i><i style="--shade:#002c61"></i><i style="--shade:#00397f"></i><i style="--shade:#004395"></i><i style="--shade:#3369aa"></i><i style="--shade:#668ebf"></i><i style="--shade:#99b4d5"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #151c27; color: #ffffff;">
+        <span>on-surface</span>
+        <span>#151C27</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#05070a"></i><i style="--shade:#090d12"></i><i style="--shade:#0e1219"></i><i style="--shade:#121821"></i><i style="--shade:#151c27"></i><i style="--shade:#444952"></i><i style="--shade:#73777d"></i><i style="--shade:#a1a4a9"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #534434; color: #ffffff;">
+        <span>on-surface-variant</span>
+        <span>#534434</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#15110d"></i><i style="--shade:#251f17"></i><i style="--shade:#362c22"></i><i style="--shade:#473a2c"></i><i style="--shade:#534434"></i><i style="--shade:#75695d"></i><i style="--shade:#988f85"></i><i style="--shade:#bab4ae"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffffff; color: #000000;">
+        <span>on-tertiary</span>
+        <span>#FFFFFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#404040"></i><i style="--shade:#737373"></i><i style="--shade:#a6a6a6"></i><i style="--shade:#d9d9d9"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #004966; color: #ffffff;">
+        <span>on-tertiary-container</span>
+        <span>#004966</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#00121a"></i><i style="--shade:#00212e"></i><i style="--shade:#002f42"></i><i style="--shade:#003e57"></i><i style="--shade:#004966"></i><i style="--shade:#336d85"></i><i style="--shade:#6692a3"></i><i style="--shade:#99b6c2"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #001e2d; color: #ffffff;">
+        <span>on-tertiary-fixed</span>
+        <span>#001E2D</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#00080b"></i><i style="--shade:#000d14"></i><i style="--shade:#00141d"></i><i style="--shade:#001a26"></i><i style="--shade:#001e2d"></i><i style="--shade:#334b57"></i><i style="--shade:#667881"></i><i style="--shade:#99a5ab"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #004c6a; color: #ffffff;">
+        <span>on-tertiary-fixed-variant</span>
+        <span>#004C6A</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#00131b"></i><i style="--shade:#002230"></i><i style="--shade:#003145"></i><i style="--shade:#00415a"></i><i style="--shade:#004c6a"></i><i style="--shade:#337088"></i><i style="--shade:#6694a6"></i><i style="--shade:#99b7c3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #867461; color: #ffffff;">
+        <span>outline</span>
+        <span>#867461</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#221d18"></i><i style="--shade:#3c342c"></i><i style="--shade:#574b3f"></i><i style="--shade:#726352"></i><i style="--shade:#867461"></i><i style="--shade:#9e9081"></i><i style="--shade:#b6aca0"></i><i style="--shade:#cfc7c0"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #d8c3ad; color: #000000;">
+        <span>outline-variant</span>
+        <span>#D8C3AD</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#36312b"></i><i style="--shade:#61584e"></i><i style="--shade:#8c7f70"></i><i style="--shade:#b8a693"></i><i style="--shade:#d8c3ad"></i><i style="--shade:#e0cfbd"></i><i style="--shade:#e8dbce"></i><i style="--shade:#efe7de"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #855300; color: #ffffff;">
+        <span>primary</span>
+        <span>#855300</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#211500"></i><i style="--shade:#3c2500"></i><i style="--shade:#563600"></i><i style="--shade:#714700"></i><i style="--shade:#855300"></i><i style="--shade:#9d7533"></i><i style="--shade:#b69866"></i><i style="--shade:#ceba99"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #f59e0b; color: #000000;">
+        <span>primary-container</span>
+        <span>#F59E0B</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3d2803"></i><i style="--shade:#6e4705"></i><i style="--shade:#9f6707"></i><i style="--shade:#d08609"></i><i style="--shade:#f59e0b"></i><i style="--shade:#f7b13c"></i><i style="--shade:#f9c56d"></i><i style="--shade:#fbd89d"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffddb8; color: #000000;">
+        <span>primary-fixed</span>
+        <span>#FFDDB8</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#40372e"></i><i style="--shade:#736353"></i><i style="--shade:#a69078"></i><i style="--shade:#d9bc9c"></i><i style="--shade:#ffddb8"></i><i style="--shade:#ffe4c6"></i><i style="--shade:#ffebd4"></i><i style="--shade:#fff1e3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffb95f; color: #000000;">
+        <span>primary-fixed-dim</span>
+        <span>#FFB95F</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#402e18"></i><i style="--shade:#73532b"></i><i style="--shade:#a6783e"></i><i style="--shade:#d99d51"></i><i style="--shade:#ffb95f"></i><i style="--shade:#ffc77f"></i><i style="--shade:#ffd59f"></i><i style="--shade:#ffe3bf"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #0058be; color: #ffffff;">
+        <span>secondary</span>
+        <span>#0058BE</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#001630"></i><i style="--shade:#002855"></i><i style="--shade:#00397c"></i><i style="--shade:#004ba2"></i><i style="--shade:#0058be"></i><i style="--shade:#3379cb"></i><i style="--shade:#669bd8"></i><i style="--shade:#99bce5"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #2170e4; color: #ffffff;">
+        <span>secondary-container</span>
+        <span>#2170E4</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#081c39"></i><i style="--shade:#0f3267"></i><i style="--shade:#154994"></i><i style="--shade:#1c5fc2"></i><i style="--shade:#2170e4"></i><i style="--shade:#4d8de9"></i><i style="--shade:#7aa9ef"></i><i style="--shade:#a6c6f4"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #d8e2ff; color: #000000;">
+        <span>secondary-fixed</span>
+        <span>#D8E2FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#363940"></i><i style="--shade:#616673"></i><i style="--shade:#8c93a6"></i><i style="--shade:#b8c0d9"></i><i style="--shade:#d8e2ff"></i><i style="--shade:#e0e8ff"></i><i style="--shade:#e8eeff"></i><i style="--shade:#eff3ff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #adc6ff; color: #000000;">
+        <span>secondary-fixed-dim</span>
+        <span>#ADC6FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#2b3240"></i><i style="--shade:#4e5973"></i><i style="--shade:#7081a6"></i><i style="--shade:#93a8d9"></i><i style="--shade:#adc6ff"></i><i style="--shade:#bdd1ff"></i><i style="--shade:#ceddff"></i><i style="--shade:#dee8ff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #f9f9ff; color: #000000;">
+        <span>surface</span>
+        <span>#F9F9FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3e3e40"></i><i style="--shade:#707073"></i><i style="--shade:#a2a2a6"></i><i style="--shade:#d4d4d9"></i><i style="--shade:#f9f9ff"></i><i style="--shade:#fafaff"></i><i style="--shade:#fbfbff"></i><i style="--shade:#fdfdff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #f9f9ff; color: #000000;">
+        <span>surface-bright</span>
+        <span>#F9F9FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3e3e40"></i><i style="--shade:#707073"></i><i style="--shade:#a2a2a6"></i><i style="--shade:#d4d4d9"></i><i style="--shade:#f9f9ff"></i><i style="--shade:#fafaff"></i><i style="--shade:#fbfbff"></i><i style="--shade:#fdfdff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #e7eefe; color: #000000;">
+        <span>surface-container</span>
+        <span>#E7EEFE</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3a3c40"></i><i style="--shade:#686b72"></i><i style="--shade:#969ba5"></i><i style="--shade:#c4cad8"></i><i style="--shade:#e7eefe"></i><i style="--shade:#ecf1fe"></i><i style="--shade:#f1f5fe"></i><i style="--shade:#f5f8ff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #e2e8f8; color: #000000;">
+        <span>surface-container-high</span>
+        <span>#E2E8F8</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#393a3e"></i><i style="--shade:#666870"></i><i style="--shade:#9397a1"></i><i style="--shade:#c0c5d3"></i><i style="--shade:#e2e8f8"></i><i style="--shade:#e8edf9"></i><i style="--shade:#eef1fb"></i><i style="--shade:#f3f6fc"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #dce2f3; color: #000000;">
+        <span>surface-container-highest</span>
+        <span>#DCE2F3</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#37393d"></i><i style="--shade:#63666d"></i><i style="--shade:#8f939e"></i><i style="--shade:#bbc0cf"></i><i style="--shade:#dce2f3"></i><i style="--shade:#e3e8f5"></i><i style="--shade:#eaeef8"></i><i style="--shade:#f1f3fa"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #f0f3ff; color: #000000;">
+        <span>surface-container-low</span>
+        <span>#F0F3FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#3c3d40"></i><i style="--shade:#6c6d73"></i><i style="--shade:#9c9ea6"></i><i style="--shade:#cccfd9"></i><i style="--shade:#f0f3ff"></i><i style="--shade:#f3f5ff"></i><i style="--shade:#f6f8ff"></i><i style="--shade:#f9faff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffffff; color: #000000;">
+        <span>surface-container-lowest</span>
+        <span>#FFFFFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#404040"></i><i style="--shade:#737373"></i><i style="--shade:#a6a6a6"></i><i style="--shade:#d9d9d9"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #d3daea; color: #000000;">
+        <span>surface-dim</span>
+        <span>#D3DAEA</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#35373b"></i><i style="--shade:#5f6269"></i><i style="--shade:#898e98"></i><i style="--shade:#b3b9c7"></i><i style="--shade:#d3daea"></i><i style="--shade:#dce1ee"></i><i style="--shade:#e5e9f2"></i><i style="--shade:#edf0f7"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #855300; color: #ffffff;">
+        <span>surface-tint</span>
+        <span>#855300</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#211500"></i><i style="--shade:#3c2500"></i><i style="--shade:#563600"></i><i style="--shade:#714700"></i><i style="--shade:#855300"></i><i style="--shade:#9d7533"></i><i style="--shade:#b69866"></i><i style="--shade:#ceba99"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #dce2f3; color: #000000;">
+        <span>surface-variant</span>
+        <span>#DCE2F3</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#37393d"></i><i style="--shade:#63666d"></i><i style="--shade:#8f939e"></i><i style="--shade:#bbc0cf"></i><i style="--shade:#dce2f3"></i><i style="--shade:#e3e8f5"></i><i style="--shade:#eaeef8"></i><i style="--shade:#f1f3fa"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #00658b; color: #ffffff;">
+        <span>tertiary</span>
+        <span>#00658B</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#001923"></i><i style="--shade:#002d3f"></i><i style="--shade:#00425a"></i><i style="--shade:#005676"></i><i style="--shade:#00658b"></i><i style="--shade:#3384a2"></i><i style="--shade:#66a3b9"></i><i style="--shade:#99c1d1"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #1abdff; color: #000000;">
+        <span>tertiary-container</span>
+        <span>#1ABDFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#072f40"></i><i style="--shade:#0c5573"></i><i style="--shade:#117ba6"></i><i style="--shade:#16a1d9"></i><i style="--shade:#1abdff"></i><i style="--shade:#48caff"></i><i style="--shade:#76d7ff"></i><i style="--shade:#a3e5ff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #c5e7ff; color: #000000;">
+        <span>tertiary-fixed</span>
+        <span>#C5E7FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#313a40"></i><i style="--shade:#596873"></i><i style="--shade:#8096a6"></i><i style="--shade:#a7c4d9"></i><i style="--shade:#c5e7ff"></i><i style="--shade:#d1ecff"></i><i style="--shade:#dcf1ff"></i><i style="--shade:#e8f5ff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #7fd0ff; color: #000000;">
+        <span>tertiary-fixed-dim</span>
+        <span>#7FD0FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#203440"></i><i style="--shade:#395e73"></i><i style="--shade:#5387a6"></i><i style="--shade:#6cb1d9"></i><i style="--shade:#7fd0ff"></i><i style="--shade:#99d9ff"></i><i style="--shade:#b2e3ff"></i><i style="--shade:#ccecff"></i>
+      </div>
+    </article>
+        </div>
+      </div>
+
+      <!-- TYPOGRAPHY TAB -->
+      <div id="tab-typography" class="tab-content">
+        <div class="grid-auto">
+          <article class="card">
+        <div class="type-header">
+          <span>body-lg</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>body-md</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>display</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:800;letter-spacing:-0.02em">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>headline-lg</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:700;letter-spacing:-0.01em">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>headline-md</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:700">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>label-md</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:600;letter-spacing:0.01em">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>label-sm</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:500">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>title-lg</span>
+          <span>Plus Jakarta Sans</span>
+        </div>
+        <p class="type-sample" style="font-family:Plus Jakarta Sans;font-size: 6.5rem;font-weight:600">Aa</p>
+      </article>
+        </div>
+      </div>
+
+      <!-- LAYOUT (SPACING) TAB -->
+      <div id="tab-layout" class="tab-content">
+        <div class="masonry">
+          <div class="card">
+            <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">All Spacing Tokens</h3>
+            <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">base</strong>
+          <span style="color:var(--text-muted);">8px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:17.6px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">gutter</strong>
+          <span style="color:var(--text-muted);">16px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:35.2px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">lg</strong>
+          <span style="color:var(--text-muted);">40px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:88px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">margin</strong>
+          <span style="color:var(--text-muted);">24px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:52.800000000000004px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">md</strong>
+          <span style="color:var(--text-muted);">24px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:52.800000000000004px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">sm</strong>
+          <span style="color:var(--text-muted);">12px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:26.400000000000002px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">xl</strong>
+          <span style="color:var(--text-muted);">64px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:140.8px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">xs</strong>
+          <span style="color:var(--text-muted);">4px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:12px"></i></div>
+      </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHAPES (ROUNDED) TAB -->
+      <div id="tab-shapes" class="tab-content">
+        <div class="masonry">
+          <div class="card">
+            <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">All Rounded Tokens</h3>
+            <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">DEFAULT</strong>
+          <span style="color:var(--text-muted);">0.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.5rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">full</strong>
+          <span style="color:var(--text-muted);">9999px</span>
+        </div>
+        <div class="rounded-chip" style="--radius:9999px"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">lg</strong>
+          <span style="color:var(--text-muted);">1rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">md</strong>
+          <span style="color:var(--text-muted);">0.75rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.75rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">sm</strong>
+          <span style="color:var(--text-muted);">0.25rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.25rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">xl</strong>
+          <span style="color:var(--text-muted);">1.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1.5rem"></div>
+      </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPONENTS TAB -->
+      <div id="tab-components" class="tab-content">
+        <div class="masonry">
+          <article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">badge-status</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#1abdff</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>4px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>9999px</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#004966</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Plus Jakarta Sans 12px/16px (500)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#855300</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>24px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Plus Jakarta Sans 14px/20px (600)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary-hover</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#f59e0b</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#613b00</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-secondary</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#0058be</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>24px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Plus Jakarta Sans 14px/20px (600)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-secondary-hover</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#2170e4</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#fefcff</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">card-profile</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>24px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">card-walk-stat</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#2170e4</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>12px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>0.75rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#fefcff</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">input-field</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#f0f3ff</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>12px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>0.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#151c27</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Plus Jakarta Sans 16px/24px (400)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">list-item-walker</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>transparent</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>12px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>0.75rem</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">list-item-walker-hover</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#e2e8f8</span>
+      </div>
+      </div>
+    </article>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    function showTab(event, tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+  </script>
+</body>
+</html>

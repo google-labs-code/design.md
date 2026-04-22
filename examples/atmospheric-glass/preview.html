@@ -1,0 +1,1189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Atmospheric Glass - DESIGN.md Show</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&family=Noto+Serif:wght@400;700&display=swap');
+
+    :root {
+      --bg-dark: #242424;
+      --board-bg: #e2e2db;
+      --board-border: #7951ff;
+      --card-bg: #f5f5f0;
+      --text-main: #333333;
+      --text-muted: #888888;
+      --radius-xl: 1.5rem;
+      --radius-lg: 1rem;
+      --radius-md: 0.75rem;
+      --radius-sm: 0.5rem;
+      --radius-pill: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Manrope", sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg-dark);
+      background-image: radial-gradient(#3a3a3a 1px, transparent 0);
+      background-size: 20px 20px;
+      padding: 2rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      padding: 0 1rem;
+    }
+
+    .page-title {
+      font-weight: 700;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .page-title svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .page-actions {
+      display: flex;
+      gap: 0.5rem;
+      color: #999;
+    }
+
+    .page-actions svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+
+    .board-container {
+      border: 4px solid var(--board-border);
+      border-radius: var(--radius-xl);
+      background: var(--board-bg);
+      padding: 1.5rem;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid rgba(0,0,0,0.05);
+      padding-bottom: 0.5rem;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.5rem 0.25rem;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -0.5rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      border-bottom-color: var(--board-border);
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Column layouts for Overview */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Masonry layout for inner tabs */
+    .masonry {
+      column-count: 4;
+      column-gap: 1.5rem;
+    }
+    .masonry > * {
+      break-inside: avoid;
+      margin-bottom: 1.5rem;
+    }
+    
+    .grid-auto {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Color Card */
+    .color-card {
+      padding: 0;
+      gap: 0;
+    }
+    .color-main {
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 0.9rem;
+      min-height: 120px;
+    }
+    .color-shades {
+      display: flex;
+      height: 36px;
+    }
+    .color-shades i {
+      flex: 1;
+      background: var(--shade);
+    }
+
+    /* Typography Card */
+    .type-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+    }
+    .type-sample {
+      margin: 0;
+      text-align: center;
+      font-size: 6.5rem;
+      line-height: 1;
+      color: #333;
+      padding-bottom: 1.5rem;
+    }
+
+    /* Dimension Rows */
+    .dim-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      align-items: center;
+    }
+    .dim-bar {
+      grid-column: 1 / -1;
+      height: 6px;
+      border-radius: var(--radius-pill);
+      background: rgba(0,0,0,0.05);
+      margin-bottom: 1rem;
+    }
+    .dim-bar i {
+      display: block;
+      height: 100%;
+      border-radius: var(--radius-pill);
+      background: #5d665b;
+      width: var(--width);
+    }
+    .rounded-chip {
+      height: 32px;
+      background: rgba(0,0,0,0.1);
+      border-radius: var(--radius);
+      margin-top: 0.25rem;
+    }
+
+    /* Components */
+    .component-prop {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .component-prop:last-child {
+      border-bottom: none;
+    }
+    .component-prop strong {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .diagnostics {
+      margin-bottom: 1rem;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      background: #ffebee;
+      color: #c62828;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 1200px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      body { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-title">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      Atmospheric Glass
+    </div>
+    <div class="page-actions">
+      <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+      <svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"></path></svg>
+    </div>
+  </header>
+
+  <div class="board-container">
+    <div class="diagnostics">
+    <p style="margin:0 0 0.5rem;font-weight:bold;">Diagnostics: 0 errors, 43 warnings</p>
+    <ul style="margin:0;padding-left:1.5rem;"><li>[colors.surface] &#39;surface&#39; is defined but never referenced by any component.</li><li>[colors.surface-dim] &#39;surface-dim&#39; is defined but never referenced by any component.</li><li>[colors.surface-bright] &#39;surface-bright&#39; is defined but never referenced by any component.</li><li>[colors.surface-container-lowest] &#39;surface-container-lowest&#39; is defined but never referenced by any component.</li><li>[colors.surface-container-low] &#39;surface-container-low&#39; is defined but never referenced by any component.</li><li>[colors.surface-container] &#39;surface-container&#39; is defined but never referenced by any component.</li></ul>
+  </div>
+    
+    <nav class="tabs">
+      <button class="tab-btn active" onclick="showTab(event, 'tab-overview')">Overview</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-colors')">Colors (47)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-typography')">Typography (6)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-layout')">Layout (5)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-shapes')">Shapes (6)</button>
+      <button class="tab-btn" onclick="showTab(event, 'tab-components')">Components (10)</button>
+    </nav>
+
+    <main class="board">
+      
+      <!-- OVERVIEW TAB -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="grid-4">
+          <div class="column">
+            <article class="card color-card">
+      <div class="color-main" style="background-color: #0b1326; color: #ffffff;">
+        <span>background</span>
+        <span>#0B1326</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#03050a"></i><i style="--shade:#050911"></i><i style="--shade:#070c19"></i><i style="--shade:#091020"></i><i style="--shade:#0b1326"></i><i style="--shade:#3c4251"></i><i style="--shade:#6d717d"></i><i style="--shade:#9da1a8"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffb4ab; color: #000000;">
+        <span>error</span>
+        <span>#FFB4AB</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#402d2b"></i><i style="--shade:#73514d"></i><i style="--shade:#a6756f"></i><i style="--shade:#d99991"></i><i style="--shade:#ffb4ab"></i><i style="--shade:#ffc3bc"></i><i style="--shade:#ffd2cd"></i><i style="--shade:#ffe1dd"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #93000a; color: #ffffff;">
+        <span>error-container</span>
+        <span>#93000A</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#250003"></i><i style="--shade:#420005"></i><i style="--shade:#600007"></i><i style="--shade:#7d0009"></i><i style="--shade:#93000a"></i><i style="--shade:#a9333b"></i><i style="--shade:#be666c"></i><i style="--shade:#d4999d"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #283044; color: #ffffff;">
+        <span>inverse-on-surface</span>
+        <span>#283044</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0a0c11"></i><i style="--shade:#12161f"></i><i style="--shade:#1a1f2c"></i><i style="--shade:#22293a"></i><i style="--shade:#283044"></i><i style="--shade:#535969"></i><i style="--shade:#7e838f"></i><i style="--shade:#a9acb4"></i>
+      </div>
+    </article>
+          </div>
+          <div class="column">
+            <article class="card">
+        <div class="type-header">
+          <span>body-lg</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>body-md</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article>
+          </div>
+          <div class="column">
+            <div class="card">
+              <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">Spacing</h3>
+              <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">card-gap</strong>
+          <span style="color:var(--text-muted);">16px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:35.2px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">container-padding</strong>
+          <span style="color:var(--text-muted);">24px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:52.800000000000004px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">glass-padding</strong>
+          <span style="color:var(--text-muted);">20px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:44px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">section-margin</strong>
+          <span style="color:var(--text-muted);">40px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:88px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">unit</strong>
+          <span style="color:var(--text-muted);">8px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:17.6px"></i></div>
+      </div>
+            </div>
+            <article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-ghost</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>rgba(255, 255, 255, 0.05)</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Inter 12px/16px (600)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>height</strong>
+        <span>48px</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>0 24px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#2f3131</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Inter 12px/16px (600)</span>
+      </div>
+      </div>
+    </article>
+          </div>
+          <div class="column">
+            <div class="card">
+              <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">Rounded</h3>
+              <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">DEFAULT</strong>
+          <span style="color:var(--text-muted);">0.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.5rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">full</strong>
+          <span style="color:var(--text-muted);">9999px</span>
+        </div>
+        <div class="rounded-chip" style="--radius:9999px"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">lg</strong>
+          <span style="color:var(--text-muted);">1rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">md</strong>
+          <span style="color:var(--text-muted);">0.75rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.75rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">sm</strong>
+          <span style="color:var(--text-muted);">0.25rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.25rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">xl</strong>
+          <span style="color:var(--text-muted);">1.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1.5rem"></div>
+      </div>
+            </div>
+            <article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary-hover</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#c6c6c7</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">glass-card-elevated</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>rgba(255, 255, 255, 0.2)</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>20px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div>
+      </div>
+    </article>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLORS TAB -->
+      <div id="tab-colors" class="tab-content">
+        <div class="grid-auto">
+          <article class="card color-card">
+      <div class="color-main" style="background-color: #0b1326; color: #ffffff;">
+        <span>background</span>
+        <span>#0B1326</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#03050a"></i><i style="--shade:#050911"></i><i style="--shade:#070c19"></i><i style="--shade:#091020"></i><i style="--shade:#0b1326"></i><i style="--shade:#3c4251"></i><i style="--shade:#6d717d"></i><i style="--shade:#9da1a8"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffb4ab; color: #000000;">
+        <span>error</span>
+        <span>#FFB4AB</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#402d2b"></i><i style="--shade:#73514d"></i><i style="--shade:#a6756f"></i><i style="--shade:#d99991"></i><i style="--shade:#ffb4ab"></i><i style="--shade:#ffc3bc"></i><i style="--shade:#ffd2cd"></i><i style="--shade:#ffe1dd"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #93000a; color: #ffffff;">
+        <span>error-container</span>
+        <span>#93000A</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#250003"></i><i style="--shade:#420005"></i><i style="--shade:#600007"></i><i style="--shade:#7d0009"></i><i style="--shade:#93000a"></i><i style="--shade:#a9333b"></i><i style="--shade:#be666c"></i><i style="--shade:#d4999d"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #283044; color: #ffffff;">
+        <span>inverse-on-surface</span>
+        <span>#283044</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0a0c11"></i><i style="--shade:#12161f"></i><i style="--shade:#1a1f2c"></i><i style="--shade:#22293a"></i><i style="--shade:#283044"></i><i style="--shade:#535969"></i><i style="--shade:#7e838f"></i><i style="--shade:#a9acb4"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #5d5f5f; color: #ffffff;">
+        <span>inverse-primary</span>
+        <span>#5D5F5F</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#171818"></i><i style="--shade:#2a2b2b"></i><i style="--shade:#3c3e3e"></i><i style="--shade:#4f5151"></i><i style="--shade:#5d5f5f"></i><i style="--shade:#7d7f7f"></i><i style="--shade:#9e9f9f"></i><i style="--shade:#bebfbf"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #dae2fd; color: #000000;">
+        <span>inverse-surface</span>
+        <span>#DAE2FD</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#37393f"></i><i style="--shade:#626672"></i><i style="--shade:#8e93a4"></i><i style="--shade:#b9c0d7"></i><i style="--shade:#dae2fd"></i><i style="--shade:#e1e8fd"></i><i style="--shade:#e9eefe"></i><i style="--shade:#f0f3fe"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #dae2fd; color: #000000;">
+        <span>on-background</span>
+        <span>#DAE2FD</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#37393f"></i><i style="--shade:#626672"></i><i style="--shade:#8e93a4"></i><i style="--shade:#b9c0d7"></i><i style="--shade:#dae2fd"></i><i style="--shade:#e1e8fd"></i><i style="--shade:#e9eefe"></i><i style="--shade:#f0f3fe"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #690005; color: #ffffff;">
+        <span>on-error</span>
+        <span>#690005</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#1a0001"></i><i style="--shade:#2f0002"></i><i style="--shade:#440003"></i><i style="--shade:#590004"></i><i style="--shade:#690005"></i><i style="--shade:#873337"></i><i style="--shade:#a56669"></i><i style="--shade:#c3999b"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffdad6; color: #000000;">
+        <span>on-error-container</span>
+        <span>#FFDAD6</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#403736"></i><i style="--shade:#736260"></i><i style="--shade:#a68e8b"></i><i style="--shade:#d9b9b6"></i><i style="--shade:#ffdad6"></i><i style="--shade:#ffe1de"></i><i style="--shade:#ffe9e6"></i><i style="--shade:#fff0ef"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #2f3131; color: #ffffff;">
+        <span>on-primary</span>
+        <span>#2F3131</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0c0c0c"></i><i style="--shade:#151616"></i><i style="--shade:#1f2020"></i><i style="--shade:#282a2a"></i><i style="--shade:#2f3131"></i><i style="--shade:#595a5a"></i><i style="--shade:#828383"></i><i style="--shade:#acadad"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #636565; color: #ffffff;">
+        <span>on-primary-container</span>
+        <span>#636565</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#191919"></i><i style="--shade:#2d2d2d"></i><i style="--shade:#404242"></i><i style="--shade:#545656"></i><i style="--shade:#636565"></i><i style="--shade:#828484"></i><i style="--shade:#a1a3a3"></i><i style="--shade:#c1c1c1"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #1a1c1c; color: #ffffff;">
+        <span>on-primary-fixed</span>
+        <span>#1A1C1C</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#070707"></i><i style="--shade:#0c0d0d"></i><i style="--shade:#111212"></i><i style="--shade:#161818"></i><i style="--shade:#1a1c1c"></i><i style="--shade:#484949"></i><i style="--shade:#767777"></i><i style="--shade:#a3a4a4"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #454747; color: #ffffff;">
+        <span>on-primary-fixed-variant</span>
+        <span>#454747</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#111212"></i><i style="--shade:#1f2020"></i><i style="--shade:#2d2e2e"></i><i style="--shade:#3b3c3c"></i><i style="--shade:#454747"></i><i style="--shade:#6a6c6c"></i><i style="--shade:#8f9191"></i><i style="--shade:#b5b5b5"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #14324e; color: #ffffff;">
+        <span>on-secondary</span>
+        <span>#14324E</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#050d14"></i><i style="--shade:#091623"></i><i style="--shade:#0d2133"></i><i style="--shade:#112b42"></i><i style="--shade:#14324e"></i><i style="--shade:#435b71"></i><i style="--shade:#728495"></i><i style="--shade:#a1adb8"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #9fbbdd; color: #000000;">
+        <span>on-secondary-container</span>
+        <span>#9FBBDD</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#282f37"></i><i style="--shade:#485463"></i><i style="--shade:#677a90"></i><i style="--shade:#879fbc"></i><i style="--shade:#9fbbdd"></i><i style="--shade:#b2c9e4"></i><i style="--shade:#c5d6eb"></i><i style="--shade:#d9e4f1"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #001d35; color: #ffffff;">
+        <span>on-secondary-fixed</span>
+        <span>#001D35</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#00070d"></i><i style="--shade:#000d18"></i><i style="--shade:#001322"></i><i style="--shade:#00192d"></i><i style="--shade:#001d35"></i><i style="--shade:#334a5d"></i><i style="--shade:#667786"></i><i style="--shade:#99a5ae"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #2d4965; color: #ffffff;">
+        <span>on-secondary-fixed-variant</span>
+        <span>#2D4965</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0b1219"></i><i style="--shade:#14212d"></i><i style="--shade:#1d2f42"></i><i style="--shade:#263e56"></i><i style="--shade:#2d4965"></i><i style="--shade:#576d84"></i><i style="--shade:#8192a3"></i><i style="--shade:#abb6c1"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #dae2fd; color: #000000;">
+        <span>on-surface</span>
+        <span>#DAE2FD</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#37393f"></i><i style="--shade:#626672"></i><i style="--shade:#8e93a4"></i><i style="--shade:#b9c0d7"></i><i style="--shade:#dae2fd"></i><i style="--shade:#e1e8fd"></i><i style="--shade:#e9eefe"></i><i style="--shade:#f0f3fe"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #c4c7c8; color: #000000;">
+        <span>on-surface-variant</span>
+        <span>#C4C7C8</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#313232"></i><i style="--shade:#585a5a"></i><i style="--shade:#7f8182"></i><i style="--shade:#a7a9aa"></i><i style="--shade:#c4c7c8"></i><i style="--shade:#d0d2d3"></i><i style="--shade:#dcddde"></i><i style="--shade:#e7e9e9"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #620040; color: #ffffff;">
+        <span>on-tertiary</span>
+        <span>#620040</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#190010"></i><i style="--shade:#2c001d"></i><i style="--shade:#40002a"></i><i style="--shade:#530036"></i><i style="--shade:#620040"></i><i style="--shade:#813366"></i><i style="--shade:#a1668c"></i><i style="--shade:#c099b3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ab3779; color: #ffffff;">
+        <span>on-tertiary-container</span>
+        <span>#AB3779</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#2b0e1e"></i><i style="--shade:#4d1936"></i><i style="--shade:#6f244f"></i><i style="--shade:#912f67"></i><i style="--shade:#ab3779"></i><i style="--shade:#bc5f94"></i><i style="--shade:#cd87af"></i><i style="--shade:#ddafc9"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #3d0026; color: #ffffff;">
+        <span>on-tertiary-fixed</span>
+        <span>#3D0026</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0f000a"></i><i style="--shade:#1b0011"></i><i style="--shade:#280019"></i><i style="--shade:#340020"></i><i style="--shade:#3d0026"></i><i style="--shade:#643351"></i><i style="--shade:#8b667d"></i><i style="--shade:#b199a8"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #85145a; color: #ffffff;">
+        <span>on-tertiary-fixed-variant</span>
+        <span>#85145A</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#210517"></i><i style="--shade:#3c0928"></i><i style="--shade:#560d3b"></i><i style="--shade:#71114d"></i><i style="--shade:#85145a"></i><i style="--shade:#9d437b"></i><i style="--shade:#b6729c"></i><i style="--shade:#cea1bd"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #8e9192; color: #ffffff;">
+        <span>outline</span>
+        <span>#8E9192</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#242425"></i><i style="--shade:#404142"></i><i style="--shade:#5c5e5f"></i><i style="--shade:#797b7c"></i><i style="--shade:#8e9192"></i><i style="--shade:#a5a7a8"></i><i style="--shade:#bbbdbe"></i><i style="--shade:#d2d3d3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #444748; color: #ffffff;">
+        <span>outline-variant</span>
+        <span>#444748</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#111212"></i><i style="--shade:#1f2020"></i><i style="--shade:#2c2e2f"></i><i style="--shade:#3a3c3d"></i><i style="--shade:#444748"></i><i style="--shade:#696c6d"></i><i style="--shade:#8f9191"></i><i style="--shade:#b4b5b6"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffffff; color: #000000;">
+        <span>primary</span>
+        <span>#FFFFFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#404040"></i><i style="--shade:#737373"></i><i style="--shade:#a6a6a6"></i><i style="--shade:#d9d9d9"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #e2e2e2; color: #000000;">
+        <span>primary-container</span>
+        <span>#E2E2E2</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#393939"></i><i style="--shade:#666666"></i><i style="--shade:#939393"></i><i style="--shade:#c0c0c0"></i><i style="--shade:#e2e2e2"></i><i style="--shade:#e8e8e8"></i><i style="--shade:#eeeeee"></i><i style="--shade:#f3f3f3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #e2e2e2; color: #000000;">
+        <span>primary-fixed</span>
+        <span>#E2E2E2</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#393939"></i><i style="--shade:#666666"></i><i style="--shade:#939393"></i><i style="--shade:#c0c0c0"></i><i style="--shade:#e2e2e2"></i><i style="--shade:#e8e8e8"></i><i style="--shade:#eeeeee"></i><i style="--shade:#f3f3f3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #c6c6c7; color: #000000;">
+        <span>primary-fixed-dim</span>
+        <span>#C6C6C7</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#323232"></i><i style="--shade:#59595a"></i><i style="--shade:#818181"></i><i style="--shade:#a8a8a9"></i><i style="--shade:#c6c6c7"></i><i style="--shade:#d1d1d2"></i><i style="--shade:#dddddd"></i><i style="--shade:#e8e8e9"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #adc9eb; color: #000000;">
+        <span>secondary</span>
+        <span>#ADC9EB</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#2b323b"></i><i style="--shade:#4e5a6a"></i><i style="--shade:#708399"></i><i style="--shade:#93abc8"></i><i style="--shade:#adc9eb"></i><i style="--shade:#bdd4ef"></i><i style="--shade:#cedff3"></i><i style="--shade:#dee9f7"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #304b68; color: #ffffff;">
+        <span>secondary-container</span>
+        <span>#304B68</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0c131a"></i><i style="--shade:#16222f"></i><i style="--shade:#1f3144"></i><i style="--shade:#294058"></i><i style="--shade:#304b68"></i><i style="--shade:#596f86"></i><i style="--shade:#8393a4"></i><i style="--shade:#acb7c3"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #d0e4ff; color: #000000;">
+        <span>secondary-fixed</span>
+        <span>#D0E4FF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#343940"></i><i style="--shade:#5e6773"></i><i style="--shade:#8794a6"></i><i style="--shade:#b1c2d9"></i><i style="--shade:#d0e4ff"></i><i style="--shade:#d9e9ff"></i><i style="--shade:#e3efff"></i><i style="--shade:#ecf4ff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #adc9eb; color: #000000;">
+        <span>secondary-fixed-dim</span>
+        <span>#ADC9EB</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#2b323b"></i><i style="--shade:#4e5a6a"></i><i style="--shade:#708399"></i><i style="--shade:#93abc8"></i><i style="--shade:#adc9eb"></i><i style="--shade:#bdd4ef"></i><i style="--shade:#cedff3"></i><i style="--shade:#dee9f7"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #0b1326; color: #ffffff;">
+        <span>surface</span>
+        <span>#0B1326</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#03050a"></i><i style="--shade:#050911"></i><i style="--shade:#070c19"></i><i style="--shade:#091020"></i><i style="--shade:#0b1326"></i><i style="--shade:#3c4251"></i><i style="--shade:#6d717d"></i><i style="--shade:#9da1a8"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #31394d; color: #ffffff;">
+        <span>surface-bright</span>
+        <span>#31394D</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0c0e13"></i><i style="--shade:#161a23"></i><i style="--shade:#202532"></i><i style="--shade:#2a3041"></i><i style="--shade:#31394d"></i><i style="--shade:#5a6171"></i><i style="--shade:#838894"></i><i style="--shade:#adb0b8"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #171f33; color: #ffffff;">
+        <span>surface-container</span>
+        <span>#171F33</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#06080d"></i><i style="--shade:#0a0e17"></i><i style="--shade:#0f1421"></i><i style="--shade:#141a2b"></i><i style="--shade:#171f33"></i><i style="--shade:#454c5c"></i><i style="--shade:#747985"></i><i style="--shade:#a2a5ad"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #222a3d; color: #ffffff;">
+        <span>surface-container-high</span>
+        <span>#222A3D</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#090b0f"></i><i style="--shade:#0f131b"></i><i style="--shade:#161b28"></i><i style="--shade:#1d2434"></i><i style="--shade:#222a3d"></i><i style="--shade:#4e5564"></i><i style="--shade:#7a7f8b"></i><i style="--shade:#a7aab1"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #2d3449; color: #ffffff;">
+        <span>surface-container-highest</span>
+        <span>#2D3449</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0b0d12"></i><i style="--shade:#141721"></i><i style="--shade:#1d222f"></i><i style="--shade:#262c3e"></i><i style="--shade:#2d3449"></i><i style="--shade:#575d6d"></i><i style="--shade:#818592"></i><i style="--shade:#abaeb6"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #131b2e; color: #ffffff;">
+        <span>surface-container-low</span>
+        <span>#131B2E</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#05070c"></i><i style="--shade:#090c15"></i><i style="--shade:#0c121e"></i><i style="--shade:#101727"></i><i style="--shade:#131b2e"></i><i style="--shade:#424958"></i><i style="--shade:#717682"></i><i style="--shade:#a1a4ab"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #060e20; color: #ffffff;">
+        <span>surface-container-lowest</span>
+        <span>#060E20</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#020408"></i><i style="--shade:#03060e"></i><i style="--shade:#040915"></i><i style="--shade:#050c1b"></i><i style="--shade:#060e20"></i><i style="--shade:#383e4d"></i><i style="--shade:#6a6e79"></i><i style="--shade:#9b9fa6"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #0b1326; color: #ffffff;">
+        <span>surface-dim</span>
+        <span>#0B1326</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#03050a"></i><i style="--shade:#050911"></i><i style="--shade:#070c19"></i><i style="--shade:#091020"></i><i style="--shade:#0b1326"></i><i style="--shade:#3c4251"></i><i style="--shade:#6d717d"></i><i style="--shade:#9da1a8"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #c6c6c7; color: #000000;">
+        <span>surface-tint</span>
+        <span>#C6C6C7</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#323232"></i><i style="--shade:#59595a"></i><i style="--shade:#818181"></i><i style="--shade:#a8a8a9"></i><i style="--shade:#c6c6c7"></i><i style="--shade:#d1d1d2"></i><i style="--shade:#dddddd"></i><i style="--shade:#e8e8e9"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #2d3449; color: #ffffff;">
+        <span>surface-variant</span>
+        <span>#2D3449</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#0b0d12"></i><i style="--shade:#141721"></i><i style="--shade:#1d222f"></i><i style="--shade:#262c3e"></i><i style="--shade:#2d3449"></i><i style="--shade:#575d6d"></i><i style="--shade:#818592"></i><i style="--shade:#abaeb6"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffffff; color: #000000;">
+        <span>tertiary</span>
+        <span>#FFFFFF</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#404040"></i><i style="--shade:#737373"></i><i style="--shade:#a6a6a6"></i><i style="--shade:#d9d9d9"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i><i style="--shade:#ffffff"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffd8e7; color: #000000;">
+        <span>tertiary-container</span>
+        <span>#FFD8E7</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#40363a"></i><i style="--shade:#736168"></i><i style="--shade:#a68c96"></i><i style="--shade:#d9b8c4"></i><i style="--shade:#ffd8e7"></i><i style="--shade:#ffe0ec"></i><i style="--shade:#ffe8f1"></i><i style="--shade:#ffeff5"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffd8e7; color: #000000;">
+        <span>tertiary-fixed</span>
+        <span>#FFD8E7</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#40363a"></i><i style="--shade:#736168"></i><i style="--shade:#a68c96"></i><i style="--shade:#d9b8c4"></i><i style="--shade:#ffd8e7"></i><i style="--shade:#ffe0ec"></i><i style="--shade:#ffe8f1"></i><i style="--shade:#ffeff5"></i>
+      </div>
+    </article><article class="card color-card">
+      <div class="color-main" style="background-color: #ffafd3; color: #000000;">
+        <span>tertiary-fixed-dim</span>
+        <span>#FFAFD3</span>
+      </div>
+      <div class="color-shades">
+        <i style="--shade:#402c35"></i><i style="--shade:#734f5f"></i><i style="--shade:#a67289"></i><i style="--shade:#d995b3"></i><i style="--shade:#ffafd3"></i><i style="--shade:#ffbfdc"></i><i style="--shade:#ffcfe5"></i><i style="--shade:#ffdfed"></i>
+      </div>
+    </article>
+        </div>
+      </div>
+
+      <!-- TYPOGRAPHY TAB -->
+      <div id="tab-typography" class="tab-content">
+        <div class="grid-auto">
+          <article class="card">
+        <div class="type-header">
+          <span>body-lg</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>body-md</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:400">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>display-lg</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:700;letter-spacing:-0.04em">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>headline-lg</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:600;letter-spacing:-0.02em">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>headline-md</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:500">Aa</p>
+      </article><article class="card">
+        <div class="type-header">
+          <span>label-sm</span>
+          <span>Inter</span>
+        </div>
+        <p class="type-sample" style="font-family:Inter;font-size: 6.5rem;font-weight:600;letter-spacing:0.05em">Aa</p>
+      </article>
+        </div>
+      </div>
+
+      <!-- LAYOUT (SPACING) TAB -->
+      <div id="tab-layout" class="tab-content">
+        <div class="masonry">
+          <div class="card">
+            <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">All Spacing Tokens</h3>
+            <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">card-gap</strong>
+          <span style="color:var(--text-muted);">16px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:35.2px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">container-padding</strong>
+          <span style="color:var(--text-muted);">24px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:52.800000000000004px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">glass-padding</strong>
+          <span style="color:var(--text-muted);">20px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:44px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">section-margin</strong>
+          <span style="color:var(--text-muted);">40px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:88px"></i></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">unit</strong>
+          <span style="color:var(--text-muted);">8px</span>
+        </div>
+        <div class="dim-bar"><i style="--width:17.6px"></i></div>
+      </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHAPES (ROUNDED) TAB -->
+      <div id="tab-shapes" class="tab-content">
+        <div class="masonry">
+          <div class="card">
+            <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-muted);font-weight:400;">All Rounded Tokens</h3>
+            <div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">DEFAULT</strong>
+          <span style="color:var(--text-muted);">0.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.5rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">full</strong>
+          <span style="color:var(--text-muted);">9999px</span>
+        </div>
+        <div class="rounded-chip" style="--radius:9999px"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">lg</strong>
+          <span style="color:var(--text-muted);">1rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">md</strong>
+          <span style="color:var(--text-muted);">0.75rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.75rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">sm</strong>
+          <span style="color:var(--text-muted);">0.25rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:0.25rem"></div>
+      </div><div>
+        <div class="dim-row">
+          <strong style="color:var(--text-main);font-weight:700;">xl</strong>
+          <span style="color:var(--text-muted);">1.5rem</span>
+        </div>
+        <div class="rounded-chip" style="--radius:1.5rem"></div>
+      </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPONENTS TAB -->
+      <div id="tab-components" class="tab-content">
+        <div class="masonry">
+          <article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-ghost</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>rgba(255, 255, 255, 0.05)</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Inter 12px/16px (600)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>height</strong>
+        <span>48px</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>0 24px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#2f3131</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Inter 12px/16px (600)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">button-primary-hover</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>#c6c6c7</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">glass-card-elevated</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>rgba(255, 255, 255, 0.2)</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>20px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">glass-card-standard</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>rgba(255, 255, 255, 0.1)</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>20px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">input-field</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>rgba(255, 255, 255, 0.1)</span>
+      </div><div class="component-prop">
+        <strong>height</strong>
+        <span>48px</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>20px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>1.5rem</span>
+      </div><div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Inter 16px/24px (400)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">list-item-interactive</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>transparent</span>
+      </div><div class="component-prop">
+        <strong>padding</strong>
+        <span>12px</span>
+      </div><div class="component-prop">
+        <strong>rounded</strong>
+        <span>0.75rem</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">list-item-interactive-hover</h3>
+      <div>
+      <div class="component-prop">
+        <strong>backgroundColor</strong>
+        <span>rgba(255, 255, 255, 0.1)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">metric-label</h3>
+      <div>
+      <div class="component-prop">
+        <strong>textColor</strong>
+        <span>#c4c7c8</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Inter 12px/16px (600)</span>
+      </div>
+      </div>
+    </article><article class="card">
+      <h3 style="margin:0 0 1rem;font-size:0.9rem;color:var(--text-main);font-weight:400;">weather-display-large</h3>
+      <div>
+      <div class="component-prop">
+        <strong>textColor</strong>
+        <span>#ffffff</span>
+      </div><div class="component-prop">
+        <strong>typography</strong>
+        <span>Inter 84px/90px (700)</span>
+      </div>
+      </div>
+    </article>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    function showTab(event, tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+  </script>
+</body>
+</html>

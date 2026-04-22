@@ -185,7 +185,7 @@ Or run directly:
 npx @google/design.md lint DESIGN.md
 ```
 
-All commands accept a file path or `-` for stdin. Output defaults to JSON.
+Most commands accept a file path or `-` for stdin. Output defaults to JSON.
 
 ### `lint`
 
@@ -233,6 +233,25 @@ npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 |:-------|:-----|:--------|:------------|
 | `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
 | `--format` | `tailwind` \| `dtcg` | required | Output format |
+
+### `show`
+
+Generate an offline HTML token-board preview from DESIGN.md structured tokens.
+
+```bash
+npx @google/design.md show DESIGN.md
+npx @google/design.md show DESIGN.md --open false
+npx @google/design.md show DESIGN.md --output ./design-preview.html
+```
+
+| Option | Type | Default | Description |
+|:-------|:-----|:--------|:------------|
+| `file` | positional | required | Path to DESIGN.md (stdin `-` is not supported in v1) |
+| `--output` | `string` | none | Optional output path for generated HTML |
+| `--open` | `true` \| `false` | `true` | Whether to open the generated HTML in the browser |
+| `--format` | `json` \| `markdown` | `json` | Output format |
+
+Exit code is `1` when lint errors are present. The preview is still generated when possible.
 
 ### `spec`
 
