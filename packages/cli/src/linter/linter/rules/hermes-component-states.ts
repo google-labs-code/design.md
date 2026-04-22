@@ -13,7 +13,21 @@
 // limitations under the License.
 
 import type { DesignSystemState } from '../../model/spec.js';
+import { VALID_COMPONENT_SUB_TOKENS } from '../../model/spec.js';
 import type { RuleDescriptor, RuleFinding } from './types.js';
+
+const HERMES_COMPONENT_EXTENSION_PROPS = new Set([
+  'borderColor',
+  'borderWidth',
+  'shadow',
+  'gap',
+  'focusRingColor',
+  'focusRingWidth',
+  'iconSize',
+  'minHeight',
+  'stateLayer',
+  'states',
+]);
 
 export function hermesComponentStates(state: DesignSystemState): RuleFinding[] {
   if (state.profile !== 'hermes') return [];
@@ -37,6 +51,16 @@ export function hermesComponentStates(state: DesignSystemState): RuleFinding[] {
           path: `components.${componentName}.states.${stateName}`,
           message: 'Each Hermes component state must be an object of token overrides.',
         });
+        continue;
+      }
+
+      for (const propName of Object.keys(rawState as Record<string, unknown>)) {
+        if (!(VALID_COMPONENT_SUB_TOKENS as readonly string[]).includes(propName) && !HERMES_COMPONENT_EXTENSION_PROPS.has(propName)) {
+          findings.push({
+            path: `components.${componentName}.states.${stateName}.${propName}`,
+            message: `Unknown Hermes state override property '${propName}'.`,
+          });
+        }
       }
     }
   }

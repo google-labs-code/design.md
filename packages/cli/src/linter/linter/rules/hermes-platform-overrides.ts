@@ -41,6 +41,15 @@ export function hermesPlatformOverrides(state: DesignSystemState): RuleFinding[]
           path: `platformOverrides.${platform}.components`,
           message: 'platformOverrides.<platform>.components must be an object when provided.',
         });
+      } else {
+        for (const componentName of Object.keys(override['components'] as Record<string, unknown>)) {
+          if (!state.components.has(componentName)) {
+            findings.push({
+              path: `platformOverrides.${platform}.components.${componentName}`,
+              message: `Platform override references unknown base component '${componentName}'.`,
+            });
+          }
+        }
       }
     }
   }

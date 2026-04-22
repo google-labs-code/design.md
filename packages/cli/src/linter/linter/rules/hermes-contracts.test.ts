@@ -67,6 +67,42 @@ platformOverrides:
     expect(messages).toContain('platformOverrides.web.components');
   });
 
+  it('warns when a state override uses an unknown property or a platform override targets an unknown component', () => {
+    const content = `---
+profile: hermes-v1
+agent:
+  mode: strict
+  fallbackOrder: [components]
+accessibility:
+  contrast:
+    bodyText: AA
+  focus:
+    minRingWidth: 2px
+  motion:
+    respectReducedMotion: true
+colors:
+  tertiary: "#2563eb"
+  on-tertiary: "#ffffff"
+components:
+  button-primary:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.on-tertiary}"
+    states:
+      hover:
+        madeUpProp: 12px
+platformOverrides:
+  web:
+    components:
+      ghost-button:
+        minHeight: 40px
+---`;
+
+    const result = lint(content);
+    const messages = result.findings.map(f => f.path);
+    expect(messages).toContain('components.button-primary.states.hover.madeUpProp');
+    expect(messages).toContain('platformOverrides.web.components.ghost-button');
+  });
+
   it('accepts a well-formed hermes extension contract', () => {
     const content = `---
 profile: hermes-v1
