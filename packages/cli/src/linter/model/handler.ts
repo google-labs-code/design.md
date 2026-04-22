@@ -132,6 +132,42 @@ export class ModelHandler implements ModelSpec {
         }
       }
 
+      // Resolve chained rounded references
+      if (input.rounded) {
+        for (const [name, raw] of Object.entries(input.rounded)) {
+          if (typeof raw === 'string' && isTokenReference(raw)) {
+            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+            if (
+              resolved !== null &&
+              typeof resolved === 'object' &&
+              'type' in resolved &&
+              resolved.type === 'dimension'
+            ) {
+              rounded.set(name, resolved as ResolvedDimension);
+              symbolTable.set(`rounded.${name}`, resolved);
+            }
+          }
+        }
+      }
+
+      // Resolve chained spacing references
+      if (input.spacing) {
+        for (const [name, raw] of Object.entries(input.spacing)) {
+          if (typeof raw === 'string' && isTokenReference(raw)) {
+            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+            if (
+              resolved !== null &&
+              typeof resolved === 'object' &&
+              'type' in resolved &&
+              resolved.type === 'dimension'
+            ) {
+              spacing.set(name, resolved as ResolvedDimension);
+              symbolTable.set(`spacing.${name}`, resolved);
+            }
+          }
+        }
+      }
+
       // ── Phase 3: Build components ──────────────────────────────────
       const components = new Map<string, ComponentDef>();
       if (input.components) {

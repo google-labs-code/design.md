@@ -235,4 +235,107 @@ describe('ModelHandler', () => {
       expect(result.findings).toBeDefined();
     });
   });
+
+  // ── Fix #25: rounded and spacing token references ─────────────────
+  describe('rounded token reference resolution', () => {
+    it('resolves a direct token reference in rounded', () => {
+      const result = handler.execute(makeParsed({
+        rounded: {
+          sm: '4px',
+          button: '{rounded.sm}' as string,
+        },
+      }));
+      const button = result.designSystem.rounded.get('button');
+      expect(button).toBeDefined();
+      expect(button?.value).toBe(4);
+      expect(button?.unit).toBe('px');
+    });
+
+    it('resolves a chained token reference in rounded', () => {
+      const result = handler.execute(makeParsed({
+        rounded: {
+          sm: '4px',
+          md: '{rounded.sm}' as string,
+          card: '{rounded.md}' as string,
+        },
+      }));
+      const card = result.designSystem.rounded.get('card');
+      expect(card).toBeDefined();
+      expect(card?.value).toBe(4);
+      expect(card?.unit).toBe('px');
+    });
+
+    it('resolved rounded reference appears in symbol table', () => {
+      const result = handler.execute(makeParsed({
+        rounded: {
+          sm: '4px',
+          button: '{rounded.sm}' as string,
+        },
+      }));
+      const sym = result.designSystem.symbolTable.get('rounded.button');
+      expect(sym).toBeDefined();
+      expect(typeof sym === 'object' && sym !== null && 'type' in sym && sym.type === 'dimension').toBe(true);
+    });
+  });
+
+  describe('spacing token reference resolution', () => {
+    it('resolves a direct token reference in spacing', () => {
+      const result = handler.execute(makeParsed({
+        spacing: {
+          base: '8px',
+          'button-padding': '{spacing.base}' as string,
+        },
+      }));
+      const buttonPadding = result.designSystem.spacing.get('button-padding');
+      expect(buttonPadding).toBeDefined();
+      expect(buttonPadding?.value).toBe(8);
+      expect(buttonPadding?.unit).toBe('px');
+    });
+
+    it('resolves a chained token reference in spacing', () => {
+      const result = handler.execute(makeParsed({
+        spacing: {
+          base: '8px',
+          md: '{spacing.base}' as string,
+          'section-gap': '{spacing.md}' as string,
+        },
+      }));
+      const sectionGap = result.designSystem.spacing.get('section-gap');
+      expect(sectionGap).toBeDefined();
+      expect(sectionGap?.value).toBe(8);
+      expect(sectionGap?.unit).toBe('px');
+    });
+
+    it('resolved spacing reference appears in symbol table', () => {
+      const result = handler.execute(makeParsed({
+        spacing: {
+          base: '8px',
+          'button-padding': '{spacing.base}' as string,
+        },
+      }));
+      const sym = result.designSystem.symbolTable.get('spacing.button-padding');
+      expect(sym).toBeDefined();
+      expect(typeof sym === 'object' && sym !== null && 'type' in sym && sym.type === 'dimension').toBe(true);
+    });
+
+    it('resolved spacing reference propagates correctly to component resolution', () => {
+      const result = handler.execute(makeParsed({
+        spacing: {
+          base: '8px',
+          'button-padding': '{spacing.base}' as string,
+        },
+        components: {
+          'button-primary': {
+            padding: '{spacing.button-padding}',
+          },
+        },
+      }));
+      const btn = result.designSystem.components.get('button-primary');
+      const padding = btn?.properties.get('padding');
+      expect(typeof padding === 'object' && padding !== null && 'type' in padding && padding.type === 'dimension').toBe(true);
+      if (typeof padding === 'object' && padding !== null && 'value' in padding) {
+        expect(padding.value).toBe(8);
+      }
+    });
+  });
 });
