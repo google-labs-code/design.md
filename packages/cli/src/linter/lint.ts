@@ -17,7 +17,7 @@ import type { ParsedDesignSystem } from './parser/spec.js';
 import { ModelHandler } from './model/handler.js';
 import { runLinter } from './linter/runner.js';
 import { TailwindEmitterHandler } from './tailwind/handler.js';
-import type { DesignSystemState } from './model/spec.js';
+import type { DesignSystemState, LintProfile } from './model/spec.js';
 import type { Finding } from './linter/spec.js';
 import type { LintRule } from './linter/rules/types.js';
 import type { TailwindEmitterResult } from './tailwind/spec.js';
@@ -25,6 +25,8 @@ import type { TailwindEmitterResult } from './tailwind/spec.js';
 export interface LintOptions {
   /** Custom lint rules. Defaults to DEFAULT_RULES if omitted. */
   rules?: LintRule[];
+  /** Validation mode. Defaults to upstream for full backward compatibility. */
+  profile?: LintProfile;
 }
 
 export interface LintReport {
@@ -57,6 +59,7 @@ export function lint(content: string, options?: LintOptions): LintReport {
   const parser = new ParserHandler();
   const model = new ModelHandler();
   const tailwind = new TailwindEmitterHandler();
+  const fallbackProfile = options?.profile ?? 'upstream';
 
   const parseResult = parser.execute({ content });
 
@@ -66,7 +69,7 @@ export function lint(content: string, options?: LintOptions): LintReport {
     // with an empty design system and a finding instead of throwing.
     if (parseResult.error.recoverable) {
       const emptyParsed: ParsedDesignSystem = { sourceMap: new Map() };
-      const { designSystem } = model.execute(emptyParsed);
+      const { designSystem } = model.execute(emptyParsed, { profile: fallbackProfile });
 
       // Still extract sections from the raw content even without YAML
       const sections = extractSectionsFromContent(content);
@@ -88,7 +91,8 @@ export function lint(content: string, options?: LintOptions): LintReport {
     throw new Error(`Parse failed: ${parseResult.error.message}`);
   }
 
-  const { designSystem, findings: modelFindings } = model.execute(parseResult.data);
+  const selectedProfile = inferLintProfile(parseResult.data.profile, options?.profile);
+  const { designSystem, findings: modelFindings } = model.execute(parseResult.data, { profile: selectedProfile });
   const lintResult = runLinter(designSystem, options?.rules);
   const tailwindConfig = tailwind.execute(designSystem);
 
@@ -108,6 +112,12 @@ export function lint(content: string, options?: LintOptions): LintReport {
     documentSections: parseResult.data.documentSections ?? [],
   };
 
+}
+
+function inferLintProfile(declaredProfile: string | undefined, explicitProfile: LintProfile | undefined): LintProfile {
+  if (explicitProfile) return explicitProfile;
+  if (declaredProfile?.toLowerCase().startsWith('hermes')) return 'hermes';
+  return 'upstream';
 }
 
 /**

@@ -39,13 +39,14 @@ export interface SourceLocation {
 
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
+  profile?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
   colors?: Record<string, string> | undefined;
   typography?: Record<string, Record<string, string | number>> | undefined;
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
-  components?: Record<string, Record<string, string>> | undefined;
+  components?: Record<string, Record<string, unknown>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

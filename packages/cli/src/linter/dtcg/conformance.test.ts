@@ -17,6 +17,7 @@ import { writeFileSync, mkdtempSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { spawnSync } from 'child_process';
+import { homedir } from 'os';
 import { lint } from '../lint.js';
 import { DtcgEmitterHandler } from './handler.js';
 
@@ -81,9 +82,10 @@ export default defineConfig({
 
       // Install dependencies in temp dir so they can be imported in config
       // Using bun add should be fast if cached
+      const envPath = `${join(homedir(), '.bun/bin')}:${process.env.PATH ?? ''}`;
       const installProc = spawnSync('bun', ['add', '@terrazzo/cli', '@terrazzo/plugin-css'], {
         cwd: tmpDir,
-        env: { ...process.env, PATH: process.env.PATH },
+        env: { ...process.env, PATH: envPath },
         shell: true
       });
 

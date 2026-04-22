@@ -14,6 +14,7 @@
 
 import { defineCommand } from 'citty';
 import { lint } from '../linter/index.js';
+import type { LintProfile } from '../linter/model/spec.js';
 import { readInput, formatOutput } from '../utils.js';
 
 export default defineCommand({
@@ -32,10 +33,15 @@ export default defineCommand({
       description: 'Output format: json or text',
       default: 'json',
     },
+    profile: {
+      type: 'string',
+      description: 'Validation profile: upstream or hermes',
+    },
   },
   async run({ args }) {
     const content = await readInput(args.file);
-    const report = lint(content);
+    const selectedProfile = args.profile === 'hermes' ? 'hermes' : args.profile === 'upstream' ? 'upstream' : undefined;
+    const report = lint(content, { profile: selectedProfile as LintProfile | undefined });
 
     const output = {
       findings: report.findings,

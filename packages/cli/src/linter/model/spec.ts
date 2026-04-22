@@ -60,12 +60,16 @@ export interface ResolvedTypography {
 
 export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string;
 
+export type LintProfile = 'upstream' | 'hermes';
+
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
 export const VALID_COMPONENT_SUB_TOKENS = _VALID_COMPONENT_SUB_TOKENS;
 
 // ── STATE ──────────────────────────────────────────────────────────
 export interface DesignSystemState {
+  profile: LintProfile;
+  declaredProfile?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
   colors: Map<string, ResolvedColor>;
@@ -81,6 +85,7 @@ export interface DesignSystemState {
 
 export interface ComponentDef {
   properties: Map<string, ResolvedValue>;
+  extensionProperties: Map<string, unknown>;
   /** Unresolved references that failed to resolve */
   unresolvedRefs: string[];
 }
@@ -104,7 +109,7 @@ export interface ModelResult {
 
 // ── INTERFACE ──────────────────────────────────────────────────────
 export interface ModelSpec {
-  execute(input: ParsedDesignSystem): ModelResult;
+  execute(input: ParsedDesignSystem, options?: { profile?: LintProfile }): ModelResult;
 }
 
 // ── VALIDATION HELPERS ─────────────────────────────────────────────
@@ -138,7 +143,8 @@ const CSS_UNITS = new Set([
  * Accepts an optional leading sign and optional decimal (`.5rem` is valid).
  * Returns null for non-dimension strings (bare numbers, keywords like `auto`).
  */
-export function parseDimensionParts(raw: string): { value: number; unit: string } | null {
+export function parseDimensionParts(raw: unknown): { value: number; unit: string } | null {
+  if (typeof raw !== 'string') return null;
   const match = raw.match(/^(-?\d*\.?\d+)([a-zA-Z%]+)$/);
   if (!match) return null;
   const value = parseFloat(match[1]!);
@@ -148,14 +154,15 @@ export function parseDimensionParts(raw: string): { value: number; unit: string 
 /**
  * Validate a hex color string. Accepts #RGB and #RRGGBB.
  */
-export function isValidColor(raw: string): boolean {
+export function isValidColor(raw: unknown): boolean {
+  if (typeof raw !== 'string') return false;
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw);
 }
 
 /**
  * Validate a dimension string uses a spec-standard unit (px or rem only).
  */
-export function isStandardDimension(raw: string): boolean {
+export function isStandardDimension(raw: unknown): boolean {
   const parts = parseDimensionParts(raw);
   return parts !== null && STANDARD_UNITS.has(parts.unit);
 }
@@ -164,7 +171,7 @@ export function isStandardDimension(raw: string): boolean {
  * Check if a dimension string is parseable (any known CSS length/percentage unit).
  * Adding support for a new unit: add it to CSS_UNITS above.
  */
-export function isParseableDimension(raw: string): boolean {
+export function isParseableDimension(raw: unknown): boolean {
   const parts = parseDimensionParts(raw);
   return parts !== null && CSS_UNITS.has(parts.unit);
 }
@@ -177,6 +184,7 @@ export const isValidDimension = isStandardDimension;
 /**
  * Check if a string is a token reference ({section.token}).
  */
-export function isTokenReference(raw: string): boolean {
+export function isTokenReference(raw: unknown): boolean {
+  if (typeof raw !== 'string') return false;
   return /^\{[a-zA-Z0-9._-]+\}$/.test(raw);
 }

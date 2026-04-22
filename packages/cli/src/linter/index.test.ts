@@ -129,4 +129,30 @@ components:
     // Should have errors: invalid color + broken reference
     expect(result.summary.errors).toBeGreaterThanOrEqual(2);
   });
+
+  it('auto-selects Hermes mode for hermes-v1 profiles with extension properties', () => {
+    const content = `---
+profile: hermes-v1
+colors:
+  tertiary: "#2563eb"
+  on-tertiary: "#ffffff"
+components:
+  button-primary:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.on-tertiary}"
+    minHeight: 40px
+    states:
+      hover:
+        backgroundColor: "#1d4ed8"
+---`;
+
+    const result = lint(content);
+    expect(result.designSystem.profile).toBe('hermes');
+    expect(result.summary.errors).toBe(0);
+
+    const button = result.designSystem.components.get('button-primary');
+    expect(button?.extensionProperties.get('minHeight')).toBe('40px');
+    const states = button?.extensionProperties.get('states') as Record<string, unknown> | undefined;
+    expect(states?.hover).toBeDefined();
+  });
 });

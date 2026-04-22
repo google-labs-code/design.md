@@ -16,6 +16,7 @@ import type { ParsedDesignSystem } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
+  LintProfile,
   ResolvedColor,
   ResolvedDimension,
   ResolvedTypography,
@@ -27,6 +28,18 @@ import type {
 import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
 
 const MAX_REFERENCE_DEPTH = 10;
+const HERMES_COMPONENT_EXTENSION_PROPS = new Set([
+  'borderColor',
+  'borderWidth',
+  'shadow',
+  'gap',
+  'focusRingColor',
+  'focusRingWidth',
+  'iconSize',
+  'minHeight',
+  'stateLayer',
+  'states',
+]);
 
 /**
  * Builds a resolved DesignSystemState from parsed YAML tokens.
@@ -35,8 +48,9 @@ const MAX_REFERENCE_DEPTH = 10;
  * Never throws — all errors returned as ModelResult failures.
  */
 export class ModelHandler implements ModelSpec {
-  execute(input: ParsedDesignSystem): ModelResult {
+  execute(input: ParsedDesignSystem, options?: { profile?: LintProfile }): ModelResult {
     try {
+      const profile = options?.profile ?? 'upstream';
       const findings: Finding[] = [];
       const symbolTable = new Map<string, ResolvedValue>();
       const colors = new Map<string, ResolvedColor>();
@@ -137,9 +151,24 @@ export class ModelHandler implements ModelSpec {
       if (input.components) {
         for (const [compName, props] of Object.entries(input.components)) {
           const properties = new Map<string, ResolvedValue>();
+          const extensionProperties = new Map<string, unknown>();
           const unresolvedRefs: string[] = [];
 
           for (const [propName, rawValue] of Object.entries(props)) {
+            if (profile === 'hermes' && HERMES_COMPONENT_EXTENSION_PROPS.has(propName)) {
+              extensionProperties.set(propName, rawValue);
+              continue;
+            }
+
+            if (typeof rawValue !== 'string') {
+              findings.push({
+                severity: 'error',
+                path: `components.${compName}.${propName}`,
+                message: `Component property '${propName}' must be a string in the ${profile} profile.`,
+              });
+              continue;
+            }
+
             if (isTokenReference(rawValue)) {
               const refPath = rawValue.slice(1, -1);
               const resolved = resolveReference(symbolTable, refPath, new Set());
@@ -158,12 +187,14 @@ export class ModelHandler implements ModelSpec {
             }
           }
 
-          components.set(compName, { properties, unresolvedRefs });
+          components.set(compName, { properties, extensionProperties, unresolvedRefs });
         }
       }
 
       return {
         designSystem: {
+          profile,
+          declaredProfile: input.profile,
           name: input.name,
           description: input.description,
           colors,
@@ -179,6 +210,7 @@ export class ModelHandler implements ModelSpec {
     } catch (error) {
       return {
         designSystem: {
+          profile: options?.profile ?? 'upstream',
           colors: new Map(),
           typography: new Map(),
           rounded: new Map(),

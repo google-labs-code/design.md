@@ -191,13 +191,14 @@ export class ParserHandler implements ParserSpec {
    */
   private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: Array<{ heading: string; content: string }>): ParsedDesignSystem {
     return {
+      profile: typeof raw['profile'] === 'string' ? raw['profile'] : undefined,
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
       colors: raw['colors'] as Record<string, string> | undefined,
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
-      components: raw['components'] as Record<string, Record<string, string>> | undefined,
+      components: raw['components'] as Record<string, Record<string, unknown>> | undefined,
       sourceMap,
       sections,
       documentSections,
