@@ -57,6 +57,24 @@ describe('ModelHandler', () => {
       const accent = result.designSystem.colors.get('accent');
       expect(accent?.hex).toBe('#aabbcc');
     });
+
+    it('normalizes #RGBA shorthand to #RRGGBBAA and extracts alpha', () => {
+      const result = handler.execute(makeParsed({
+        colors: { transparent: '#abc0' },
+      }));
+      const transparent = result.designSystem.colors.get('transparent');
+      expect(transparent?.hex).toBe('#aabbcc00');
+      expect(transparent?.a).toBe(0);
+    });
+
+    it('accepts 8-digit hex colors and extracts alpha', () => {
+      const result = handler.execute(makeParsed({
+        colors: { semitransparent: '#FFFFFFA6' },
+      }));
+      const semitransparent = result.designSystem.colors.get('semitransparent');
+      expect(semitransparent?.hex).toBe('#ffffffa6');
+      expect(semitransparent?.a).toBeCloseTo(166 / 255, 5);
+    });
   });
 
   // ── Cycle 10: Resolve single-level token reference ────────────────

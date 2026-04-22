@@ -203,12 +203,16 @@ export class ModelHandler implements ModelSpec {
 /**
  * Parse a hex color string into a ResolvedColor with RGB + WCAG luminance.
  */
-function parseColor(raw: string): ResolvedColor {
+export function parseColor(raw: string): ResolvedColor {
   let hex = raw;
 
   // Normalize #RGB to #RRGGBB
   if (hex.length === 4) {
     hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  }
+  // Normalize #RGBA to #RRGGBBAA
+  if (hex.length === 5) {
+    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}${hex[4]}${hex[4]}`;
   }
 
   hex = hex.toLowerCase();
@@ -217,9 +221,14 @@ function parseColor(raw: string): ResolvedColor {
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
 
+  let a: number | undefined;
+  if (hex.length === 9) {
+    a = parseInt(hex.slice(7, 9), 16) / 255;
+  }
+
   const luminance = computeLuminance(r, g, b);
 
-  return { type: 'color', hex, r, g, b, luminance };
+  return { type: 'color', hex, r, g, b, a, luminance };
 }
 
 /**
