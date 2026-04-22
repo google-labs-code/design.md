@@ -47,6 +47,9 @@ export interface ParsedDesignSystem {
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
   components?: Record<string, Record<string, unknown>> | undefined;
+  agent?: Record<string, unknown> | undefined;
+  accessibility?: Record<string, unknown> | undefined;
+  platformOverrides?: Record<string, unknown> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

@@ -23,6 +23,10 @@ import { tokenSummaryRule } from './token-summary.js';
 import { missingSectionsRule } from './missing-sections.js';
 import { sectionOrderRule } from './section-order.js';
 import { missingTypographyRule } from './missing-typography.js';
+import { hermesAgentContractRule } from './hermes-agent.js';
+import { hermesAccessibilityContractRule } from './hermes-accessibility.js';
+import { hermesPlatformOverridesRule } from './hermes-platform-overrides.js';
+import { hermesComponentStatesRule } from './hermes-component-states.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -34,6 +38,10 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   missingSectionsRule,
   missingTypographyRule,
   sectionOrderRule,
+  hermesAgentContractRule,
+  hermesAccessibilityContractRule,
+  hermesPlatformOverridesRule,
+  hermesComponentStatesRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -58,4 +66,8 @@ export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
 export { missingTypography } from './missing-typography.js';
 export { sectionOrder } from './section-order.js';
+export { hermesAgentContract } from './hermes-agent.js';
+export { hermesAccessibilityContract } from './hermes-accessibility.js';
+export { hermesPlatformOverrides } from './hermes-platform-overrides.js';
+export { hermesComponentStates } from './hermes-component-states.js';
 export type { LintRule } from './types.js';

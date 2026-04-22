@@ -20,6 +20,7 @@ describe('LintRule type', () => {
   it('accepts a function that takes state and returns findings', () => {
     const rule: LintRule = (_state) => [];
     expect(rule({
+      profile: 'upstream',
       colors: new Map(),
       typography: new Map(),
       rounded: new Map(),
@@ -40,7 +41,7 @@ describe('LintRule type', () => {
   });
 
   it('has all rules in DEFAULT_RULE_DESCRIPTORS', () => {
-    expect(DEFAULT_RULE_DESCRIPTORS.length).toBe(8);
+    expect(DEFAULT_RULE_DESCRIPTORS.length).toBe(12);
     DEFAULT_RULE_DESCRIPTORS.forEach((rule: RuleDescriptor) => {
       expect(rule.name).toBeTruthy();
       expect(rule.severity).toBeTruthy();

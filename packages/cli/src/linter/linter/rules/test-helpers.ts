@@ -27,7 +27,8 @@ export function buildState(overrides: Partial<ParsedDesignSystem> = {}): DesignS
     modelHandler = new ModelHandler();
   }
   const parsed: ParsedDesignSystem = { sourceMap: new Map(), ...overrides };
-  const result = modelHandler.execute(parsed);
+  const selectedProfile = parsed.profile?.startsWith('hermes') ? 'hermes' : 'upstream';
+  const result = modelHandler.execute(parsed, { profile: selectedProfile });
   const hasErrors = result.findings.some(d => d.severity === 'error');
   if (hasErrors) {
     throw new Error(`Model build failed: ${result.findings.map(d => d.message).join(', ')}`);

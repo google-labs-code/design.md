@@ -77,6 +77,9 @@ export interface DesignSystemState {
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
   components: Map<string, ComponentDef>;
+  agent?: Record<string, unknown> | undefined;
+  accessibility?: Record<string, unknown> | undefined;
+  platformOverrides?: Record<string, unknown> | undefined;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
