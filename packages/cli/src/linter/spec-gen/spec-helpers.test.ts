@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { describe, it, expect } from 'bun:test';
-import { getRulesTable, getSpecContent } from './spec-helpers.js';
+import { getRulesTable, getSpecContent, getProfileSpecContent } from './spec-helpers.js';
 import type { RuleDescriptor } from '../linter/rules/types.js';
 
 describe('getRulesTable', () => {
@@ -62,5 +62,19 @@ describe('getSpecContent', () => {
     // This tests the explicit-path contract. If someone passes a path,
     // it should use that path exactly — no guessing.
     expect(() => getSpecContent('/nonexistent/fake.md')).toThrow();
+  });
+});
+
+describe('getProfileSpecContent', () => {
+  it('returns the upstream spec by default', () => {
+    const content = getProfileSpecContent();
+    expect(content).toContain('# DESIGN.md Format');
+    expect(content).not.toContain('# Hermes Profile Extensions');
+  });
+
+  it('returns the Hermes profile spec when requested', () => {
+    const content = getProfileSpecContent('hermes');
+    expect(content).toContain('# DESIGN.md Format');
+    expect(content).toContain('# Hermes Profile Extensions');
   });
 });

@@ -302,8 +302,16 @@ function phase4() {
 
   // 20. CLI spec command works
   const specCheck = exec(`node ${cliIndex} spec`);
-  check('#20 CLI spec command valid', specCheck.ok && !specCheck.stderr.includes('Failed to load spec.md'),
+  check('#20 CLI spec command valid', specCheck.ok && !specCheck.stderr.includes('Failed to load spec'),
     'CLI spec command failed to load spec.md');
+
+  // 21. CLI Hermes spec command works
+  const hermesSpecCheck = exec(`node ${cliIndex} spec --profile hermes`);
+  check('#21 CLI Hermes spec command valid',
+    hermesSpecCheck.ok &&
+    !hermesSpecCheck.stderr.includes('Failed to load spec.hermes.md') &&
+    hermesSpecCheck.stdout.includes('# Hermes Profile Extensions'),
+    'CLI Hermes spec command failed to load spec.hermes.md');
 
   // Cleanup
   try {

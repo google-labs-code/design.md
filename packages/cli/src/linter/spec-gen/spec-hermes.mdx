@@ -1,0 +1,127 @@
+# Hermes Profile Extensions
+
+The Hermes profile is a compatible extension of `DESIGN.md`. It keeps the
+upstream document shape and token rules, then adds optional fields that make
+agent behavior, accessibility policy, and surface-specific variance explicit.
+
+Enable the profile with an explicit frontmatter marker:
+
+```yaml
+version: alpha
+profile: hermes-v1
+```
+
+## Compatibility
+
+- All upstream `DESIGN.md` requirements still apply in Hermes mode.
+- Hermes-aware tooling should preserve unknown extension data where possible.
+- Upstream tooling may ignore Hermes-only fields; Hermes tooling should treat
+  them as first-class contract data.
+
+## Additional Top-Level YAML Blocks
+
+Hermes may include these optional top-level blocks:
+
+```yaml
+agent:
+  mode: strict
+  canInfer:
+    - missing-hover-state
+    - spacing-between-related-elements
+  mustNotInfer:
+    - brand-colors
+    - new-component-families
+  fallbackOrder:
+    - components
+    - typography
+    - colors
+
+accessibility:
+  contrast:
+    bodyText: AA
+    largeText: AA
+  focus:
+    minRingWidth: 2px
+    minContrast: 3
+  motion:
+    respectReducedMotion: true
+
+platformOverrides:
+  web:
+    components:
+      button-primary:
+        minHeight: 40px
+  mobile:
+    components:
+      button-primary:
+        minHeight: 44px
+```
+
+### `agent`
+
+Defines how much discretion an agent has when implementing or extending the
+system. Use it to distinguish hard design constraints from permitted judgment.
+
+### `accessibility`
+
+Defines accessibility requirements that go beyond basic token validation.
+Typical examples include contrast targets, focus treatment, and reduced-motion
+policy.
+
+### `platformOverrides`
+
+Defines bounded deviations for named surfaces without duplicating the entire
+design system. Overrides should be additive and scoped to the relevant
+platform.
+
+## Hermes Component Extensions
+
+Hermes may extend component definitions with implementation-oriented properties
+such as:
+
+- `borderColor`
+- `borderWidth`
+- `shadow`
+- `gap`
+- `focusRingColor`
+- `focusRingWidth`
+- `iconSize`
+- `minHeight`
+- `stateLayer`
+
+Hermes components may also include nested states:
+
+```yaml
+components:
+  button-primary:
+    backgroundColor: "{colors.tertiary}"
+    textColor: "{colors.on-tertiary}"
+    rounded: "{rounded.md}"
+    padding: 12px
+    borderWidth: 0px
+    minHeight: 40px
+    states:
+      hover:
+        backgroundColor: "{colors.tertiary-hover}"
+      focus:
+        focusRingColor: "{colors.focus-ring}"
+        focusRingWidth: 2px
+      disabled:
+        backgroundColor: "{colors.surface-disabled}"
+        textColor: "{colors.on-surface-muted}"
+```
+
+## Additional Prose Sections
+
+Hermes tooling may recognize these optional markdown sections in addition to
+the upstream section set:
+
+- `## Interaction`
+- `## Motion`
+- `## Accessibility`
+- `## Density`
+- `## Platform Overrides`
+- `## Agent Notes`
+
+These sections are intended to keep design intent close to implementation
+reality without forcing everything into YAML.

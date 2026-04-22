@@ -34,6 +34,21 @@ describe('spec command', () => {
     expect(logSpy.mock.calls.length).toBe(1);
     const output = logSpy.mock.calls[0][0];
     expect(output).toContain('# DESIGN.md Format');
+    expect(output).not.toContain('# Hermes Profile Extensions');
+  });
+
+  it('outputs Hermes profile spec markdown when --profile hermes is passed', async () => {
+    await specCommand.run!({
+      args: {
+        profile: 'hermes',
+      },
+    } as any);
+
+    expect(logSpy.mock.calls.length).toBe(1);
+    const output = logSpy.mock.calls[0][0];
+    expect(output).toContain('# DESIGN.md Format');
+    expect(output).toContain('# Hermes Profile Extensions');
+    expect(output).toContain('profile: hermes-v1');
   });
 
   it('outputs spec and rules table when --rules is passed', async () => {
@@ -72,8 +87,25 @@ describe('spec command', () => {
     expect(logSpy.mock.calls.length).toBe(1);
     const outputStr = logSpy.mock.calls[0][0];
     const output = JSON.parse(outputStr);
+    expect(output.profile).toBe('upstream');
     expect(output.spec).toBeDefined();
     expect(output.spec).toContain('# DESIGN.md Format');
+    expect(output.spec).not.toContain('# Hermes Profile Extensions');
+  });
+
+  it('outputs Hermes JSON when --format json and --profile hermes are passed', async () => {
+    await specCommand.run!({
+      args: {
+        format: 'json',
+        profile: 'hermes',
+      },
+    } as any);
+
+    expect(logSpy.mock.calls.length).toBe(1);
+    const outputStr = logSpy.mock.calls[0][0];
+    const output = JSON.parse(outputStr);
+    expect(output.profile).toBe('hermes');
+    expect(output.spec).toContain('# Hermes Profile Extensions');
   });
 
   it('outputs JSON with rules when --format json and --rules are passed', async () => {

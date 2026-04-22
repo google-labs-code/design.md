@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import { defineCommand } from 'citty';
-import { getSpecContent, getRulesTable } from '../linter/spec-gen/spec-helpers.js';
+import { getProfileSpecContent, getRulesTable } from '../linter/spec-gen/spec-helpers.js';
 import { DEFAULT_RULE_DESCRIPTORS } from '../linter/linter/rules/index.js';
+import type { LintProfile } from '../linter/model/spec.js';
 
 export default defineCommand({
   meta: {
@@ -35,13 +36,21 @@ export default defineCommand({
       description: 'Output format (markdown, json).',
       default: 'markdown',
     },
+    profile: {
+      type: 'string',
+      description: 'Specification profile: upstream or hermes.',
+    },
   },
   async run({ args }) {
+    const selectedProfile: LintProfile = args.profile === 'hermes' ? 'hermes' : 'upstream';
     const rulesTable = getRulesTable(DEFAULT_RULE_DESCRIPTORS);
-    
+    const specContent = getProfileSpecContent(selectedProfile);
+
     if (args.format === 'json') {
-      const jsonOutput: any = {};
-      
+      const jsonOutput: any = {
+        profile: selectedProfile,
+      };
+
       if (args.rulesOnly) {
         jsonOutput.rules = DEFAULT_RULE_DESCRIPTORS.map(r => ({
           name: r.name,
@@ -49,7 +58,7 @@ export default defineCommand({
           description: r.description,
         }));
       } else {
-        jsonOutput.spec = getSpecContent();
+        jsonOutput.spec = specContent;
         if (args.rules) {
           jsonOutput.rules = DEFAULT_RULE_DESCRIPTORS.map(r => ({
             name: r.name,
@@ -58,22 +67,22 @@ export default defineCommand({
           }));
         }
       }
-      
+
       console.log(JSON.stringify(jsonOutput, null, 2));
       return;
     }
-    
+
     if (args.rulesOnly) {
       console.log(rulesTable);
       return;
     }
-    
-    let output = getSpecContent();
-    
+
+    let output = specContent;
+
     if (args.rules) {
       output += '\n\n## Active Linting Rules\n\n' + rulesTable;
     }
-    
+
     console.log(output);
   },
 });

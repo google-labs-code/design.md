@@ -14,7 +14,7 @@
 // limitations under the License.
 
 /**
- * Generate docs/spec.md from docs/spec.mdx + spec-config.ts.
+ * Generate the published spec docs from MDX + spec-config.ts.
  *
  * Usage:
  *   bun run packages/linter/src/spec-gen/generate.ts
@@ -29,12 +29,57 @@ import * as renderers from './renderers.js';
 
 const ROOT = resolve(import.meta.dir, '../../../../../');
 const MDX_PATH = resolve(import.meta.dir, 'spec.mdx');
-const OUTPUT_PATH = resolve(ROOT, 'docs/spec.md');
+const HERMES_MDX_PATH = resolve(import.meta.dir, 'spec-hermes.mdx');
+const OUTPUTS = {
+  upstream: resolve(ROOT, 'docs/spec.md'),
+  hermes: resolve(ROOT, 'docs/spec.hermes.md'),
+} as const;
 
 const isCheck = process.argv.includes('--check');
 
+function stripHeader(content: string): string {
+  return content.replace(/^<!--.*-->\n/gm, '');
+}
+
+function relativeOutputPath(path: string): string {
+  return path.replace(`${ROOT}/`, '');
+}
+
+async function checkOrWrite(outputPath: string, content: string) {
+  if (isCheck) {
+    const existing = await readFile(outputPath, 'utf-8');
+    const existingBody = stripHeader(existing);
+    const generatedBody = stripHeader(content);
+
+    if (existingBody !== generatedBody) {
+      console.error(`❌ ${relativeOutputPath(outputPath)} is out of date. Run \`bun run spec:gen\` to regenerate.`);
+
+      const existingLines = existingBody.split('\n');
+      const generatedLines = generatedBody.split('\n');
+      for (let i = 0; i < Math.max(existingLines.length, generatedLines.length); i++) {
+        if (existingLines[i] !== generatedLines[i]) {
+          console.error(`   First difference at line ${i + 1}:`);
+          console.error(`   - existing:  ${existingLines[i]?.slice(0, 100)}`);
+          console.error(`   + generated: ${generatedLines[i]?.slice(0, 100)}`);
+          break;
+        }
+      }
+      process.exit(1);
+    }
+
+    console.log(`✅ ${relativeOutputPath(outputPath)} is up to date.`);
+    return;
+  }
+
+  await writeFile(outputPath, content);
+  console.log(`✅ Generated ${relativeOutputPath(outputPath)} (${content.split('\n').length} lines)`);
+}
+
 async function main() {
-  const source = await readFile(MDX_PATH, 'utf-8');
+  const [source, hermesSource] = await Promise.all([
+    readFile(MDX_PATH, 'utf-8'),
+    readFile(HERMES_MDX_PATH, 'utf-8'),
+  ]);
 
   // Scope: raw config values + renderer functions
   const cfg = SPEC_CONFIG;
@@ -51,42 +96,20 @@ async function main() {
     recommendedTokens: () => renderers.recommendedTokens(cfg),
   };
 
-  const generated = await compileMdx(source, scope);
+  const [generated, hermesAppendix] = await Promise.all([
+    compileMdx(source, scope),
+    compileMdx(hermesSource, scope),
+  ]);
 
-  // Prepend header comment
-  const header = `<!-- Generated from spec.mdx + spec-config.ts | version: ${cfg.SPEC_VERSION} -->\n<!-- Do not edit directly. Run \`bun run spec:gen\` to regenerate. -->\n\n`;
-  const content = header + generated;
+  const upstreamHeader = `<!-- Generated from spec.mdx + spec-config.ts | version: ${cfg.SPEC_VERSION} -->\n<!-- Do not edit directly. Run \`bun run spec:gen\` to regenerate. -->\n\n`;
+  const hermesHeader = `<!-- Generated from spec.mdx + spec-hermes.mdx + spec-config.ts | version: ${cfg.SPEC_VERSION} -->\n<!-- Do not edit directly. Run \`bun run spec:gen\` to regenerate. -->\n\n`;
+  const generatedByProfile = {
+    upstream: upstreamHeader + generated,
+    hermes: hermesHeader + generated + '\n\n' + hermesAppendix,
+  } as const;
 
-  if (isCheck) {
-    const existing = await readFile(OUTPUT_PATH, 'utf-8');
-
-    // Strip header for comparison (contains no timestamp, but future-proof)
-    const stripHeader = (s: string) => s.replace(/^<!--.*-->\n/gm, '');
-    const existingBody = stripHeader(existing);
-    const generatedBody = stripHeader(content);
-
-    if (existingBody === generatedBody) {
-      console.log('✅ docs/spec.md is up to date.');
-      process.exit(0);
-    } else {
-      console.error('❌ docs/spec.md is out of date. Run `bun run spec:gen` to regenerate.');
-
-      const existingLines = existingBody.split('\n');
-      const generatedLines = generatedBody.split('\n');
-      for (let i = 0; i < Math.max(existingLines.length, generatedLines.length); i++) {
-        if (existingLines[i] !== generatedLines[i]) {
-          console.error(`   First difference at line ${i + 1}:`);
-          console.error(`   - existing:  ${existingLines[i]?.slice(0, 100)}`);
-          console.error(`   + generated: ${generatedLines[i]?.slice(0, 100)}`);
-          break;
-        }
-      }
-      process.exit(1);
-    }
-  }
-
-  await writeFile(OUTPUT_PATH, content);
-  console.log(`✅ Generated docs/spec.md (${content.split('\n').length} lines)`);
+  await checkOrWrite(OUTPUTS.upstream, generatedByProfile.upstream);
+  await checkOrWrite(OUTPUTS.hermes, generatedByProfile.hermes);
 }
 
 main();

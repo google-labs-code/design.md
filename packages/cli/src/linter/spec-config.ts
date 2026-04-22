@@ -26,7 +26,7 @@ import { z } from 'zod';
  *
  * To change what the spec says:
  *   1. Edit spec-config.yaml
- *   2. Run `bun run spec:gen` to regenerate docs/spec.md
+ *   2. Run `bun run spec:gen` to regenerate docs/spec.md and docs/spec.hermes.md
  *   3. Run `bun test` to verify linter alignment
  */
 
