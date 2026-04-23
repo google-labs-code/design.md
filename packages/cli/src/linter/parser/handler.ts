@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import YAML from 'yaml';
-import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation } from './spec.js';
+import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, IconsBlock, SourceLocation } from './spec.js';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
@@ -198,6 +198,7 @@ export class ParserHandler implements ParserSpec {
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
       components: raw['components'] as Record<string, Record<string, string>> | undefined,
+      icons: raw['icons'] as IconsBlock | undefined,
       sourceMap,
       sections,
       documentSections,

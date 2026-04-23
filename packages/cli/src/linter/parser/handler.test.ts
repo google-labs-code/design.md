@@ -154,3 +154,30 @@ Some markdown text with no YAML blocks.
     });
   });
 });
+
+describe('icons passthrough', () => {
+  it('parses icons top-level block from frontmatter', () => {
+    const content = `---
+name: Test
+icons:
+  library: Lucide
+  style: outlined
+  strokeWidth: 1.5
+  size:
+    sm: 16px
+    md: 24px
+  color: "{colors.on-surface}"
+---
+
+## Colors
+Some text.
+`;
+    const handler = new ParserHandler();
+    const result = handler.execute({ content });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.icons).toBeDefined();
+    expect(result.data.icons!.library).toBe('Lucide');
+    expect(result.data.icons!.size!.md).toBe('24px');
+  });
+});
