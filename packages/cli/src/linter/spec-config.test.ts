@@ -22,6 +22,7 @@ import {
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,
   CORE_COLOR_ROLES,
+  ICON_STYLES,
   RECOMMENDED_TOKENS,
   EXAMPLES,
   CANONICAL_ORDER,
@@ -204,5 +205,26 @@ describe('spec-config derived constants', () => {
     for (const [alias, canonical] of Object.entries(SECTION_ALIASES)) {
       expect(CANONICAL_ORDER).toContain(canonical);
     }
+  });
+});
+
+describe('spec-config icons additions', () => {
+  it('Iconography appears in canonical section order between Shapes and Components', () => {
+    const idxShapes = CANONICAL_ORDER.indexOf('Shapes');
+    const idxIcons = CANONICAL_ORDER.indexOf('Iconography');
+    const idxComponents = CANONICAL_ORDER.indexOf('Components');
+    expect(idxShapes).toBeGreaterThan(-1);
+    expect(idxIcons).toBe(idxShapes + 1);
+    expect(idxComponents).toBe(idxIcons + 1);
+  });
+
+  it('ICON_STYLES enum exposes the five canonical styles', () => {
+    expect(ICON_STYLES).toEqual(['outlined', 'filled', 'rounded', 'sharp', 'duotone']);
+  });
+
+  it('EXAMPLES.icons is validated and present', () => {
+    expect(EXAMPLES.icons).toBeDefined();
+    expect(EXAMPLES.icons.library).toBe('Lucide');
+    expect(EXAMPLES.icons.size?.md).toBe('24px');
   });
 });
