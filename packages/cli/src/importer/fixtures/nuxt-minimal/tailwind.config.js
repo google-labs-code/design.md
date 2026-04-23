@@ -1,0 +1,3 @@
+module.exports = {
+  theme: { extend: {} },
+};

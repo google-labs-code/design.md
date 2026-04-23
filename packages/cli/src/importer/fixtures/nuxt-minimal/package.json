@@ -1,0 +1,7 @@
+{
+  "name": "nuxt-minimal",
+  "private": true,
+  "dependencies": {
+    "nuxt": "^3.13.0"
+  }
+}

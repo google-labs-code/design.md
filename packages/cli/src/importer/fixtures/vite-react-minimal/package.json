@@ -1,0 +1,10 @@
+{
+  "name": "vite-react-minimal",
+  "private": true,
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  }
+}

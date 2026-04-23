@@ -1,0 +1,7 @@
+{
+  "name": "plain",
+  "private": true,
+  "dependencies": {
+    "chalk": "^5.0.0"
+  }
+}

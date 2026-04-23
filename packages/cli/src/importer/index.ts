@@ -1,0 +1,144 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import type { DesignSystemState } from '../linter/model/spec.js';
+import { detectFramework } from './framework-detector.js';
+import { scanSources } from './source-scanner.js';
+import { parseTailwindConfig } from './tailwind-parser.js';
+import { parseCssVariables } from './css-var-parser.js';
+import { parseDtcgTokens } from './dtcg-parser.js';
+import { mergeStates, type PartialState } from './merger.js';
+import { emitDesignMd } from './markdown-emitter.js';
+import { readProjectMetadata } from './project-metadata.js';
+import type {
+  ImportOptions,
+  ImportResult,
+  ImportStep,
+  SourceCounts,
+} from './spec.js';
+
+function countsOf(p: PartialState): SourceCounts {
+  return {
+    colors: p.colors?.size ?? 0,
+    typography: p.typography?.size ?? 0,
+    spacing: p.spacing?.size ?? 0,
+    rounded: p.rounded?.size ?? 0,
+  };
+}
+
+function totalCount(c: SourceCounts): number {
+  return c.colors + c.typography + c.spacing + c.rounded;
+}
+
+export async function runImport(opts: ImportOptions): Promise<ImportResult> {
+  const emit = (s: ImportStep): void => opts.onStep?.(s);
+  const warnings: string[] = [];
+  const partials: PartialState[] = [];
+
+  emit({ kind: 'detect-start', projectPath: opts.projectPath });
+  const framework = detectFramework(opts.projectPath);
+  emit({ kind: 'detect-done', framework });
+
+  emit({ kind: 'scan-start' });
+  const sources = scanSources(opts.projectPath, framework.name);
+  emit({ kind: 'scan-done', sources });
+
+  // Paths that actually contributed tokens — passed to the emitter so the
+  // body's "Sources scanned" line reflects real signal, not the full raw scan.
+  const contributingSources = { tailwindConfigs: [] as string[], cssFiles: [] as string[], dtcgFiles: [] as string[] };
+
+  // Order: css → tailwind → dtcg so the most structured source wins.
+  for (const path of sources.cssFiles) {
+    const partial = parseCssVariables(path);
+    if (partial.warnings) warnings.push(...partial.warnings);
+    const counts = countsOf(partial);
+    if (totalCount(counts) === 0) {
+      emit({ kind: 'parse-skip', source: 'css', path, reason: 'no tokens found' });
+      continue;
+    }
+    emit({ kind: 'parse-source', source: 'css', path, counts });
+    contributingSources.cssFiles.push(path);
+    partials.push(partial);
+  }
+
+  for (const path of sources.tailwindConfigs) {
+    try {
+      const partial = await parseTailwindConfig(path);
+      if (partial.warnings) warnings.push(...partial.warnings);
+      const counts = countsOf(partial);
+      emit({ kind: 'parse-source', source: 'tailwind', path, counts });
+      if (totalCount(counts) > 0) contributingSources.tailwindConfigs.push(path);
+      partials.push(partial);
+    } catch (err) {
+      emit({
+        kind: 'parse-skip',
+        source: 'tailwind',
+        path,
+        reason: (err as Error).message,
+      });
+    }
+  }
+
+  for (const path of sources.dtcgFiles) {
+    const partial = parseDtcgTokens(path);
+    if (partial.warnings) warnings.push(...partial.warnings);
+    const counts = countsOf(partial);
+    if (totalCount(counts) === 0) {
+      emit({ kind: 'parse-skip', source: 'dtcg', path, reason: 'no tokens found' });
+      continue;
+    }
+    emit({ kind: 'parse-source', source: 'dtcg', path, counts });
+    contributingSources.dtcgFiles.push(path);
+    partials.push(partial);
+  }
+
+  const projectMeta = readProjectMetadata(opts.projectPath);
+  const metaPartial: PartialState = { name: projectMeta.name };
+  if (projectMeta.description) metaPartial.description = projectMeta.description;
+  partials.push(metaPartial);
+
+  const merged: DesignSystemState = mergeStates(partials);
+  emit({
+    kind: 'merge-done',
+    totals: { ...countsOf(merged), components: merged.components.size },
+  });
+
+  const markdown = emitDesignMd(merged, {
+    framework,
+    sources: contributingSources,
+    ...(projectMeta.readmeIntro ? { readmeIntro: projectMeta.readmeIntro } : {}),
+    ...(projectMeta.version ? { version: projectMeta.version } : {}),
+  });
+  const outputPath = opts.outputPath ?? join(opts.projectPath, 'DESIGN.md');
+
+  if (!opts.dryRun) {
+    writeFileSync(outputPath, markdown, 'utf-8');
+    emit({
+      kind: 'write-done',
+      outputPath,
+      bytes: Buffer.byteLength(markdown, 'utf-8'),
+    });
+  }
+
+  return {
+    success: true,
+    ...(opts.dryRun ? {} : { outputPath }),
+    markdown,
+    framework,
+    sources,
+    warnings,
+  };
+}

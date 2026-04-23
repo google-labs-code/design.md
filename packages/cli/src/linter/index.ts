@@ -49,3 +49,6 @@ export { TailwindEmitterHandler } from './tailwind/handler.js';
 export { DtcgEmitterHandler } from './dtcg/handler.js';
 export { fixSectionOrder } from './fixer/handler.js';
 export type { FixerInput, FixerResult } from './fixer/spec.js';
+
+// ── Import-side API (DesignSystemState → DESIGN.md) ───────────────
+export { emitDesignMd } from '../importer/markdown-emitter.js';
