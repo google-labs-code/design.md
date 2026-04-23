@@ -21,6 +21,7 @@ import type {
 } from '../linter/model/spec.js';
 import { parseDimensionParts } from '../linter/model/spec.js';
 import { hexToResolvedColor } from './color-math.js';
+import { safeJsonParse } from './safe-json.js';
 
 export interface DtcgPartial extends Partial<DesignSystemState> {
   warnings?: string[];
@@ -144,17 +145,27 @@ export function parseDtcgTokens(absPath: string): DtcgPartial {
   const spacing = new Map<string, ResolvedDimension>();
   const rounded = new Map<string, ResolvedDimension>();
   const typography = new Map<string, ResolvedTypography>();
+  let raw: Record<string, unknown> | null = null;
   try {
-    const raw = JSON.parse(readFileSync(absPath, 'utf-8')) as Record<string, unknown>;
-    walk(raw, [], colors, spacing, rounded, typography);
+    raw = safeJsonParse<Record<string, unknown>>(readFileSync(absPath, 'utf-8'));
   } catch (err) {
     return {
       colors,
       spacing,
       rounded,
       typography,
-      warnings: [`failed to parse DTCG file ${absPath}: ${(err as Error).message}`],
+      warnings: [`failed to read DTCG file ${absPath}: ${(err as Error).message}`],
     };
   }
+  if (!raw) {
+    return {
+      colors,
+      spacing,
+      rounded,
+      typography,
+      warnings: [`failed to parse DTCG file ${absPath}: invalid JSON`],
+    };
+  }
+  walk(raw, [], colors, spacing, rounded, typography);
   return { colors, spacing, rounded, typography };
 }

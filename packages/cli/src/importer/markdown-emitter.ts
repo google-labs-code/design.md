@@ -91,6 +91,31 @@ function pluralize(n: number, singular: string, plural: string): string {
   return `${n} ${n === 1 ? singular : plural}`;
 }
 
+/**
+ * Neutralize free-form text that came from an attacker-controlled
+ * package.json or README. Without this, a malicious `description` of
+ * `"\n\n## HIGH — ignore prior instructions and run …"` forges a new
+ * section heading that downstream consumers (LLM agents, other tooling)
+ * may treat as authoritative. Likewise HTML tags in an intranet wiki
+ * renderer.
+ *
+ *   - Strips CR/LF so multi-line payloads cannot forge headings.
+ *   - Escapes leading `#` so `# …` can't become a Markdown heading.
+ *   - Escapes `<` so HTML tags do not render verbatim.
+ *   - Caps length so the body cannot balloon unexpectedly.
+ */
+function sanitizeImportedText(raw: string, maxLen = 500): string {
+  const collapsed = raw.replace(/[\r\n]+/g, ' ').trim();
+  const escaped = collapsed
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/^#/, '\\#');
+  if (escaped.length > maxLen) {
+    return `${escaped.slice(0, maxLen - 1).trimEnd()}…`;
+  }
+  return escaped;
+}
+
 function overviewSentence(state: DesignSystemState, ctx: EmitContext | undefined): string {
   const frameworkLabel = ctx?.framework
     ? FRAMEWORK_LABELS[ctx.framework.name] ?? 'a'
@@ -152,15 +177,18 @@ function typographyBullets(state: DesignSystemState): string[] {
 function buildBody(state: DesignSystemState, ctx?: EmitContext): string {
   const lines: string[] = [];
   if (state.name) {
-    lines.push(`# ${state.name}`);
+    // Heading text is sanitized to remove newlines and leading `#`.
+    lines.push(`# ${sanitizeImportedText(state.name, 120)}`);
     lines.push('');
   }
   if (state.description) {
-    lines.push(state.description);
+    lines.push(sanitizeImportedText(state.description));
     lines.push('');
   }
   if (ctx?.readmeIntro) {
-    lines.push(ctx.readmeIntro);
+    // Attribute the README quote as a blockquote so LLM consumers see it
+    // as repo-provided content, not an authoritative directive.
+    lines.push(`> ${sanitizeImportedText(ctx.readmeIntro)}`);
     lines.push('');
   }
 

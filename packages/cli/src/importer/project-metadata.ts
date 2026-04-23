@@ -14,6 +14,7 @@
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import { safeJsonParse } from './safe-json.js';
 
 export interface ProjectMetadata {
   /** Display name. README H1 > package.json name > directory basename. */
@@ -39,11 +40,16 @@ const INTRO_MAX_LEN = 500;
 function readPackageJson(projectPath: string): PackageJsonShape | null {
   const pkgPath = join(projectPath, 'package.json');
   if (!existsSync(pkgPath)) return null;
-  try {
-    return JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJsonShape;
-  } catch {
-    return null;
-  }
+  const parsed = safeJsonParse<PackageJsonShape>(readFileSync(pkgPath, 'utf-8'));
+  if (!parsed) return null;
+  // Only the three string fields we actually consume. Ignoring everything
+  // else means an attacker can't smuggle surprising structures into the
+  // pipeline via the package.json.
+  const out: PackageJsonShape = {};
+  if (typeof parsed.name === 'string') out.name = parsed.name;
+  if (typeof parsed.version === 'string') out.version = parsed.version;
+  if (typeof parsed.description === 'string') out.description = parsed.description;
+  return out;
 }
 
 function findReadme(projectPath: string): string | null {

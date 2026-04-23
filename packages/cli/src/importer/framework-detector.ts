@@ -15,6 +15,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { FrameworkInfo, FrameworkName } from './spec.js';
+import { safeJsonParse } from './safe-json.js';
 
 interface FrameworkRule {
   name: FrameworkName;
@@ -49,18 +50,26 @@ interface PackageJsonShape {
 function readPackageJson(projectPath: string): { deps: Record<string, string> } | null {
   const pkgPath = join(projectPath, 'package.json');
   if (!existsSync(pkgPath)) return null;
+  let raw: PackageJsonShape | null;
   try {
-    const raw = JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJsonShape;
-    return {
-      deps: {
-        ...(raw.dependencies ?? {}),
-        ...(raw.devDependencies ?? {}),
-        ...(raw.peerDependencies ?? {}),
-      },
-    };
+    raw = safeJsonParse<PackageJsonShape>(readFileSync(pkgPath, 'utf-8'));
   } catch {
     return null;
   }
+  if (!raw) return null;
+  // Compose into a null-prototype object so that even if the spread has
+  // been tampered with, no prototype chain is involved in subsequent
+  // lookups. safeJsonParse already stripped __proto__/constructor keys
+  // at parse time; this is the second layer.
+  const deps: Record<string, string> = Object.create(null);
+  for (const bucket of [raw.dependencies, raw.devDependencies, raw.peerDependencies]) {
+    if (!bucket || typeof bucket !== 'object') continue;
+    for (const [k, v] of Object.entries(bucket)) {
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+      if (typeof v === 'string') deps[k] = v;
+    }
+  }
+  return { deps };
 }
 
 export function detectFramework(projectPath: string): FrameworkInfo {

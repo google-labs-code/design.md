@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { readFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { extname } from 'node:path';
 import type {
   DesignSystemState,
   ResolvedColor,
@@ -22,6 +22,7 @@ import type {
 } from '../linter/model/spec.js';
 import { parseDimensionParts } from '../linter/model/spec.js';
 import { hexToResolvedColor } from './color-math.js';
+import { safeEvalConfig } from './safe-eval.js';
 
 export interface TailwindPartial extends Partial<DesignSystemState> {
   warnings?: string[];
@@ -83,12 +84,20 @@ function parseFontSize(entry: unknown): ResolvedTypography | null {
   return out;
 }
 
-async function loadConfigModule(absPath: string): Promise<Record<string, unknown>> {
-  // Bun handles .ts/.cjs/.mjs/.js via dynamic import natively.
-  const url = pathToFileURL(absPath).href + `?t=${Date.now()}`;
-  const mod = (await import(url)) as { default?: unknown } & Record<string, unknown>;
-  const target = (mod.default ?? mod) as Record<string, unknown>;
-  return target;
+function loadConfigModule(absPath: string): { value: Record<string, unknown>; warnings: string[] } {
+  // SECURITY: never evaluate a user-supplied tailwind config in the current
+  // process. Earlier versions used `await import(absPath)` which is a
+  // remote-code-execution primitive — a malicious tailwind.config.js can
+  // `require('child_process').exec(...)`. We read the source as text and
+  // evaluate it in a locked-down vm context (no require, no process, no
+  // network, 1s timeout). See safe-eval.ts for details.
+  const source = readFileSync(absPath, 'utf-8');
+  const ext = extname(absPath).slice(1).toLowerCase();
+  const lang: 'js' | 'ts' | 'mjs' | 'cjs' =
+    ext === 'ts' ? 'ts' : ext === 'mjs' ? 'mjs' : ext === 'cjs' ? 'cjs' : 'js';
+  const { exports, warnings } = safeEvalConfig(source, lang);
+  const target = (exports && typeof exports === 'object' ? (exports as Record<string, unknown>) : {});
+  return { value: target, warnings };
 }
 
 function regexFallback(src: string, warnings: string[]): TailwindPartial {
@@ -127,18 +136,31 @@ export async function parseTailwindConfig(absPath: string): Promise<TailwindPart
   const warnings: string[] = [];
   let cfg: Record<string, unknown>;
   try {
-    cfg = await loadConfigModule(absPath);
+    const loaded = loadConfigModule(absPath);
+    cfg = loaded.value;
+    warnings.push(...loaded.warnings);
   } catch (err) {
-    warnings.push(
-      `tailwind config could not be evaluated (${(err as Error).message}); used regex fallback`,
-    );
-    let src = '';
+    warnings.push(`tailwind config could not be read: ${(err as Error).message}`);
+    return {
+      colors: new Map(),
+      rounded: new Map(),
+      spacing: new Map(),
+      typography: new Map(),
+      warnings,
+    };
+  }
+
+  // If the sandboxed eval produced nothing (e.g. the config relied on
+  // blocked APIs like `require('tailwindcss/colors')`), try the regex
+  // fallback so we still surface the color palette.
+  if (Object.keys(cfg).length === 0) {
     try {
-      src = readFileSync(absPath, 'utf-8');
+      const src = readFileSync(absPath, 'utf-8');
+      const fb = regexFallback(src, warnings);
+      if ((fb.colors?.size ?? 0) > 0) return fb;
     } catch {
-      return { colors: new Map(), rounded: new Map(), spacing: new Map(), typography: new Map(), warnings };
+      /* ignore */
     }
-    return regexFallback(src, warnings);
   }
 
   const theme = (cfg['theme'] as Record<string, unknown> | undefined) ?? {};

@@ -47,6 +47,32 @@ describe('runImport', () => {
     expect(existsSync(tmp)).toBe(false);
   });
 
+  it('refuses to write when DESIGN.md is a symlink in the project root', async () => {
+    const { mkdtempSync, writeFileSync, symlinkSync, rmSync, readFileSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const project = mkdtempSync(join(import.meta.dir, 'tmp-sym-'));
+    const outside = mkdtempSync(join(tmpdir(), 'victim-'));
+    try {
+      writeFileSync(join(project, 'package.json'), '{"name":"evil"}');
+      writeFileSync(join(outside, 'secret'), 'original-content');
+      symlinkSync(join(outside, 'secret'), join(project, 'DESIGN.md'));
+
+      const events: string[] = [];
+      const result = await runImport({
+        projectPath: project,
+        dryRun: false,
+        onStep: (s) => events.push(s.kind),
+      });
+      expect(result.success).toBe(false);
+      expect(events).toContain('error');
+      // Victim file must be untouched — no arbitrary write.
+      expect(readFileSync(join(outside, 'secret'), 'utf-8')).toBe('original-content');
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
   it('emits parse-source events for each found source', async () => {
     const events: string[] = [];
     await runImport({

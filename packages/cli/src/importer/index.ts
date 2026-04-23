@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { writeFileSync } from 'node:fs';
+import { realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DesignSystemState } from '../linter/model/spec.js';
+import { safeWriteFile } from './safe-write.js';
 import { detectFramework } from './framework-detector.js';
 import { scanSources } from './source-scanner.js';
 import { parseTailwindConfig } from './tailwind-parser.js';
@@ -48,12 +49,34 @@ export async function runImport(opts: ImportOptions): Promise<ImportResult> {
   const warnings: string[] = [];
   const partials: PartialState[] = [];
 
-  emit({ kind: 'detect-start', projectPath: opts.projectPath });
-  const framework = detectFramework(opts.projectPath);
+  // Resolve and validate the project root once. realpath resolves symlinks
+  // so subsequent containment checks in safeWriteFile compare against the
+  // same canonical root the scanner walks.
+  let canonicalRoot: string;
+  try {
+    const st = statSync(opts.projectPath);
+    if (!st.isDirectory()) {
+      throw new Error('projectPath is not a directory');
+    }
+    canonicalRoot = realpathSync(opts.projectPath);
+  } catch (err) {
+    const msg = (err as Error).message;
+    emit({ kind: 'error', message: 'invalid project path', path: opts.projectPath });
+    return {
+      success: false,
+      markdown: '',
+      framework: { name: 'unknown', confidence: 'low', evidence: [msg] },
+      sources: { tailwindConfigs: [], cssFiles: [], dtcgFiles: [] },
+      warnings: [msg],
+    };
+  }
+
+  emit({ kind: 'detect-start', projectPath: canonicalRoot });
+  const framework = detectFramework(canonicalRoot);
   emit({ kind: 'detect-done', framework });
 
   emit({ kind: 'scan-start' });
-  const sources = scanSources(opts.projectPath, framework.name);
+  const sources = scanSources(canonicalRoot, framework.name);
   emit({ kind: 'scan-done', sources });
 
   // Paths that actually contributed tokens — passed to the emitter so the
@@ -105,7 +128,7 @@ export async function runImport(opts: ImportOptions): Promise<ImportResult> {
     partials.push(partial);
   }
 
-  const projectMeta = readProjectMetadata(opts.projectPath);
+  const projectMeta = readProjectMetadata(canonicalRoot);
   const metaPartial: PartialState = { name: projectMeta.name };
   if (projectMeta.description) metaPartial.description = projectMeta.description;
   partials.push(metaPartial);
@@ -122,15 +145,31 @@ export async function runImport(opts: ImportOptions): Promise<ImportResult> {
     ...(projectMeta.readmeIntro ? { readmeIntro: projectMeta.readmeIntro } : {}),
     ...(projectMeta.version ? { version: projectMeta.version } : {}),
   });
-  const outputPath = opts.outputPath ?? join(opts.projectPath, 'DESIGN.md');
+  const userSuppliedOutput = opts.outputPath !== undefined;
+  const outputPath = opts.outputPath ?? join(canonicalRoot, 'DESIGN.md');
 
   if (!opts.dryRun) {
-    writeFileSync(outputPath, markdown, 'utf-8');
-    emit({
-      kind: 'write-done',
-      outputPath,
-      bytes: Buffer.byteLength(markdown, 'utf-8'),
-    });
+    try {
+      // When the output path is defaulted (attacker-controlled project
+      // root), require the write to land inside the project. When the
+      // user explicitly set --output, trust them (CLI flags are in-policy
+      // per the threat model).
+      safeWriteFile(outputPath, markdown, userSuppliedOutput ? {} : { containWithin: canonicalRoot });
+      emit({
+        kind: 'write-done',
+        outputPath,
+        bytes: Buffer.byteLength(markdown, 'utf-8'),
+      });
+    } catch (err) {
+      emit({ kind: 'error', message: 'refused to write output', path: outputPath });
+      return {
+        success: false,
+        markdown,
+        framework,
+        sources,
+        warnings: [...warnings, (err as Error).message],
+      };
+    }
   }
 
   return {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { readdirSync, statSync } from 'node:fs';
+import { readdirSync, lstatSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import type { FrameworkName, ScanResult } from './spec.js';
 
@@ -72,6 +72,13 @@ function looksLikeDtcg(name: string): boolean {
   );
 }
 
+/**
+ * Walk with `lstatSync` (not `statSync`) so symlinks are visible as
+ * symlinks and can be rejected. An attacker-controlled repo may plant
+ * `src/ -> /` or `tokens.json -> ~/.ssh/id_rsa` — following either would
+ * either read arbitrary files into DESIGN.md or silently escape the
+ * project root. Symlinks are always skipped here, with no opt-in flag.
+ */
 function walk(root: string, maxDepth: number, visit: (absPath: string) => void): void {
   const stack: Array<{ dir: string; depth: number }> = [{ dir: root, depth: 0 }];
   while (stack.length > 0) {
@@ -87,10 +94,11 @@ function walk(root: string, maxDepth: number, visit: (absPath: string) => void):
       const abs = join(dir, entry);
       let st;
       try {
-        st = statSync(abs);
+        st = lstatSync(abs);
       } catch {
         continue;
       }
+      if (st.isSymbolicLink()) continue;
       if (st.isDirectory()) {
         if (depth < maxDepth) stack.push({ dir: abs, depth: depth + 1 });
       } else if (st.isFile()) {

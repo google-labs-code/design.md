@@ -89,6 +89,31 @@ describe('scanSources', () => {
       }
     });
 
+    it('skips symlinks (prevents escape out of project root)', async () => {
+      const { mkdirSync, writeFileSync, symlinkSync, rmSync, mkdtempSync } = await import('node:fs');
+      const { tmpdir } = await import('node:os');
+      const outsideRoot = mkdtempSync(join(tmpdir(), 'scan-outside-'));
+      const projectRoot = mkdtempSync(join(tmpdir(), 'scan-symlink-'));
+      try {
+        writeFileSync(join(outsideRoot, 'leaked.css'), ':root { --secret: #deadbe; }');
+        writeFileSync(join(outsideRoot, 'leaked.tokens.json'), '{}');
+        mkdirSync(join(projectRoot, 'src'));
+        writeFileSync(join(projectRoot, 'src', 'ok.css'), ':root {}');
+        symlinkSync(join(outsideRoot, 'leaked.css'), join(projectRoot, 'src', 'evil.css'));
+        symlinkSync(join(outsideRoot, 'leaked.tokens.json'), join(projectRoot, 'src', 'evil.tokens.json'));
+        symlinkSync(outsideRoot, join(projectRoot, 'link-to-outside'));
+        const r = scanSources(projectRoot, 'node');
+        expect(r.cssFiles.some((p) => p.endsWith('ok.css'))).toBe(true);
+        expect(r.cssFiles.some((p) => p.endsWith('evil.css'))).toBe(false);
+        expect(r.cssFiles.some((p) => p.includes('leaked'))).toBe(false);
+        expect(r.dtcgFiles.some((p) => p.includes('leaked'))).toBe(false);
+        expect(r.cssFiles.some((p) => p.includes('link-to-outside'))).toBe(false);
+      } finally {
+        rmSync(projectRoot, { recursive: true, force: true });
+        rmSync(outsideRoot, { recursive: true, force: true });
+      }
+    });
+
     it('skips files under a "public" directory', async () => {
       const { mkdirSync, writeFileSync, rmSync, mkdtempSync } = await import('node:fs');
       const { tmpdir } = await import('node:os');

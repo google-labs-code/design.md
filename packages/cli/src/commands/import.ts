@@ -19,6 +19,7 @@ import { defineCommand } from 'citty';
 import { runImport } from '../importer/index.js';
 import { ImportProgress } from '../importer/ui.js';
 import type { ImportStep } from '../importer/spec.js';
+import { sanitizeError } from '../importer/error-sanitize.js';
 
 export default defineCommand({
   meta: {
@@ -47,6 +48,12 @@ export default defineCommand({
       description:
         'Progress output: "pretty" (Ink UI) or "json" (machine-readable events)',
       default: 'pretty',
+    },
+    verbose: {
+      type: 'boolean',
+      description:
+        'Include path-redacted error messages on failure. Default emits only error codes.',
+      default: false,
     },
   },
   async run({ args }) {
@@ -94,8 +101,14 @@ export default defineCommand({
       process.exitCode = result.success ? 0 : 1;
     } catch (err) {
       if (inkApp) inkApp.unmount();
-      const message = err instanceof Error ? err.message : String(err);
-      process.stderr.write(JSON.stringify({ error: message }) + '\n');
+      // Default emits only `{error: {code}}` — no freeform message that
+      // could disclose filesystem layout or internal state. With
+      // --verbose the message is included but still path-redacted.
+      process.stderr.write(
+        JSON.stringify({
+          error: sanitizeError(err, { includeMessage: Boolean(args.verbose) }),
+        }) + '\n',
+      );
       process.exitCode = 1;
     }
   },

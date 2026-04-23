@@ -38,4 +38,30 @@ describe('detectFramework', () => {
     const info = detectFramework(join(import.meta.dir, 'fixtures'));
     expect(info.name).toBe('unknown');
   });
+
+  it('does not pollute Object.prototype from a malicious package.json', async () => {
+    const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'evil-pkg-'));
+    try {
+      writeFileSync(
+        join(dir, 'package.json'),
+        JSON.stringify({
+          name: 'evil',
+          dependencies: {
+            __proto__: { polluted: 'YES' },
+            constructor: { prototype: { polluted: 'YES' } },
+            react: '^18.0.0',
+          },
+        }),
+      );
+      const info = detectFramework(dir);
+      // React dep is still detected; dangerous keys are dropped.
+      expect(info.name).toBe('node');
+      // Host Object.prototype untouched.
+      expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
