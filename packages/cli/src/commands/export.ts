@@ -15,15 +15,16 @@
 import { defineCommand } from 'citty';
 import { lint, TailwindEmitterHandler } from '../linter/index.js';
 import { DtcgEmitterHandler } from '../linter/dtcg/handler.js';
+import { CssEmitterHandler } from '../linter/css/handler.js';
 import { readInput } from '../utils.js';
 
-const FORMATS = ['tailwind', 'dtcg'] as const;
-type ExportFormat = typeof FORMATS[number];
+const FORMATS = ['tailwind', 'dtcg', 'css'] as const;
+type ExportFormat = (typeof FORMATS)[number];
 
 export default defineCommand({
   meta: {
     name: 'export',
-    description: 'Export DESIGN.md tokens to other formats (tailwind, dtcg).',
+    description: 'Export DESIGN.md tokens to other formats (tailwind, dtcg, css).',
   },
   args: {
     file: {
@@ -42,9 +43,13 @@ export default defineCommand({
 
     // Validate --format against closed enum
     if (!FORMATS.includes(format as ExportFormat)) {
-      console.error(JSON.stringify({
-        error: `Invalid format "${format}". Valid formats: ${FORMATS.join(', ')}`,
-      }));
+      console.error(
+        JSON.stringify({
+          error: `Invalid format "${format}". Valid formats: ${FORMATS.join(
+            ', ',
+          )}`,
+        }),
+      );
       process.exitCode = 1;
       return;
     }
@@ -74,6 +79,17 @@ export default defineCommand({
       }
 
       console.log(JSON.stringify(result.data, null, 2));
+    } else if (format === 'css') {
+      const handler = new CssEmitterHandler();
+      const result = handler.execute(report.designSystem);
+
+      if (!result.success) {
+        console.error(JSON.stringify({ error: result.error.message }));
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(result.data);
     }
 
     process.exitCode = report.summary.errors > 0 ? 1 : 0;
