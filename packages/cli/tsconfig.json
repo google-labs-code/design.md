@@ -8,8 +8,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
-    "types": ["bun"],
-    "jsx": "react-jsx"
+    "types": ["bun"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts"]
 }
