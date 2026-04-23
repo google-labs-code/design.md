@@ -40,6 +40,8 @@ export interface ResolvedColor {
   a?: number;
   /** WCAG relative luminance */
   luminance: number;
+  /** Original oklch string, if provided */
+  oklch?: string;
 }
 
 export interface ResolvedDimension {
@@ -148,9 +150,10 @@ export function parseDimensionParts(raw: string): { value: number; unit: string 
 }
 
 /**
- * Validate a hex color string. Accepts #RGB, #RGBA, #RRGGBB, and #RRGGBBAA.
+ * Validate a color string. Accepts hex codes and oklch().
  */
 export function isValidColor(raw: string): boolean {
+  if (raw.startsWith('oklch(') && raw.endsWith(')')) return true;
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(raw);
 }
 

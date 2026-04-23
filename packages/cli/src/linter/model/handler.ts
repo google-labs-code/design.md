@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { parse, formatHex, converter } from 'culori';
 import type { ParsedDesignSystem } from '../parser/spec.js';
 import type {
   ModelSpec,
@@ -59,7 +60,7 @@ export class ModelHandler implements ModelSpec {
             findings.push({
               severity: 'error',
               path: `colors.${name}`,
-              message: `'${raw}' is not a valid color. Expected a hex color code (e.g., #ffffff).`,
+              message: `'${raw}' is not a valid color. Expected a hex color code (e.g., #ffffff) or oklch().`,
             });
             // Store as-is for fallback
             symbolTable.set(`colors.${name}`, raw);
@@ -237,9 +238,25 @@ export class ModelHandler implements ModelSpec {
 // ── Pure utility functions ─────────────────────────────────────────
 
 /**
- * Parse a hex color string into a ResolvedColor with RGB + WCAG luminance.
+ * Parse a hex or oklch() color string into a ResolvedColor with RGB + WCAG luminance.
  */
 export function parseColor(raw: string): ResolvedColor {
+  if (raw.startsWith('oklch(')) {
+    const parsed = parse(raw);
+    if (!parsed) {
+      // This should ideally not be reached if isValidColor is correct
+      throw new Error(`Invalid oklch color: ${raw}`);
+    }
+    const rgb = converter('rgb')(parsed);
+    const { r, g, b, alpha } = rgb;
+    const hex = formatHex(raw);
+    const r255 = r * 255;
+    const g255 = g * 255;
+    const b255 = b * 255;
+    const luminance = computeLuminance(r255, g255, b255);
+    return { type: 'color', hex, r: r255, g: g255, b: b255, a: alpha, luminance, oklch: raw };
+  }
+
   let hex = raw;
 
   // Normalize #RGB to #RRGGBB
@@ -266,6 +283,7 @@ export function parseColor(raw: string): ResolvedColor {
 
   return { type: 'color', hex, r, g, b, a, luminance };
 }
+
 
 /**
  * Compute WCAG 2.1 relative luminance.
