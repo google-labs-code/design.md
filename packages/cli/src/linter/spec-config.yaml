@@ -36,6 +36,7 @@ sections:
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Iconography
   - canonical: Components
   - canonical: "Do's and Don'ts"
 
@@ -77,6 +78,13 @@ component_sub_tokens:
   - name: width
     type: Dimension
 
+icon_styles:
+  - outlined
+  - filled
+  - rounded
+  - sharp
+  - duotone
+
 color_roles:
   - primary
   - secondary
@@ -109,6 +117,16 @@ recommended_tokens:
     - lg
     - xl
     - full
+  icon-styles:
+    - outlined
+    - filled
+    - rounded
+    - sharp
+    - duotone
+  icon-sizes:
+    - sm
+    - md
+    - lg
 
 examples:
   colors:
@@ -142,3 +160,13 @@ examples:
       padding: 12px
     button-primary-hover:
       backgroundColor: "{colors.primary-70}"
+  icons:
+    library: "Lucide"
+    style: "outlined"
+    strokeWidth: 1.5
+    grid: "24px"
+    size:
+      sm: "16px"
+      md: "24px"
+      lg: "32px"
+    color: "{colors.on-surface}"
