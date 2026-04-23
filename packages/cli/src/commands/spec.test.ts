@@ -13,7 +13,16 @@
 // limitations under the License.
 
 import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { execFileSync } from 'node:child_process';
+import { existsSync, rmSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import specCommand from './spec.js';
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const packageRoot = resolve(currentDir, '../..');
+const distDir = resolve(packageRoot, 'dist');
+const bundledCliPath = resolve(distDir, 'index.js');
 
 describe('spec command', () => {
   let logSpy: any;
@@ -90,5 +99,25 @@ describe('spec command', () => {
     expect(output.spec).toBeDefined();
     expect(output.rules).toBeDefined();
     expect(output.rules.length).toBe(8);
+  });
+
+  it('outputs the spec from the built CLI bundle', () => {
+    if (existsSync(distDir)) {
+      rmSync(distDir, { recursive: true, force: true });
+    }
+
+    execFileSync('bun', ['run', 'build'], {
+      cwd: packageRoot,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    const output = execFileSync('node', [bundledCliPath, 'spec'], {
+      cwd: packageRoot,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    expect(output).toContain('# DESIGN.md Format');
   });
 });

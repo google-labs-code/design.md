@@ -25,19 +25,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - uses: oven-sh/setup-bun@v2
       with:
-        bun-version: latest
-        
+        bun-version-file: package.json
+         
     - name: Install dependencies
       run: bun install
-      
-    - name: Run tests
-      run: bun test
 
-    - name: Build CLI
-      run: cd packages/cli && bun run build
+    - name: Run lint
+      run: bun run lint
+      
+    - name: Run workspace tests
+      run: bun run test
+
+    - name: Run workspace build
+      run: bun run build
 
     - name: Node.js Smoke Test
       run: node packages/cli/dist/index.js lint examples/atmospheric-glass/DESIGN.md
@@ -51,4 +54,3 @@ jobs:
         echo -e '---\ncolors:\n  primary: "#0000ff"\n---' > DESIGN.md
         npx design.md lint DESIGN.md
         node -e "import('@google/design.md/linter').then(m => console.log('OK:', Object.keys(m).length, 'exports'))"
-
