@@ -1,6 +1,7 @@
 {
   "name": "design-monorepo",
   "private": true,
+  "packageManager": "bun@1.1.20",
   "workspaces": [
     "packages/*"
   ],
