@@ -32,19 +32,12 @@ export type TailwindThemeExtend = z.infer<typeof TailwindThemeExtendSchema>;
 export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
   z.object({
     success: z.literal(true),
-    data: z.object({
-      theme: z.object({
-        extend: TailwindThemeExtendSchema
-      })
-    })
+    data: z.string(),
   }),
   z.object({
     success: z.literal(false),
-    error: z.object({
-      code: z.string(),
-      message: z.string()
-    })
-  })
+    error: z.instanceof(Error),
+  }),
 ]);
 
 export type TailwindEmitterResult = z.infer<typeof TailwindEmitterResultSchema>;

@@ -72,11 +72,11 @@ The palette uses a deep "Evergreen" primary for health-sector credibility.
     // ── Tailwind assertions ─────────────────────────────────────────
     expect(result.tailwindConfig.success).toBe(true);
     if (result.tailwindConfig.success) {
-      const config = result.tailwindConfig.data;
-      expect(config.theme?.extend?.colors?.['primary']).toBe('#647d66');
-      expect(config.theme?.extend?.fontFamily?.['headline-lg']).toContain('Google Sans Display');
-      expect(config.theme?.extend?.borderRadius?.['full']).toBe('9999px');
-      expect(config.theme?.extend?.spacing?.['gutter-s']).toBe('8px');
+      const css = result.tailwindConfig.data;
+      expect(css).toContain('--color-primary: #647d66;');
+      expect(css).toContain("--typography-headline-lg-font-family: Google Sans Display;");
+      expect(css).toContain('--border-radius-full: 9999px;');
+      expect(css).toContain('--spacing-gutter-s: 8px;');
     }
   });
 
