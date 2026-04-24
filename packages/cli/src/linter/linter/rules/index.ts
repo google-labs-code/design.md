@@ -23,6 +23,7 @@ import { tokenSummaryRule } from './token-summary.js';
 import { missingSectionsRule } from './missing-sections.js';
 import { sectionOrderRule } from './section-order.js';
 import { missingTypographyRule } from './missing-typography.js';
+import { unknownIconStyleRule } from './unknown-icon-style.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -34,6 +35,7 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   missingSectionsRule,
   missingTypographyRule,
   sectionOrderRule,
+  unknownIconStyleRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -58,4 +60,5 @@ export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
 export { missingTypography } from './missing-typography.js';
 export { sectionOrder } from './section-order.js';
+export { unknownIconStyle } from './unknown-icon-style.js';
 export type { LintRule } from './types.js';

@@ -37,6 +37,15 @@ export interface SourceLocation {
   block: 'frontmatter' | number;
 }
 
+export interface IconsBlock {
+  library?: string | undefined;
+  style?: string | undefined;
+  strokeWidth?: number | string | undefined;
+  grid?: string | undefined;
+  size?: Record<string, string> | undefined;
+  color?: string | undefined;
+}
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   name?: string | undefined;
@@ -46,6 +55,7 @@ export interface ParsedDesignSystem {
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
   components?: Record<string, Record<string, string>> | undefined;
+  icons?: IconsBlock | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

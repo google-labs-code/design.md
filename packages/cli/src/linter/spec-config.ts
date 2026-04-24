@@ -38,6 +38,15 @@ const PropertyDefSchema = z.object({
   description: z.string().optional(),
 });
 
+const IconsExampleSchema = z.object({
+  library: z.string(),
+  style: z.string().optional(),
+  strokeWidth: z.union([z.number(), z.string()]).optional(),
+  grid: z.string().optional(),
+  size: z.record(z.string(), z.string()).optional(),
+  color: z.string().optional(),
+});
+
 const ConfigSchema = z.object({
   version: z.string(),
   units: z.array(z.string()).min(1),
@@ -48,11 +57,13 @@ const ConfigSchema = z.object({
   typography_properties: z.array(PropertyDefSchema).min(1),
   component_sub_tokens: z.array(PropertyDefSchema).min(1),
   color_roles: z.array(z.string()).min(1),
+  icon_styles: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
     components: z.record(z.string(), z.record(z.string(), z.string())),
+    icons: IconsExampleSchema,
   }),
 });
 
@@ -130,6 +141,9 @@ export const COMPONENT_SUB_TOKENS: readonly ComponentSubTokenDef[] = config.comp
 /** Core color roles that every design system should define. */
 export const CORE_COLOR_ROLES = config.color_roles;
 
+/** The enum of canonical icon style values. */
+export const ICON_STYLES: readonly string[] = config.icon_styles;
+
 /** Non-normative recommended token names, organized by category. */
 export const RECOMMENDED_TOKENS = config.recommended_tokens;
 
@@ -169,6 +183,7 @@ export interface SpecConfig {
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
+  ICON_STYLES: typeof ICON_STYLES;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
   EXAMPLES: typeof EXAMPLES;
 }
@@ -181,6 +196,7 @@ export const SPEC_CONFIG: SpecConfig = {
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,
   CORE_COLOR_ROLES,
+  ICON_STYLES,
   RECOMMENDED_TOKENS,
   EXAMPLES,
 };

@@ -154,6 +154,16 @@ components:
     typography: "{typography.label-sm}"
     rounded: "{rounded.full}"
     padding: "{spacing.xs}"
+icons:
+  library: "Lucide"
+  style: "outlined"
+  strokeWidth: 1.75
+  grid: "24px"
+  size:
+    sm: "16px"
+    md: "20px"
+    lg: "24px"
+  color: "{colors.on-surface}"
 ---
 
 ## Brand & Style
@@ -202,7 +212,14 @@ The shape language is defined by **Rounded** corners, mirroring the soft feature
 - **Buttons:** Main CTA buttons use a `12px` (rounded-lg) radius to feel substantial and clickable.
 - **Cards:** Dog profiles and walker cards use a `1.5rem` (rounded-xl) radius to create a soft, containerized look.
 - **Inputs:** Form fields use a `0.5rem` radius to maintain a professional yet modern appearance.
-- **Icons:** Icons should feature rounded caps and corners to harmonize with the UI's structural elements.
+
+## Iconography
+
+Icons use **Lucide** in its outlined style with a slightly heavier **1.75 stroke weight**, whose rounded line caps mirror the soft corners of the UI and reinforce the friendly, human-centric feel of the brand. Icons render on a 24px grid and inherit `on-surface` color by default so they sit comfortably against any surface tint.
+
+- **Small (16px):** Inline affordances in dense lists and metadata (e.g., status dots next to walker names).
+- **Medium (20px):** Default for buttons, form fields, and navigation — large enough to read at a glance without overpowering the label.
+- **Large (24px):** Feature tiles, empty states, and hero card actions where the icon carries meaning on its own.
 
 ## Components
 

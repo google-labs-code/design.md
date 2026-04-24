@@ -73,6 +73,7 @@ describe('compileMdx', () => {
       sectionOrderList: () => renderers.sectionOrderList(cfg),
       componentSubTokenList: () => renderers.componentSubTokenList(cfg),
       recommendedTokens: () => renderers.recommendedTokens(cfg),
+      iconsExample: () => renderers.iconsExample(cfg),
     };
 
     const result = await compileMdx(source, scope);

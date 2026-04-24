@@ -19,6 +19,7 @@ import type {
   ResolvedColor,
   ResolvedDimension,
   ResolvedTypography,
+  ResolvedIcons,
   ResolvedValue,
   ComponentDef,
   Finding,
@@ -198,6 +199,104 @@ export class ModelHandler implements ModelSpec {
         }
       }
 
+      // ── Phase 4: Resolve icons ─────────────────────────────────────
+      let icons: ResolvedIcons | undefined;
+      if (input.icons) {
+        const sizeMap = new Map<string, ResolvedDimension>();
+        if (input.icons.size) {
+          for (const [key, raw] of Object.entries(input.icons.size)) {
+            if (typeof raw === 'string' && isParseableDimension(raw)) {
+              const resolved = parseDimension(raw);
+              if (resolved.unit !== 'px' && resolved.unit !== 'rem' && resolved.unit !== 'em') {
+                findings.push({
+                  severity: 'error',
+                  path: `icons.size.${key}`,
+                  message: `'${raw}' has an invalid unit '${resolved.unit}'. Only px, rem, and em are allowed.`,
+                });
+              }
+              sizeMap.set(key, resolved);
+              symbolTable.set(`icons.size.${key}`, resolved);
+            } else if (typeof raw === 'string' && !isTokenReference(raw)) {
+              findings.push({
+                severity: 'error',
+                path: `icons.size.${key}`,
+                message: `'${raw}' is not a valid dimension.`,
+              });
+            }
+          }
+        }
+
+        let resolvedGrid: ResolvedDimension | undefined;
+        if (typeof input.icons.grid === 'string') {
+          if (isParseableDimension(input.icons.grid)) {
+            resolvedGrid = parseDimension(input.icons.grid);
+            symbolTable.set('icons.grid', resolvedGrid);
+          } else {
+            findings.push({
+              severity: 'error',
+              path: 'icons.grid',
+              message: `'${input.icons.grid}' is not a valid dimension.`,
+            });
+          }
+        }
+
+        let resolvedColor: ResolvedColor | undefined;
+        if (typeof input.icons.color === 'string') {
+          const raw = input.icons.color;
+          if (isTokenReference(raw)) {
+            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+            if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
+              resolvedColor = resolved as ResolvedColor;
+              symbolTable.set('icons.color', resolvedColor);
+            } else {
+              findings.push({
+                severity: 'error',
+                path: 'icons.color',
+                message: `Could not resolve color reference '${raw}'.`,
+              });
+            }
+          } else if (isValidColor(raw)) {
+            resolvedColor = parseColor(raw);
+            symbolTable.set('icons.color', resolvedColor);
+          } else {
+            findings.push({
+              severity: 'error',
+              path: 'icons.color',
+              message: `'${raw}' is not a valid color or token reference.`,
+            });
+          }
+        }
+
+        let resolvedStrokeWidth: number | undefined;
+        if (input.icons.strokeWidth !== undefined) {
+          const sw = input.icons.strokeWidth;
+          if (typeof sw === 'number') {
+            resolvedStrokeWidth = sw;
+          } else if (typeof sw === 'string') {
+            const n = Number(sw);
+            if (!Number.isNaN(n)) {
+              resolvedStrokeWidth = n;
+            } else {
+              findings.push({
+                severity: 'error',
+                path: 'icons.strokeWidth',
+                message: `'${sw}' is not a valid number.`,
+              });
+            }
+          }
+        }
+
+        icons = {
+          type: 'icons',
+          library: input.icons.library,
+          style: input.icons.style,
+          strokeWidth: resolvedStrokeWidth,
+          grid: resolvedGrid,
+          size: sizeMap,
+          color: resolvedColor,
+        };
+      }
+
       return {
         designSystem: {
           name: input.name,
@@ -207,6 +306,7 @@ export class ModelHandler implements ModelSpec {
           rounded,
           spacing,
           components,
+          icons,
           symbolTable,
           sections: input.sections,
         },

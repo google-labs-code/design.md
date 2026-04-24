@@ -87,8 +87,9 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 4. **Layout** (also: "Layout & Spacing")
 5. **Elevation & Depth** (also: "Elevation")
 6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+7. **Iconography**
+8. **Components**
+9. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -274,6 +275,50 @@ rounded:
   full: 9999px
 ```
 
+## Iconography
+
+This section defines the icon library, style, and size scale used across the product.
+
+Example:
+
+```markdown
+## Iconography
+
+Icons use **Lucide** in its outlined style at a 1.5 stroke weight, echoing
+the calm, linear rhythm of the typography. Icons render on a 24px grid and
+inherit `on-surface` color by default.
+
+- **Small (16px):** Inline with body text or dense tables.
+- **Medium (24px):** Default for buttons, navigation, and form fields.
+- **Large (32px):** Feature tiles and empty states.
+```
+
+### Design Tokens
+
+The `icons` section defines a single token group (not a map) describing the
+icon library in use, its style variant, stroke weight, source grid, render
+sizes, and default color.
+
+```yaml
+icons:
+  library: "Lucide"
+  style: "outlined"
+  strokeWidth: 1.5
+  grid: "24px"
+  size:
+    sm: "16px"
+    md: "24px"
+    lg: "32px"
+  color: "{colors.on-surface}"
+```
+
+* `library` (string) — the icon set in use (e.g., "Lucide", "Heroicons", "Material Symbols"). Agents resolve the string to an import.
+* `style` (enum, optional) — one of: `outlined`, `filled`, `rounded`, `sharp`, `duotone`. Unknown values are preserved with a warning.
+* `strokeWidth` (number, optional) — for stroke-based libraries (Lucide, Tabler, Feather). Font-based libraries (e.g., Material Symbols with its 100–700 weight axis) map this agent-side.
+* `grid` (Dimension, optional) — the source viewBox unit (Radix 15, Phosphor 256, most others 24). Distinct from `size.*`, which is the CSS render size.
+* `size` (map\<string, Dimension>, optional) — named render sizes.
+* `color` (Color or token reference, optional) — default icon color; inherits via CSS `currentColor` unless explicitly set.
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -341,13 +386,17 @@ The following names are commonly used across design systems. They are not requir
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
+**Icon-styles:** `outlined`, `filled`, `rounded`, `sharp`, `duotone`
+
+**Icon-sizes:** `sm`, `md`, `lg`
+
 # Consumer Behavior for Unknown Content
 
 When a DESIGN.md consumer encounters content not defined by this spec:
 
 | Scenario | Behavior | Example |
 |---|---|---|
-| Unknown section heading | Preserve; do not error | `## Iconography` |
+| Unknown section heading | Preserve; do not error | `## Illustrations` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |

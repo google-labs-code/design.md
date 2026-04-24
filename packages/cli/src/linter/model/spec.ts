@@ -60,7 +60,17 @@ export interface ResolvedTypography {
   fontVariation?: string | undefined;
 }
 
-export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string;
+export interface ResolvedIcons {
+  type: 'icons';
+  library?: string | undefined;
+  style?: string | undefined;
+  strokeWidth?: number | undefined;
+  grid?: ResolvedDimension | undefined;
+  size: Map<string, ResolvedDimension>;
+  color?: ResolvedColor | undefined;
+}
+
+export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | ResolvedIcons | string;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
@@ -75,6 +85,8 @@ export interface DesignSystemState {
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
   components: Map<string, ComponentDef>;
+  /** Icons token group (single instance, not a map). */
+  icons?: ResolvedIcons | undefined;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
