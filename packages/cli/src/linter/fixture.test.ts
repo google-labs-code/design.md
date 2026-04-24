@@ -58,4 +58,52 @@ describe('Fixture Test', () => {
     // We expect at least the summary info
     expect(result.summary.infos).toBeGreaterThan(0);
   });
+
+  it('lints ICONS_VALID.md with no errors related to icons', () => {
+    const path = join(import.meta.dir, 'fixtures', 'ICONS_VALID.md');
+    const content = readFileSync(path, 'utf-8');
+
+    const result = lint(content);
+
+    expect(result.designSystem.icons).toBeDefined();
+    expect(result.designSystem.icons!.library).toBe('Lucide');
+    expect(result.designSystem.icons!.style).toBe('outlined');
+    expect(result.designSystem.icons!.size.get('md')?.value).toBe(24);
+
+    const iconErrors = result.findings.filter(
+      (f: { severity: string; path?: string }) =>
+        f.severity === 'error' && f.path?.startsWith('icons')
+    );
+    expect(iconErrors).toEqual([]);
+  });
+
+  it('lints ICONS_INVALID.md surfacing the expected findings', () => {
+    const path = join(import.meta.dir, 'fixtures', 'ICONS_INVALID.md');
+    const content = readFileSync(path, 'utf-8');
+
+    const result = lint(content);
+
+    // Invalid dimension in icons.size.sm → error
+    const sizeError = result.findings.find(
+      (f: { severity: string; path?: string }) =>
+        f.severity === 'error' && f.path === 'icons.size.sm'
+    );
+    expect(sizeError).toBeDefined();
+
+    // Unresolved color reference → error
+    const colorError = result.findings.find(
+      (f: { severity: string; path?: string }) =>
+        f.severity === 'error' && f.path === 'icons.color'
+    );
+    expect(colorError).toBeDefined();
+
+    // Unknown icon style "hexagonal" → warning from the unknown-icon-style rule
+    const styleWarning = result.findings.find(
+      (f: { severity: string; path?: string; message: string }) =>
+        f.severity === 'warning' &&
+        f.path === 'icons.style' &&
+        f.message.includes('hexagonal')
+    );
+    expect(styleWarning).toBeDefined();
+  });
 });
