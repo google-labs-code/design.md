@@ -10,7 +10,7 @@ import { lint } from '../linter/index.js';
 const EX = join(import.meta.dir, '..', '..', '..', '..', 'examples', 'paws-and-paths');
 
 describe('runImport', () => {
-  it('VR-1: round-trips paws-and-paths into a lint-clean DESIGN.md', async () => {
+  it('VR-1: round-trips paws-and-paths into a  lint-clean DESIGN.md', async () => {
     const events: string[] = [];
     const tmp = join(EX, 'DESIGN.generated.md');
     try {
