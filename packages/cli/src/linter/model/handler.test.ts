@@ -356,4 +356,66 @@ describe('ModelHandler', () => {
       }
     });
   });
+
+  // ── Fix #42: numeric component props crash model builder ──────────
+  describe('numeric component property values', () => {
+    it('does not crash when fontWeight is a bare number', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#000000' },
+        components: {
+          'button-primary': {
+            backgroundColor: '{colors.primary}',
+            fontWeight: 600 as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button-primary');
+      expect(btn).toBeDefined();
+      expect(btn?.properties.get('fontWeight')).toBe(600);
+    });
+
+    it('stores numeric fontWeight value as-is in component properties', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'heading': {
+            fontWeight: 700 as unknown as string,
+          },
+        },
+      }));
+      const heading = result.designSystem.components.get('heading');
+      expect(heading?.properties.get('fontWeight')).toBe(700);
+    });
+
+    it('does not crash when borderWidth is a bare number', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'card': {
+            borderWidth: 1 as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const card = result.designSystem.components.get('card');
+      expect(card?.properties.get('borderWidth')).toBe(1);
+    });
+
+    it('handles mixed numeric and string props in same component without crashing', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        spacing: { md: '16px' },
+        components: {
+          'button': {
+            fontWeight: 600 as unknown as string,
+            backgroundColor: '{colors.primary}',
+            padding: '{spacing.md}',
+            borderRadius: '4px',
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('fontWeight')).toBe(600);
+    });
+  });
 });

@@ -176,7 +176,13 @@ export class ModelHandler implements ModelSpec {
           const unresolvedRefs: string[] = [];
 
           for (const [propName, rawValue] of Object.entries(props)) {
-            if (isTokenReference(rawValue)) {
+            // Numeric values (e.g. fontWeight: 600, borderWidth: 1) are valid
+            // per spec and must be stored as-is, coercing to string first
+            // would cause isTokenReference / isValidColor to call .match() on
+            // a number and crash with "raw.match is not a function".
+            if (typeof rawValue === 'number') {
+              properties.set(propName, rawValue);
+            } else if (isTokenReference(rawValue)) {
               const refPath = rawValue.slice(1, -1);
               const resolved = resolveReference(symbolTable, refPath, new Set());
               if (resolved !== null) {
