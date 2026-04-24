@@ -139,8 +139,3 @@ export function iconsExample(config: SpecConfig): string {
   if (icons.color !== undefined) lines.push(`  color: "${icons.color}"`);
   return yamlBlock(lines);
 }
-
-/** Comma-separated backticked list of canonical icon styles. */
-export function iconStyleEnumList(config: SpecConfig): string {
-  return config.ICON_STYLES.map(s => `\`${s}\``).join(', ');
-}

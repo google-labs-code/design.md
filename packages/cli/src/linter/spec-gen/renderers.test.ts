@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { describe, it, expect } from 'bun:test';
-import { iconsExample, iconStyleEnumList } from './renderers.js';
+import { iconsExample } from './renderers.js';
 import { SPEC_CONFIG } from '../spec-config.js';
 
 describe('iconsExample renderer', () => {
@@ -28,12 +28,5 @@ describe('iconsExample renderer', () => {
     expect(output).toContain('size:');
     expect(output).toContain('md: "24px"');
     expect(output).toContain('color: "{colors.on-surface}"');
-  });
-});
-
-describe('iconStyleEnumList renderer', () => {
-  it('renders the canonical icon styles as comma-separated backticked tokens', () => {
-    const output = iconStyleEnumList(SPEC_CONFIG);
-    expect(output).toBe('`outlined`, `filled`, `rounded`, `sharp`, `duotone`');
   });
 });

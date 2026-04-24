@@ -245,7 +245,7 @@ sizes, and default color.
 {iconsExample()}
 
 - `library` (string) — the icon set in use (e.g., "Lucide", "Heroicons", "Material Symbols"). Agents resolve the string to an import.
-- `style` (enum, optional) — one of: {iconStyleEnumList()}. Unknown values are preserved with a warning.
+- `style` (enum, optional) — one of: `outlined`, `filled`, `rounded`, `sharp`, `duotone`. Unknown values are preserved with a warning.
 - `strokeWidth` (number, optional) — for stroke-based libraries (Lucide, Tabler, Feather). Font-based libraries (e.g., Material Symbols with its 100–700 weight axis) map this agent-side.
 - `grid` (Dimension, optional) — the source viewBox unit (Radix 15, Phosphor 256, most others 24). Distinct from `size.*`, which is the CSS render size.
 - `size` (map\<string, Dimension\>, optional) — named render sizes.
