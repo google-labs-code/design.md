@@ -121,3 +121,26 @@ export function recommendedTokens(config: SpecConfig): string {
     })
     .join('\n\n');
 }
+
+/** Icons YAML example. */
+export function iconsExample(config: SpecConfig): string {
+  const icons = config.EXAMPLES.icons;
+  const lines: string[] = ['icons:'];
+  if (icons.library !== undefined) lines.push(`  library: "${icons.library}"`);
+  if (icons.style !== undefined) lines.push(`  style: "${icons.style}"`);
+  if (icons.strokeWidth !== undefined) lines.push(`  strokeWidth: ${icons.strokeWidth}`);
+  if (icons.grid !== undefined) lines.push(`  grid: "${icons.grid}"`);
+  if (icons.size !== undefined) {
+    lines.push('  size:');
+    for (const [k, v] of Object.entries(icons.size)) {
+      lines.push(`    ${k}: "${v}"`);
+    }
+  }
+  if (icons.color !== undefined) lines.push(`  color: "${icons.color}"`);
+  return yamlBlock(lines);
+}
+
+/** Comma-separated backticked list of canonical icon styles. */
+export function iconStyleEnumList(config: SpecConfig): string {
+  return config.ICON_STYLES.map(s => `\`${s}\``).join(', ');
+}
