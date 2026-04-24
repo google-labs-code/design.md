@@ -357,3 +357,59 @@ describe('ModelHandler', () => {
     });
   });
 });
+
+describe('icons resolution', () => {
+  it('populates icons and adds symbol-table entries for sizes, grid, and color', () => {
+    const parsed: ParsedDesignSystem = {
+      colors: { 'on-surface': '#151c27' },
+      icons: {
+        library: 'Lucide',
+        style: 'outlined',
+        strokeWidth: 1.5,
+        grid: '24px',
+        size: { sm: '16px', md: '24px', lg: '32px' },
+        color: '{colors.on-surface}',
+      },
+      sourceMap: new Map(),
+    };
+    const handler = new ModelHandler();
+    const { designSystem, findings } = handler.execute(parsed);
+
+    expect(designSystem.icons).toBeDefined();
+    expect(designSystem.icons!.library).toBe('Lucide');
+    expect(designSystem.icons!.style).toBe('outlined');
+    expect(designSystem.icons!.strokeWidth).toBe(1.5);
+
+    // Symbol table entries for cross-references
+    const sizeMd = designSystem.symbolTable.get('icons.size.md');
+    expect(sizeMd).toBeDefined();
+    expect((sizeMd as any).type).toBe('dimension');
+    expect((sizeMd as any).value).toBe(24);
+
+    const color = designSystem.symbolTable.get('icons.color');
+    expect(color).toBeDefined();
+    expect((color as any).type).toBe('color');
+    expect((color as any).hex).toBe('#151c27');
+
+    // No error findings for a valid icons block
+    expect(findings.filter(f => f.severity === 'error' && f.path?.startsWith('icons'))).toHaveLength(0);
+  });
+
+  it('reports an error for an invalid dimension in icons.size', () => {
+    const parsed: ParsedDesignSystem = {
+      icons: { size: { bad: 'not-a-dim' } },
+      sourceMap: new Map(),
+    };
+    const { findings } = new ModelHandler().execute(parsed);
+    expect(findings.some(f => f.severity === 'error' && f.path === 'icons.size.bad')).toBe(true);
+  });
+
+  it('reports an error for an unresolved color reference', () => {
+    const parsed: ParsedDesignSystem = {
+      icons: { color: '{colors.nonexistent}' },
+      sourceMap: new Map(),
+    };
+    const { findings } = new ModelHandler().execute(parsed);
+    expect(findings.some(f => f.severity === 'error' && f.path === 'icons.color')).toBe(true);
+  });
+});
