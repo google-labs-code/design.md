@@ -15,6 +15,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { safeJsonParse } from './safe-json.js';
+import type { IconsData } from './spec.js';
 
 export interface ProjectMetadata {
   /** Display name. README H1 > package.json name > directory basename. */
@@ -27,28 +28,91 @@ export interface ProjectMetadata {
   readmeH1?: string;
   /** First real paragraph from README.md, capped length, plain-text. */
   readmeIntro?: string;
+  /**
+   * Iconography metadata derived from package.json dependencies. Present
+   * only when a recognized icon-library package appears in `dependencies`
+   * or `devDependencies`. The `library` field carries the display-form
+   * name (e.g. "Lucide", "Heroicons"). Wiring into the merged design
+   * state is handled downstream.
+   */
+  icons?: IconsData;
 }
 
 interface PackageJsonShape {
   name?: string;
   version?: string;
   description?: string;
+  dependencies?: Record<string, unknown>;
+  devDependencies?: Record<string, unknown>;
 }
 
 const INTRO_MAX_LEN = 500;
+
+/**
+ * Ordered mapping from dependency-package name to display-form library
+ * name. Order matters: first match wins when a project declares
+ * multiple icon libraries. Order is stable and grouped by library
+ * family. The deterministic-order test pins this contract — do not
+ * reorder without updating that test.
+ *
+ * Kept small and explicit — an unbounded heuristic invites false
+ * positives on packages that happen to contain "icon" in their name.
+ * Renderer/utility packages (e.g. `@fortawesome/fontawesome-svg-core`)
+ * are intentionally omitted; only icon-set packages are listed.
+ */
+const LIBRARY_RULES: ReadonlyArray<{ pkg: string; library: string }> = [
+  { pkg: 'lucide-react', library: 'Lucide' },
+  { pkg: 'lucide-vue-next', library: 'Lucide' },
+  { pkg: 'lucide-svelte', library: 'Lucide' },
+  { pkg: 'lucide', library: 'Lucide' },
+  { pkg: '@heroicons/react', library: 'Heroicons' },
+  { pkg: '@heroicons/vue', library: 'Heroicons' },
+  { pkg: '@mui/icons-material', library: 'Material Symbols' },
+  { pkg: '@material-symbols/svg-400', library: 'Material Symbols' },
+  { pkg: 'phosphor-react', library: 'Phosphor' },
+  { pkg: '@phosphor-icons/react', library: 'Phosphor' },
+  { pkg: '@phosphor-icons/vue', library: 'Phosphor' },
+  { pkg: '@tabler/icons-react', library: 'Tabler' },
+  { pkg: '@tabler/icons', library: 'Tabler' },
+  { pkg: 'react-feather', library: 'Feather' },
+  { pkg: 'feather-icons', library: 'Feather' },
+  { pkg: '@radix-ui/react-icons', library: 'Radix' },
+  { pkg: '@fortawesome/free-solid-svg-icons', library: 'Font Awesome' },
+  { pkg: '@fortawesome/free-regular-svg-icons', library: 'Font Awesome' },
+];
+
+function detectIconLibrary(pkg: PackageJsonShape): IconsData | undefined {
+  const deps = pkg.dependencies ?? {};
+  const devDeps = pkg.devDependencies ?? {};
+  for (const { pkg: name, library } of LIBRARY_RULES) {
+    // Presence of the KEY is the signal; the version value can be
+    // anything (string, object — we never inspect it).
+    if (Object.prototype.hasOwnProperty.call(deps, name) ||
+        Object.prototype.hasOwnProperty.call(devDeps, name)) {
+      return { library };
+    }
+  }
+  return undefined;
+}
 
 function readPackageJson(projectPath: string): PackageJsonShape | null {
   const pkgPath = join(projectPath, 'package.json');
   if (!existsSync(pkgPath)) return null;
   const parsed = safeJsonParse<PackageJsonShape>(readFileSync(pkgPath, 'utf-8'));
   if (!parsed) return null;
-  // Only the three string fields we actually consume. Ignoring everything
-  // else means an attacker can't smuggle surprising structures into the
-  // pipeline via the package.json.
+  // Only the scalar string fields and dependency maps we actually
+  // consume. Ignoring everything else means an attacker can't smuggle
+  // surprising structures into the pipeline via the package.json.
   const out: PackageJsonShape = {};
   if (typeof parsed.name === 'string') out.name = parsed.name;
   if (typeof parsed.version === 'string') out.version = parsed.version;
   if (typeof parsed.description === 'string') out.description = parsed.description;
+  if (parsed.dependencies && typeof parsed.dependencies === 'object' && !Array.isArray(parsed.dependencies)) {
+    out.dependencies = parsed.dependencies as Record<string, unknown>;
+  }
+  if (parsed.devDependencies && typeof parsed.devDependencies === 'object' && !Array.isArray(parsed.devDependencies)) {
+    out.devDependencies = parsed.devDependencies as Record<string, unknown>;
+  }
   return out;
 }
 
@@ -140,5 +204,7 @@ export function readProjectMetadata(projectPath: string): ProjectMetadata {
   if (pkg?.version) meta.version = pkg.version;
   if (readmeParts.h1) meta.readmeH1 = readmeParts.h1;
   if (readmeParts.intro) meta.readmeIntro = readmeParts.intro;
+  const icons = pkg ? detectIconLibrary(pkg) : undefined;
+  if (icons) meta.icons = icons;
   return meta;
 }

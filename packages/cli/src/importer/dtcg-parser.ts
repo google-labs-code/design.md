@@ -22,9 +22,11 @@ import type {
 import { parseDimensionParts } from '../linter/model/spec.js';
 import { hexToResolvedColor } from './color-math.js';
 import { safeJsonParse } from './safe-json.js';
+import type { IconsData } from './spec.js';
 
 export interface DtcgPartial extends Partial<DesignSystemState> {
   warnings?: string[];
+  icons?: IconsData;
 }
 
 interface DtcgNode {
@@ -58,6 +60,85 @@ function dimensionFromValue(val: unknown): ResolvedDimension | null {
     }
   }
   return null;
+}
+
+/**
+ * Strip the DTCG `$value` wrapper. If the node is `{ $value: x }`,
+ * return x; otherwise return the node as-is. Used so the parser
+ * accepts both DTCG-wrapped and bare-value forms within the icons
+ * block, since icon metadata is more often hand-authored.
+ *
+ * Arrays are returned as-is even if a positional element happens to
+ * resemble a wrapper, because a DTCG value-wrapper is always an object.
+ */
+function unwrapValue(node: unknown): unknown {
+  if (node && typeof node === 'object' && !Array.isArray(node)) {
+    const n = node as Record<string, unknown>;
+    if (Object.prototype.hasOwnProperty.call(n, '$value')) {
+      return n['$value'];
+    }
+  }
+  return node;
+}
+
+function parseIconsSubtree(raw: Record<string, unknown>): IconsData | undefined {
+  const icons: IconsData = {};
+  let any = false;
+
+  const lib = unwrapValue(raw['library']);
+  if (typeof lib === 'string') {
+    icons.library = lib;
+    any = true;
+  }
+
+  const style = unwrapValue(raw['style']);
+  if (typeof style === 'string') {
+    icons.style = style;
+    any = true;
+  }
+
+  const stroke = unwrapValue(raw['strokeWidth']);
+  if (typeof stroke === 'number' && Number.isFinite(stroke)) {
+    icons.strokeWidth = stroke;
+    any = true;
+  } else if (typeof stroke === 'string') {
+    const n = Number(stroke);
+    if (Number.isFinite(n)) {
+      icons.strokeWidth = n;
+      any = true;
+    }
+  }
+
+  const grid = unwrapValue(raw['grid']);
+  if (typeof grid === 'string') {
+    icons.grid = grid;
+    any = true;
+  }
+
+  const color = unwrapValue(raw['color']);
+  if (typeof color === 'string') {
+    icons.color = color;
+    any = true;
+  }
+
+  const sizeRaw = raw['size'];
+  if (sizeRaw && typeof sizeRaw === 'object' && !Array.isArray(sizeRaw)) {
+    const size = new Map<string, string>();
+    for (const [k, v] of Object.entries(sizeRaw as Record<string, unknown>)) {
+      // Defense in depth: safeJsonParse already strips these at parse
+      // time, but reject them here too so the invariant survives any
+      // future change to the JSON loader.
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+      const dim = unwrapValue(v);
+      if (typeof dim === 'string') size.set(k, dim);
+    }
+    if (size.size > 0) {
+      icons.size = size;
+      any = true;
+    }
+  }
+
+  return any ? icons : undefined;
 }
 
 function typographyFromValue(val: unknown): ResolvedTypography | null {
@@ -117,6 +198,11 @@ function walk(
 ): void {
   for (const [key, val] of Object.entries(node)) {
     if (key.startsWith('$')) continue;
+    // Skip the icons subtree at the top level — parseIconsSubtree
+    // handles it separately, and resolveTopSection('icons') would
+    // discard every leaf anyway. Avoids a wasted DFS over what may be
+    // a deep subtree of size/grid/color entries.
+    if (path.length === 0 && key === 'icons') continue;
     const nextPath = [...path, key];
     if (isTokenNode(val)) {
       const token = val as DtcgNode;
@@ -166,6 +252,22 @@ export function parseDtcgTokens(absPath: string): DtcgPartial {
       warnings: [`failed to parse DTCG file ${absPath}: invalid JSON`],
     };
   }
+  const result: DtcgPartial = { colors, spacing, rounded, typography };
+
+  // Top-level icons block: typed structure (not a generic flat-map of
+  // $value-bearing tokens), so handle it before generic walking.
+  for (const [topKey, topValue] of Object.entries(raw)) {
+    if (
+      topKey === 'icons' &&
+      topValue &&
+      typeof topValue === 'object' &&
+      !Array.isArray(topValue)
+    ) {
+      const icons = parseIconsSubtree(topValue as Record<string, unknown>);
+      if (icons) result.icons = icons;
+    }
+  }
+
   walk(raw, [], colors, spacing, rounded, typography);
-  return { colors, spacing, rounded, typography };
+  return result;
 }

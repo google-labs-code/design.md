@@ -78,3 +78,80 @@ describe('readProjectMetadata', () => {
     expect(meta.readmeIntro).toBe('Intro.');
   });
 });
+
+describe('icon library detection', () => {
+  it('maps lucide-react to library "Lucide"', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'icon-lucide-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      name: 'x',
+      dependencies: { 'lucide-react': '^0.300.0' },
+    }));
+    const md = readProjectMetadata(dir);
+    expect(md.icons?.library).toBe('Lucide');
+  });
+
+  it('maps @heroicons/react to library "Heroicons"', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'icon-hero-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      name: 'x',
+      devDependencies: { '@heroicons/react': '^2.0.0' },
+    }));
+    const md = readProjectMetadata(dir);
+    expect(md.icons?.library).toBe('Heroicons');
+  });
+
+  it('maps @mui/icons-material to library "Material Symbols"', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'icon-mui-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      name: 'x',
+      dependencies: { '@mui/icons-material': '^5.0.0' },
+    }));
+    const md = readProjectMetadata(dir);
+    expect(md.icons?.library).toBe('Material Symbols');
+  });
+
+  it('maps phosphor-react to library "Phosphor"', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'icon-phos-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      name: 'x',
+      dependencies: { 'phosphor-react': '^1.0.0' },
+    }));
+    const md = readProjectMetadata(dir);
+    expect(md.icons?.library).toBe('Phosphor');
+  });
+
+  it('returns no icons field when no recognized library present', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'icon-none-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      name: 'x',
+      dependencies: { react: '^18.0.0' },
+    }));
+    const md = readProjectMetadata(dir);
+    expect(md.icons).toBeUndefined();
+  });
+
+  it('first LIBRARY_RULES match wins: Lucide before Heroicons when both present', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'icon-multi-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      name: 'x',
+      dependencies: {
+        'lucide-react': '^0.300.0',
+        '@heroicons/react': '^2.0.0',
+      },
+    }));
+    const md = readProjectMetadata(dir);
+    // Lucide appears first in LIBRARY_RULES.
+    expect(md.icons?.library).toBe('Lucide');
+  });
+
+  it('treats non-string version values as a present dep (presence-of-key signal)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'icon-bad-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      name: 'x',
+      dependencies: { 'lucide-react': { malicious: true } },
+    }));
+    const md = readProjectMetadata(dir);
+    // We never inspect the version value; presence of the key is the signal.
+    expect(md.icons?.library).toBe('Lucide');
+  });
+});

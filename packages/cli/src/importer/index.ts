@@ -14,14 +14,13 @@
 
 import { realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import type { DesignSystemState } from '../linter/model/spec.js';
 import { safeWriteFile } from './safe-write.js';
 import { detectFramework } from './framework-detector.js';
 import { scanSources } from './source-scanner.js';
 import { parseTailwindConfig } from './tailwind-parser.js';
 import { parseCssVariables } from './css-var-parser.js';
 import { parseDtcgTokens } from './dtcg-parser.js';
-import { mergeStates, type PartialState } from './merger.js';
+import { mergeStates, type PartialState, type MergedState } from './merger.js';
 import { emitDesignMd } from './markdown-emitter.js';
 import { readProjectMetadata } from './project-metadata.js';
 import type {
@@ -129,11 +128,20 @@ export async function runImport(opts: ImportOptions): Promise<ImportResult> {
   }
 
   const projectMeta = readProjectMetadata(canonicalRoot);
+  // Asymmetric precedence by field: name/description from package.json
+  // are AUTHORITATIVE (push → highest precedence under last-wins), but
+  // the icon-library heuristic from package.json is a WEAK signal that
+  // CSS and DTCG should be allowed to override (unshift → lowest
+  // precedence). A project may depend on lucide-react for one
+  // component while declaring "Heroicons" in its design tokens.
+  if (projectMeta.icons) {
+    partials.unshift({ icons: projectMeta.icons });
+  }
   const metaPartial: PartialState = { name: projectMeta.name };
   if (projectMeta.description) metaPartial.description = projectMeta.description;
   partials.push(metaPartial);
 
-  const merged: DesignSystemState = mergeStates(partials);
+  const merged: MergedState = mergeStates(partials);
   emit({
     kind: 'merge-done',
     totals: { ...countsOf(merged), components: merged.components.size },

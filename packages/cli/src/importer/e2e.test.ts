@@ -45,3 +45,40 @@ describe('VR-2: end-to-end import on framework fixtures', () => {
     });
   }
 });
+
+describe('icon-project e2e', () => {
+  const FIXTURE = join(import.meta.dir, 'fixtures', 'icon-project');
+
+  it('imports icons from all three sources and the output lints cleanly', async () => {
+    const result = await runImport({
+      projectPath: FIXTURE,
+      dryRun: true,
+    });
+    expect(result.success).toBe(true);
+
+    expect(result.markdown).toContain('## Iconography');
+    expect(result.markdown).toContain('icons:');
+
+    // Library from package.json (lucide-react -> Lucide).
+    expect(result.markdown).toMatch(/library: Lucide/);
+    // Style from DTCG.
+    expect(result.markdown).toMatch(/style: outlined/);
+    // strokeWidth from CSS.
+    expect(result.markdown).toMatch(/strokeWidth: 1\.5/);
+    // Grid from CSS.
+    expect(result.markdown).toMatch(/grid: 24px/);
+    // Size from CSS (the test asserts the leaves; YAML indentation may
+    // be 2 or 4 spaces depending on yaml lib defaults — we pinned 2).
+    expect(result.markdown).toMatch(/sm: 16px/);
+    expect(result.markdown).toMatch(/md: 24px/);
+    expect(result.markdown).toMatch(/lg: 32px/);
+    // Color token ref from DTCG (must be quoted in YAML output).
+    expect(result.markdown).toMatch(/color: ['"]\{colors\.primary\}['"]/);
+
+    // Lint passes with zero errors. The main-branch linter silently
+    // ignores the unknown `icons:` frontmatter key and the unknown
+    // `## Iconography` section, so emitted output round-trips.
+    const report = lint(result.markdown);
+    expect(report.summary.errors).toBe(0);
+  });
+});

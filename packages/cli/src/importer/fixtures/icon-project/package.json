@@ -1,0 +1,8 @@
+{
+  "name": "icon-fixture",
+  "description": "Fixture project for icon import pipeline",
+  "version": "0.0.0",
+  "dependencies": {
+    "lucide-react": "^0.300.0"
+  }
+}

@@ -133,4 +133,84 @@ describe('parseCssVariablesFromString', () => {
       expect(p.spacing?.has('sm')).toBe(false);
     });
   });
+
+  describe('icon CSS variable parsing', () => {
+    it('captures --icon-size-* in :root as icons.size map', () => {
+      const css = `:root {
+        --icon-size-sm: 16px;
+        --icon-size-md: 24px;
+        --icon-size-lg: 32px;
+      }`;
+      const out = parseCssVariablesFromString(css);
+      expect(out.icons?.size?.get('sm')).toBe('16px');
+      expect(out.icons?.size?.get('md')).toBe('24px');
+      expect(out.icons?.size?.get('lg')).toBe('32px');
+    });
+
+    it('captures --icon-stroke-width as number', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-stroke-width: 1.5; }`);
+      expect(out.icons?.strokeWidth).toBe(1.5);
+    });
+
+    it('captures --icon-stroke as alias for strokeWidth', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-stroke: 2; }`);
+      expect(out.icons?.strokeWidth).toBe(2);
+    });
+
+    it('captures --icon-grid as dimension string', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-grid: 24px; }`);
+      expect(out.icons?.grid).toBe('24px');
+    });
+
+    it('captures --icon-color verbatim', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-color: var(--color-on-surface); }`);
+      expect(out.icons?.color).toBe('var(--color-on-surface)');
+    });
+
+    it('captures --icon-library with surrounding quotes stripped', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-library: "Lucide"; }`);
+      expect(out.icons?.library).toBe('Lucide');
+    });
+
+    it('captures --icon-style with surrounding quotes stripped', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-style: 'outlined'; }`);
+      expect(out.icons?.style).toBe('outlined');
+    });
+
+    it('does not route --icon-size-sm into generic spacing map', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-size-sm: 16px; }`);
+      expect(out.spacing?.size ?? 0).toBe(0);
+      expect(out.icons?.size?.get('sm')).toBe('16px');
+    });
+
+    it('works in @theme blocks too', () => {
+      const css = `@theme {
+        --icon-size-md: 20px;
+        --icon-stroke-width: 1.25;
+      }`;
+      const out = parseCssVariablesFromString(css);
+      expect(out.icons?.size?.get('md')).toBe('20px');
+      expect(out.icons?.strokeWidth).toBe(1.25);
+    });
+
+    it('ignores malformed --icon-stroke-width (non-numeric)', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-stroke-width: thick; }`);
+      expect(out.icons?.strokeWidth).toBeUndefined();
+    });
+
+    it('returns no icons field when CSS has no --icon-* vars', () => {
+      const out = parseCssVariablesFromString(`:root { --color-primary: #ff0000; }`);
+      expect(out.icons).toBeUndefined();
+    });
+
+    it('rejects strokeWidth with unit suffix (Number coercion fails)', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-stroke-width: 1.5px; }`);
+      expect(out.icons?.strokeWidth).toBeUndefined();
+    });
+
+    it('ignores --icon-size- (empty bucket suffix)', () => {
+      const out = parseCssVariablesFromString(`:root { --icon-size-: 16px; }`);
+      expect(out.icons).toBeUndefined();
+    });
+  });
 });

@@ -74,3 +74,19 @@ export interface ImportResult {
   sources: ScanResult;
   warnings: string[];
 }
+
+/**
+ * Discovered iconography metadata, carried internally by the importer.
+ *
+ * Not part of the linter's DesignSystemState (main-branch linter has no
+ * icons field). We carry it alongside and emit it into YAML frontmatter
+ * in a shape compatible with the spec's future `icons.*` token group.
+ */
+export interface IconsData {
+  library?: string;
+  style?: string;
+  strokeWidth?: number;
+  grid?: string;
+  size?: Map<string, string>;
+  color?: string;
+}

@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { emitDesignMd } from './markdown-emitter.js';
-import { mergeStates } from './merger.js';
+import { mergeStates, type MergedState } from './merger.js';
 import { lint } from '../linter/index.js';
 
 describe('emitDesignMd', () => {
@@ -123,6 +123,99 @@ describe('emitDesignMd', () => {
     const body = md.slice(bodyStart);
     expect(body).not.toContain('<script>');
     expect(body).toContain('&lt;script&gt;');
+  });
+
+  function emptyState(): MergedState {
+    return {
+      colors: new Map(),
+      typography: new Map(),
+      spacing: new Map(),
+      rounded: new Map(),
+      components: new Map(),
+      symbolTable: new Map(),
+    };
+  }
+
+  describe('icons emission', () => {
+    it('emits icons: frontmatter block when state.icons is populated', () => {
+      const state: MergedState = {
+        ...emptyState(),
+        icons: {
+          library: 'Lucide',
+          style: 'outlined',
+          strokeWidth: 1.5,
+          grid: '24px',
+          size: new Map([['sm', '16px'], ['md', '24px'], ['lg', '32px']]),
+          color: '{colors.on-surface}',
+        },
+      };
+      const out = emitDesignMd(state);
+      expect(out).toMatch(/^icons:$/m);
+      expect(out).toMatch(/^ {2}library: Lucide$/m);
+      expect(out).toMatch(/^ {2}style: outlined$/m);
+      expect(out).toMatch(/^ {2}strokeWidth: 1\.5$/m);
+      expect(out).toMatch(/^ {2}grid: 24px$/m);
+      expect(out).toMatch(/^ {4}sm: 16px$/m);
+      expect(out).toMatch(/^ {4}md: 24px$/m);
+      expect(out).toMatch(/^ {4}lg: 32px$/m);
+    });
+
+    it('emits ## Iconography body section', () => {
+      const state: MergedState = {
+        ...emptyState(),
+        icons: { library: 'Lucide', strokeWidth: 1.5 },
+      };
+      const out = emitDesignMd(state);
+      expect(out).toContain('## Iconography');
+      expect(out).toMatch(/- \*\*library\*\* — Lucide/);
+      expect(out).toMatch(/- \*\*strokeWidth\*\* — `1\.5`/);
+    });
+
+    it('skips both frontmatter and body when icons is absent', () => {
+      const out = emitDesignMd(emptyState());
+      expect(out).not.toContain('icons:');
+      expect(out).not.toContain('## Iconography');
+    });
+
+    it('places ## Iconography AFTER ## Rounded', () => {
+      const state: MergedState = {
+        ...emptyState(),
+        rounded: new Map([['sm', { type: 'dimension', value: 4, unit: 'px' }]]),
+        icons: { library: 'Lucide' },
+      };
+      const out = emitDesignMd(state);
+      const roundedIdx = out.indexOf('## Rounded');
+      const iconsIdx = out.indexOf('## Iconography');
+      expect(roundedIdx).toBeGreaterThan(-1);
+      expect(iconsIdx).toBeGreaterThan(roundedIdx);
+    });
+
+    it('quotes icon color token refs in YAML (curly braces would otherwise parse as flow mapping)', () => {
+      const state: MergedState = {
+        ...emptyState(),
+        icons: { color: '{colors.on-surface}' },
+      };
+      const out = emitDesignMd(state);
+      expect(out).toMatch(/^ {2}color: ['"]\{colors\.on-surface\}['"]$/m);
+    });
+
+    it('emits strokeWidth: 0 (not falsy-skipped)', () => {
+      const state: MergedState = {
+        ...emptyState(),
+        icons: { strokeWidth: 0 },
+      };
+      const out = emitDesignMd(state);
+      expect(out).toMatch(/strokeWidth: 0/);
+    });
+
+    it('sanitizes icon library string against heading injection', () => {
+      const state: MergedState = {
+        ...emptyState(),
+        icons: { library: '\n## Injected Heading\n' },
+      };
+      const out = emitDesignMd(state);
+      expect(out).not.toMatch(/\n## Injected Heading/);
+    });
   });
 
   it('body still round-trips cleanly through the linter', async () => {

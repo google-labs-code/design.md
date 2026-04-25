@@ -21,9 +21,11 @@ import type {
 } from '../linter/model/spec.js';
 import { parseDimensionParts } from '../linter/model/spec.js';
 import { hexToResolvedColor } from './color-math.js';
+import type { IconsData } from './spec.js';
 
 export interface CssVarPartial extends Partial<DesignSystemState> {
   warnings?: string[];
+  icons?: IconsData;
 }
 
 interface Buckets {
@@ -165,6 +167,86 @@ function absorbRootVar(buckets: Buckets, rawName: string, rawValue: string): voi
   else buckets.spacing.set(rawName, classified.value);
 }
 
+// ── Icon CSS variable classification ────────────────────────────────
+
+type IconUpdate =
+  | {
+      library?: string;
+      style?: string;
+      strokeWidth?: number;
+      grid?: string;
+      color?: string;
+      sizeEntry?: undefined;
+    }
+  | { sizeEntry: [string, string] };
+
+function stripQuotes(v: string): string {
+  if (
+    v.length >= 2 &&
+    ((v.startsWith('"') && v.endsWith('"')) ||
+      (v.startsWith("'") && v.endsWith("'")))
+  ) {
+    return v.slice(1, -1).trim();
+  }
+  return v;
+}
+
+/**
+ * Classify a single `--icon-*` CSS variable. Returns a structured
+ * update applied to the accumulating IconsData, or null if the name
+ * is not recognized as an icon variable. The `name` argument is the
+ * variable name with the leading `--` already stripped.
+ */
+function classifyIconVar(name: string, rawValue: string): IconUpdate | null {
+  if (!name.startsWith('icon-') && name !== 'icon') return null;
+  const value = stripQuotes(rawValue.trim());
+
+  if (name === 'icon-library') return { library: value };
+  if (name === 'icon-style') return { style: value };
+  if (name === 'icon-stroke-width' || name === 'icon-stroke') {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
+    return { strokeWidth: n };
+  }
+  // `grid` is stored as a raw string (not parsed into a Dimension)
+  // because it round-trips into YAML frontmatter verbatim, matching the
+  // shape the spec's icons-token group expects (`grid: "24px"`).
+  if (name === 'icon-grid') return { grid: value };
+  if (name === 'icon-color') return { color: value };
+
+  if (name === 'icon-size') return { sizeEntry: ['md', value] };
+  if (name.startsWith('icon-size-')) {
+    const bucket = name.slice('icon-size-'.length);
+    if (!bucket) return null;
+    return { sizeEntry: [bucket, value] };
+  }
+  return null;
+}
+
+function applyIconUpdate(icons: IconsData, update: IconUpdate): void {
+  if ('sizeEntry' in update && update.sizeEntry) {
+    if (!icons.size) icons.size = new Map();
+    icons.size.set(update.sizeEntry[0], update.sizeEntry[1]);
+    return;
+  }
+  if (update.library !== undefined) icons.library = update.library;
+  if (update.style !== undefined) icons.style = update.style;
+  if (update.strokeWidth !== undefined) icons.strokeWidth = update.strokeWidth;
+  if (update.grid !== undefined) icons.grid = update.grid;
+  if (update.color !== undefined) icons.color = update.color;
+}
+
+function hasAnyIcon(icons: IconsData): boolean {
+  return !!(
+    icons.library ||
+    icons.style ||
+    icons.strokeWidth !== undefined ||
+    icons.grid ||
+    icons.color ||
+    (icons.size && icons.size.size > 0)
+  );
+}
+
 // ── Block extraction ────────────────────────────────────────────────
 
 const VAR_RE = /--([a-zA-Z0-9_-]+)\s*:\s*([^;]+);/g;
@@ -211,13 +293,30 @@ function iterVars(body: string, visit: (name: string, value: string) => void): v
 
 export function parseCssVariablesFromString(src: string): CssVarPartial {
   const buckets = emptyBuckets();
+  const icons: IconsData = {};
 
   for (const body of extractBlocks(src, THEME_BLOCK_START)) {
-    iterVars(body, (name, value) => absorbThemeVar(buckets, name, value));
+    iterVars(body, (name, value) => {
+      // Icon classifier MUST run first: --icon-size-sm: 16px would
+      // otherwise be double-counted as generic spacing.
+      const iconUpdate = classifyIconVar(name, value);
+      if (iconUpdate) {
+        applyIconUpdate(icons, iconUpdate);
+        return;
+      }
+      absorbThemeVar(buckets, name, value);
+    });
   }
 
   for (const body of extractBlocks(src, ROOT_BLOCK_START)) {
-    iterVars(body, (name, value) => absorbRootVar(buckets, name, value));
+    iterVars(body, (name, value) => {
+      const iconUpdate = classifyIconVar(name, value);
+      if (iconUpdate) {
+        applyIconUpdate(icons, iconUpdate);
+        return;
+      }
+      absorbRootVar(buckets, name, value);
+    });
   }
 
   return {
@@ -225,6 +324,7 @@ export function parseCssVariablesFromString(src: string): CssVarPartial {
     spacing: buckets.spacing,
     rounded: buckets.rounded,
     typography: buckets.typography,
+    ...(hasAnyIcon(icons) ? { icons } : {}),
   };
 }
 

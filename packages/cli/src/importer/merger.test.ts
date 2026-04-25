@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'bun:test';
 import { mergeStates } from './merger.js';
 import type { ResolvedColor, ResolvedDimension } from '../linter/model/spec.js';
+import type { IconsData } from './spec.js';
 
 const color = (hex: string): ResolvedColor => ({
   type: 'color',
@@ -58,5 +59,43 @@ describe('mergeStates', () => {
     const merged = mergeStates([]);
     expect(merged.colors.size).toBe(0);
     expect(merged.symbolTable.size).toBe(0);
+  });
+});
+
+describe('icons merging', () => {
+  it('keeps library from first partial when second is missing it', () => {
+    const a = { icons: { library: 'Lucide' } as IconsData };
+    const b = { icons: { strokeWidth: 1.5 } as IconsData };
+    const merged = mergeStates([a, b]);
+    expect(merged.icons?.library).toBe('Lucide');
+    expect(merged.icons?.strokeWidth).toBe(1.5);
+  });
+
+  it('last wins on conflicting fields', () => {
+    const a = { icons: { library: 'Lucide' } as IconsData };
+    const b = { icons: { library: 'Heroicons' } as IconsData };
+    const merged = mergeStates([a, b]);
+    expect(merged.icons?.library).toBe('Heroicons');
+  });
+
+  it('merges size maps, with later entries overriding', () => {
+    const a = { icons: { size: new Map([['sm', '16px'], ['md', '24px']]) } as IconsData };
+    const b = { icons: { size: new Map([['md', '20px'], ['lg', '32px']]) } as IconsData };
+    const merged = mergeStates([a, b]);
+    expect(merged.icons?.size?.get('sm')).toBe('16px');
+    expect(merged.icons?.size?.get('md')).toBe('20px');
+    expect(merged.icons?.size?.get('lg')).toBe('32px');
+  });
+
+  it('returns undefined icons when no partial has any icon data', () => {
+    const merged = mergeStates([{ colors: new Map() }]);
+    expect(merged.icons).toBeUndefined();
+  });
+
+  it('caps icons.size at 256 entries (DoS guard)', () => {
+    const huge = new Map<string, string>();
+    for (let i = 0; i < 1000; i++) huge.set(`k${i}`, '1px');
+    const merged = mergeStates([{ icons: { size: huge } }]);
+    expect(merged.icons?.size?.size).toBe(256);
   });
 });
