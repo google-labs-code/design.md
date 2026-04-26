@@ -245,6 +245,64 @@ describe('ModelHandler', () => {
     });
   });
 
+  describe('component states', () => {
+    it('parses interactive flag and produces resolvedStates merged from base', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#1A1C1E', accent: '#FF0000' },
+        components: {
+          'btn': {
+            backgroundColor: '{colors.primary}',
+            padding: '12px',
+            interactive: true,
+            states: {
+              hover: { backgroundColor: '{colors.accent}' },
+            },
+          },
+        },
+      }));
+      const btn = result.designSystem.components.get('btn');
+      expect(btn).toBeDefined();
+      expect(btn?.interactive).toBe(true);
+      expect(btn?.states.size).toBe(1);
+      const hover = btn?.resolvedStates.get('hover');
+      expect(hover).toBeDefined();
+      // Merged: base padding survives, hover backgroundColor overrides base
+      expect(hover?.has('padding')).toBe(true);
+      const bg = hover?.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'hex' in bg && bg.hex).toBe('#ff0000');
+    });
+
+    it('records unresolved refs from inside state overrides', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#1A1C1E' },
+        components: {
+          'btn': {
+            backgroundColor: '{colors.primary}',
+            interactive: true,
+            states: {
+              hover: { backgroundColor: '{colors.does-not-exist}' },
+            },
+          },
+        },
+      }));
+      const btn = result.designSystem.components.get('btn');
+      expect(btn?.unresolvedRefs).toContain('{colors.does-not-exist}');
+    });
+
+    it('omits states when none are declared', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#1A1C1E' },
+        components: {
+          'btn': { backgroundColor: '{colors.primary}' },
+        },
+      }));
+      const btn = result.designSystem.components.get('btn');
+      expect(btn?.states.size).toBe(0);
+      expect(btn?.resolvedStates.size).toBe(0);
+      expect(btn?.interactive).toBeUndefined();
+    });
+  });
+
   describe('return signature', () => {
     it('returns findings array', () => {
       const result = handler.execute(makeParsed({

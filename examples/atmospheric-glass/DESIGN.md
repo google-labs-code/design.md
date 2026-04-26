@@ -113,13 +113,30 @@ components:
     rounded: "{rounded.xl}"
     height: 48px
     padding: 0 24px
-  button-primary-hover:
-    backgroundColor: "{colors.primary-fixed-dim}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-fixed-dim}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-variant}"
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
   button-ghost:
     backgroundColor: rgba(255, 255, 255, 0.05)
     textColor: "{colors.primary}"
     typography: "{typography.label-sm}"
     rounded: "{rounded.xl}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: rgba(255, 255, 255, 0.15)
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
   input-field:
     backgroundColor: rgba(255, 255, 255, 0.1)
     textColor: "{colors.primary}"
@@ -127,6 +144,14 @@ components:
     rounded: "{rounded.xl}"
     padding: 20px
     height: 48px
+    interactive: true
+    states:
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: rgba(255, 255, 255, 0.05)
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
   weather-display-large:
     textColor: "{colors.primary}"
     typography: "{typography.display-lg}"
@@ -137,8 +162,15 @@ components:
     backgroundColor: transparent
     rounded: "{rounded.md}"
     padding: 12px
-  list-item-interactive-hover:
-    backgroundColor: rgba(255, 255, 255, 0.1)
+    interactive: true
+    states:
+      hover:
+        backgroundColor: rgba(255, 255, 255, 0.1)
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
 ---
 
 ## Brand & Style

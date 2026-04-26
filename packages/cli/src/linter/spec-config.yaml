@@ -76,6 +76,39 @@ component_sub_tokens:
     type: Dimension
   - name: width
     type: Dimension
+  - name: opacity
+    type: number
+  - name: outline
+    type: string
+  - name: boxShadow
+    type: string
+  - name: border
+    type: string
+  - name: cursor
+    type: string
+
+# Interactive component states. The vocabulary is opinionated but not closed
+# (unknown states warn rather than error).
+component_states:
+  - name: hover
+    interaction: pointer-only
+    description: "Pointer hover; never the only affordance signal."
+  - name: focus-visible
+    interaction: keyboard
+    required: true
+    description: "Visible focus ring; never `outline: none` without a replacement."
+  - name: active
+    interaction: any
+    description: "Currently being pressed or otherwise actuated."
+  - name: pressed
+    interaction: any
+    description: "Toggle-style components in the on/selected position."
+  - name: disabled
+    interaction: any
+    description: "Both reduced contrast AND `cursor: not-allowed`. Never opacity-only."
+  - name: loading
+    interaction: any
+    description: "Component remains visible; indicates progress."
 
 color_roles:
   - primary
@@ -140,5 +173,15 @@ examples:
       textColor: "{colors.primary-20}"
       rounded: "{rounded.md}"
       padding: 12px
-    button-primary-hover:
-      backgroundColor: "{colors.primary-70}"
+      interactive: true
+      states:
+        hover:
+          backgroundColor: "{colors.primary-70}"
+        focus-visible:
+          outline: "2px solid {colors.primary-40}"
+        active:
+          opacity: 0.9
+        disabled:
+          backgroundColor: "{colors.surface-variant}"
+          textColor: "{colors.on-surface-variant}"
+          cursor: "not-allowed"

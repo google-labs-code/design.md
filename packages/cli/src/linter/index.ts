@@ -43,6 +43,12 @@ export {
   tokenSummary,
   missingSections,
   missingTypography,
+  unchangedState,
+  missingFocusVisible,
+  outlineNoneWithoutReplacement,
+  hoverOnlyAffordance,
+  disabledOpacityOnly,
+  unknownState,
 } from './linter/rules/index.js';
 export { contrastRatio } from './model/handler.js';
 export { TailwindEmitterHandler } from './tailwind/handler.js';

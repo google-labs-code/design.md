@@ -27,7 +27,20 @@ export const TailwindThemeExtendSchema = z.object({
 
 export type TailwindThemeExtend = z.infer<typeof TailwindThemeExtendSchema>;
 
+/**
+ * A Tailwind plugin component definition. Maps a class selector (e.g., `.btn-primary`)
+ * to its base styles plus per-state nested rules under `&:hover`, `&:focus-visible`,
+ * `&:active`, `&:disabled`. Shape mirrors what Tailwind's `addComponents()` accepts.
+ */
+export type TailwindComponentRule = {
+  [property: string]: string | TailwindComponentRule;
+};
 
+export const TailwindEmitterOptionsSchema = z.object({
+  /** When true, emit a `plugin` array with component rules including state variants. */
+  components: z.boolean().optional(),
+});
+export type TailwindEmitterOptions = z.infer<typeof TailwindEmitterOptionsSchema>;
 
 export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
   z.object({
@@ -35,7 +48,8 @@ export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
     data: z.object({
       theme: z.object({
         extend: TailwindThemeExtendSchema
-      })
+      }),
+      plugin: z.record(z.unknown()).optional(),
     })
   }),
   z.object({
@@ -51,5 +65,5 @@ export type TailwindEmitterResult = z.infer<typeof TailwindEmitterResultSchema>;
 
 // ── INTERFACE ──────────────────────────────────────────────────────
 export interface TailwindEmitterSpec {
-  execute(state: DesignSystemState): TailwindEmitterResult;
+  execute(state: DesignSystemState, options?: TailwindEmitterOptions): TailwindEmitterResult;
 }

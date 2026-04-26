@@ -115,18 +115,34 @@ components:
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
-  button-primary-hover:
-    backgroundColor: "{colors.primary-container}"
-    textColor: "{colors.on-primary-container}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-container}"
+        textColor: "{colors.on-primary-container}"
+      focus-visible:
+        outline: "2px solid {colors.primary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   button-secondary:
     backgroundColor: "{colors.secondary}"
     textColor: "{colors.on-secondary}"
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
-  button-secondary-hover:
-    backgroundColor: "{colors.secondary-container}"
-    textColor: "{colors.on-secondary-container}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.secondary-container}"
+        textColor: "{colors.on-secondary-container}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   card-profile:
     backgroundColor: "{colors.surface-container-lowest}"
     rounded: "{rounded.xl}"
@@ -142,12 +158,27 @@ components:
     typography: "{typography.body-md}"
     rounded: "{rounded.DEFAULT}"
     padding: "{spacing.sm}"
+    interactive: true
+    states:
+      focus-visible:
+        outline: "2px solid {colors.primary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   list-item-walker:
     backgroundColor: transparent
     padding: "{spacing.sm}"
     rounded: "{rounded.md}"
-  list-item-walker-hover:
-    backgroundColor: "{colors.surface-container-high}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.surface-container-high}"
+      focus-visible:
+        outline: "2px solid {colors.primary}"
+      disabled:
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   badge-status:
     backgroundColor: "{colors.tertiary-container}"
     textColor: "{colors.on-tertiary-container}"

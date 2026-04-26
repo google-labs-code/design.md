@@ -37,6 +37,18 @@ export interface SourceLocation {
   block: 'frontmatter' | number;
 }
 
+/**
+ * A raw component property value as it appears in YAML.
+ * Most properties are scalars; `states` is a nested map of state-name →
+ * state-property-map (each property a primitive); `interactive` is a boolean.
+ * The recursive shape covers both layers without losing strictness.
+ */
+export type RawComponentValue =
+  | string
+  | number
+  | boolean
+  | { [key: string]: RawComponentValue };
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   name?: string | undefined;
@@ -45,7 +57,7 @@ export interface ParsedDesignSystem {
   typography?: Record<string, Record<string, string | number>> | undefined;
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
-  components?: Record<string, Record<string, string>> | undefined;
+  components?: Record<string, Record<string, RawComponentValue>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

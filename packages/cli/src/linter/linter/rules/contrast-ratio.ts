@@ -20,28 +20,43 @@ const WCAG_AA_MINIMUM = 4.5;
 
 /**
  * WCAG contrast ratio — warns when component backgroundColor/textColor pairs
- * fall below the AA minimum of 4.5:1.
+ * fall below the AA minimum of 4.5:1, including for each per-state override.
+ * A button whose `disabled` state drops to 2.5:1 will warn.
  */
 export function contrastCheck(state: DesignSystemState): RuleFinding[] {
   const findings: RuleFinding[] = [];
   for (const [compName, comp] of state.components) {
-    const bgValue = comp.properties.get('backgroundColor');
-    const textValue = comp.properties.get('textColor');
-    if (!bgValue || !textValue) continue;
-
-    const bgColor = resolveToColor(bgValue);
-    const textColor = resolveToColor(textValue);
-    if (!bgColor || !textColor) continue;
-
-    const ratio = contrastRatio(bgColor, textColor);
-    if (ratio < WCAG_AA_MINIMUM) {
-      findings.push({
-        path: `components.${compName}`,
-        message: `textColor (${textColor.hex}) on backgroundColor (${bgColor.hex}) has contrast ratio ${ratio.toFixed(2)}:1, below WCAG AA minimum of ${WCAG_AA_MINIMUM}:1.`,
-      });
+    checkPair(compName, null, comp.properties, findings);
+    for (const [stateName, props] of comp.resolvedStates) {
+      checkPair(compName, stateName, props, findings);
     }
   }
   return findings;
+}
+
+function checkPair(
+  compName: string,
+  stateName: string | null,
+  props: Map<string, ResolvedValue>,
+  findings: RuleFinding[],
+): void {
+  const bgValue = props.get('backgroundColor');
+  const textValue = props.get('textColor');
+  if (!bgValue || !textValue) return;
+
+  const bgColor = resolveToColor(bgValue);
+  const textColor = resolveToColor(textValue);
+  if (!bgColor || !textColor) return;
+
+  const ratio = contrastRatio(bgColor, textColor);
+  if (ratio >= WCAG_AA_MINIMUM) return;
+
+  const path = stateName ? `components.${compName}.states.${stateName}` : `components.${compName}`;
+  const where = stateName ? ` (${stateName} state)` : '';
+  findings.push({
+    path,
+    message: `textColor (${textColor.hex}) on backgroundColor (${bgColor.hex})${where} has contrast ratio ${ratio.toFixed(2)}:1, below WCAG AA minimum of ${WCAG_AA_MINIMUM}:1.`,
+  });
 }
 
 function resolveToColor(value: ResolvedValue): ResolvedColor | null {

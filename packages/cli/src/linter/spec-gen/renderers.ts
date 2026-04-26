@@ -34,11 +34,18 @@ function yamlEntries(entries: Record<string, string>, indent = 2): string[] {
   );
 }
 
-function yamlObject(entries: Record<string, string | number>, indent = 4): string[] {
-  return Object.entries(entries).map(([k, v]) => {
-    const val = typeof v === 'string' && v.startsWith('{') ? `"${v}"` : v;
-    return `${' '.repeat(indent)}${k}: ${val}`;
-  });
+function yamlObject(entries: Record<string, unknown>, indent = 4): string[] {
+  const lines: string[] = [];
+  for (const [k, v] of Object.entries(entries)) {
+    if (v !== null && typeof v === 'object') {
+      lines.push(`${' '.repeat(indent)}${k}:`);
+      lines.push(...yamlObject(v as Record<string, unknown>, indent + 2));
+    } else {
+      const val = typeof v === 'string' && v.startsWith('{') ? `"${v}"` : v;
+      lines.push(`${' '.repeat(indent)}${k}: ${val}`);
+    }
+  }
+  return lines;
 }
 
 // ── Public renderers ────────────────────────────────────────────
@@ -56,7 +63,7 @@ export function frontmatterExample(config: SpecConfig): string {
     ),
     'typography:',
     `  ${typoName}:`,
-    ...yamlObject(typoProps as Record<string, string | number>),
+    ...yamlObject(typoProps as Record<string, unknown>),
     '---',
   ]);
 }
@@ -71,7 +78,7 @@ export function typographyExample(config: SpecConfig): string {
   const lines = ['typography:'];
   for (const [name, props] of Object.entries(config.EXAMPLES.typography)) {
     lines.push(`  ${name}:`);
-    lines.push(...yamlObject(props as Record<string, string | number>));
+    lines.push(...yamlObject(props as Record<string, unknown>));
   }
   return yamlBlock(lines);
 }
@@ -81,7 +88,7 @@ export function componentsExample(config: SpecConfig): string {
   const lines = ['components:'];
   for (const [name, props] of Object.entries(config.EXAMPLES.components)) {
     lines.push(`  ${name}:`);
-    lines.push(...yamlObject(props as Record<string, string | number>));
+    lines.push(...yamlObject(props as Record<string, unknown>));
   }
   return yamlBlock(lines);
 }

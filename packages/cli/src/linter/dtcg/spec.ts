@@ -42,17 +42,25 @@ export interface DtcgToken {
   $type?: string;
   $value: DtcgColorValue | DtcgDimensionValue | DtcgTypographyValue | string | number;
   $description?: string;
+  $extensions?: Record<string, unknown>;
 }
 
 export interface DtcgGroup {
   $type?: string;
   $description?: string;
-  [key: string]: DtcgToken | DtcgGroup | string | undefined;
+  $extensions?: Record<string, unknown>;
+  [key: string]: DtcgToken | DtcgGroup | string | Record<string, unknown> | undefined;
 }
 
 /** The complete tokens.json output file. */
 export interface DtcgTokenFile extends DtcgGroup {
   $schema?: string;
+}
+
+/** Per-state overrides surfaced under `$extensions['design.md'].states`. */
+export interface DesignMdStatesExtension {
+  interactive?: boolean;
+  states: Record<string, Record<string, string | number>>;
 }
 
 // ── Result ─────────────────────────────────────────────────────────
