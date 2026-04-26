@@ -38,6 +38,27 @@ const PropertyDefSchema = z.object({
   description: z.string().optional(),
 });
 
+const MotionExampleSchema = z.object({
+  duration: z.record(z.string(), z.string()),
+  easing: z.record(z.string(), z.string()),
+  reducedMotion: z.object({
+    duration: z.string(),
+    easing: z.string(),
+  }).optional(),
+});
+
+const IconographyExampleSchema = z.object({
+  library: z.object({
+    name: z.string(),
+    version: z.string().optional(),
+    style: z.string(),
+  }),
+  strokeWeight: z.string().optional(),
+  sizes: z.record(z.string(), z.string()),
+  defaultSize: z.string(),
+  colorBinding: z.string(),
+});
+
 const ComponentKindSchema = z.object({
   name: z.string(),
   interactive: z.boolean(),
@@ -63,7 +84,6 @@ const ComponentExampleValueSchema: z.ZodType<unknown> = z.lazy(() =>
   ])
 );
 
-
 const ConfigSchema = z.object({
   version: z.string(),
   units: z.array(z.string()).min(1),
@@ -75,6 +95,8 @@ const ConfigSchema = z.object({
   component_sub_tokens: z.array(PropertyDefSchema).min(1),
   component_states: z.array(ComponentStateDefSchema).min(1),
   color_roles: z.array(z.string()).min(1),
+  icon_libraries: z.array(z.string()).min(1),
+  easing_keywords: z.array(z.string()).min(1),
   component_kinds: z.array(ComponentKindSchema).min(1),
   component_modifiers: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
@@ -82,6 +104,8 @@ const ConfigSchema = z.object({
     colors: z.record(z.string(), z.string()),
     elevation: z.record(z.string(), z.string()).optional(),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
+    motion: MotionExampleSchema.optional(),
+    iconography: IconographyExampleSchema.optional(),
     components: z.record(z.string(), z.record(z.string(), ComponentExampleValueSchema)),
   }),
 });
@@ -186,6 +210,13 @@ export const INTERACTIVE_REQUIRED_STATES: readonly string[] = config.component_s
 /** Core color roles that every design system should define. */
 export const CORE_COLOR_ROLES = config.color_roles;
 
+/** Closed enum of supported icon libraries. `custom-svg` is the escape hatch. */
+export const ICON_LIBRARIES = config.icon_libraries;
+export type IconLibrary = (typeof ICON_LIBRARIES)[number];
+
+/** CSS easing keywords accepted alongside `cubic-bezier(...)` literals. */
+export const EASING_KEYWORDS = config.easing_keywords;
+
 /** Component kinds (button, container, etc.) and their default interactivity. */
 export const COMPONENT_KINDS: readonly ComponentKindDef[] = config.component_kinds;
 
@@ -243,6 +274,8 @@ export interface SpecConfig {
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
   COMPONENT_STATES: typeof COMPONENT_STATES;
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
+  ICON_LIBRARIES: typeof ICON_LIBRARIES;
+  EASING_KEYWORDS: typeof EASING_KEYWORDS;
   COMPONENT_KINDS: typeof COMPONENT_KINDS;
   COMPONENT_MODIFIERS: typeof COMPONENT_MODIFIERS;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
@@ -258,6 +291,8 @@ export const SPEC_CONFIG: SpecConfig = {
   COMPONENT_SUB_TOKENS,
   COMPONENT_STATES,
   CORE_COLOR_ROLES,
+  ICON_LIBRARIES,
+  EASING_KEYWORDS,
   COMPONENT_KINDS,
   COMPONENT_MODIFIERS,
   RECOMMENDED_TOKENS,

@@ -37,6 +37,9 @@ import { pairContrastRule } from './pair-contrast.js';
 import { mixedPairForegroundRule } from './mixed-pair-foreground.js';
 import { rampAnchorNamingRule } from './ramp-anchor-naming.js';
 import { proseTokenMismatchRule } from './prose-token-mismatch.js';
+import { missingReducedMotionRule } from './missing-reduced-motion.js';
+import { overlongDurationRule } from './overlong-duration.js';
+import { iconSizeOffScaleRule } from './icon-size-off-scale.js';
 import { unboundComponentRule } from './unbound-component.js';
 import { missingRequiredPropertyRule } from './missing-required-property.js';
 import { registryWithoutDefinitionRule } from './registry-without-definition.js';
@@ -67,6 +70,9 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   disabledOpacityOnlyRule,
   unknownStateRule,
   proseTokenMismatchRule,
+  missingReducedMotionRule,
+  overlongDurationRule,
+  iconSizeOffScaleRule,
   unboundComponentRule,
   missingRequiredPropertyRule,
   registryWithoutDefinitionRule,
@@ -110,6 +116,9 @@ export { pairContrast } from './pair-contrast.js';
 export { mixedPairForeground } from './mixed-pair-foreground.js';
 export { rampAnchorNaming } from './ramp-anchor-naming.js';
 export { proseTokenMismatch } from './prose-token-mismatch.js';
+export { missingReducedMotion } from './missing-reduced-motion.js';
+export { overlongDuration } from './overlong-duration.js';
+export { iconSizeOffScale } from './icon-size-off-scale.js';
 export { unboundComponent } from './unbound-component.js';
 export { missingRequiredProperty } from './missing-required-property.js';
 export { registryWithoutDefinition } from './registry-without-definition.js';

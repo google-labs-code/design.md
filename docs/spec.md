@@ -85,10 +85,12 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 2. **Colors**
 3. **Typography**
 4. **Layout** (also: "Layout & Spacing")
-5. **Elevation & Depth** (also: "Elevation")
-6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+5. **Motion** (also: "Motion & Animation")
+6. **Elevation & Depth** (also: "Elevation")
+7. **Shapes**
+8. **Iconography** (also: "Icons")
+9. **Components**
+10. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -229,6 +231,50 @@ spacing:
   margin: 32px
 ```
 
+## Motion
+
+Also known as "Motion & Animation".
+
+This section describes when and how the interface moves. Motion communicates causality (this caused that), state change, and spatial relationship. It is never decorative.
+
+* **Easing semantics** — entrance uses *decelerate* (fast in, slow stop); exit uses *accelerate*; movement on screen uses *standard*. Match easing to physical intuition.
+* **Duration scale** — `fast` for state changes (button press), `medium` for component transitions (modal open), `slow` for page-level transitions only. Anything over 400ms feels broken (`overlong-duration`).
+* **Reduced motion** — every system declares a `reducedMotion:` fallback. Required, not optional (`missing-reduced-motion`).
+* **What never animates** — layout properties (`width`, `height`, `padding`, `margin`) cause thrash; animate `transform` and `opacity` instead (`animating-layout-property`).
+
+### Design Tokens
+
+The `motion` section defines the temporal vocabulary. `duration` carries timing primitives in ms or s; `easing` carries CSS easings (keyword or `cubic-bezier(...)`); `reducedMotion` names the duration and easing applied under `prefers-reduced-motion`.
+
+It is a record with three optional sub-blocks: `duration`, `easing`, and `reducedMotion`.
+
+```yaml
+motion:
+  duration:
+    instant: 0ms
+    fast: 150ms
+    medium: 250ms
+    slow: 400ms
+  easing:
+    standard: "cubic-bezier(0.4, 0, 0.2, 1)"
+    decelerate: "cubic-bezier(0, 0, 0.2, 1)"
+    accelerate: "cubic-bezier(0.4, 0, 1, 1)"
+    emphasized: "cubic-bezier(0.2, 0, 0, 1)"
+  reducedMotion:
+    duration: instant
+    easing: standard
+```
+
+Components reference motion tokens from `transition:` shorthands:
+
+```yaml
+components:
+  button-primary:
+    transition: "opacity {motion.duration.fast} {motion.easing.standard}"
+```
+
+The model resolves the embedded references after validation, so exporters see substituted literal values (`"opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)"`).
+
 ## Elevation & Depth
 
 Also known as "Elevation".
@@ -296,6 +342,38 @@ rounded:
   full: 9999px
 ```
 
+## Iconography
+
+Also known as "Icons".
+
+This section commits the system to a single icon library and a single stroke weight, plus an icon-size scale that components reference from `iconSize:`.
+
+* **One library, one weight** — never mix Lucide and Material Symbols in the same product. Pick one stroke weight and hold it across the system.
+* **Filled vs. outlined** — outlined is the default; filled signals selection or emphasis (active tab, favorited item). Never mix in the same set.
+* **Icon-text alignment** — icons inside buttons match the cap height of the label, not the line height. Always include accessible labels for icon-only controls.
+* **Color binding** — icons inherit `currentColor` by default. Brand-colored icons are the exception, not the rule.
+* **Sizing** — icons follow text size unless they are the primary affordance (toolbar button, navigation). Document the size scale; component `iconSize` values not on the scale are flagged by `icon-size-off-scale`.
+
+### Design Tokens
+
+The `iconography` section names the library, the stroke weight, the size scale, the default size, and the color binding rule. Library names are validated against a closed enum: \`lucide\`, \`material-symbols\`, \`heroicons\`, \`phosphor\`, \`custom-svg\`.
+
+```yaml
+iconography:
+  library:
+    name: lucide
+    version: "0.451.0"
+    style: outlined
+  strokeWeight: 1.5px
+  sizes:
+    sm: 16px
+    md: 20px
+    lg: 24px
+    xl: 32px
+  defaultSize: md
+  colorBinding: currentColor
+```
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -328,6 +406,7 @@ components:
     textColor: "{colors.primary-20}"
     rounded: "{rounded.md}"
     padding: 12px
+    transition: opacity {motion.duration.fast} {motion.easing.standard}
     interactive: true
     states:
       hover:
@@ -526,13 +605,19 @@ The following names are commonly used across design systems. They are not requir
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
+**Motion-duration:** `instant`, `fast`, `medium`, `slow`
+
+**Motion-easing:** `standard`, `decelerate`, `accelerate`, `emphasized`
+
+**Iconography-sizes:** `sm`, `md`, `lg`, `xl`
+
 # Consumer Behavior for Unknown Content
 
 When a DESIGN.md consumer encounters content not defined by this spec:
 
 | Scenario | Behavior | Example |
 |---|---|---|
-| Unknown section heading | Preserve; do not error | `## Iconography` |
+| Unknown section heading | Preserve; do not error | `## Voice & Tone` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |

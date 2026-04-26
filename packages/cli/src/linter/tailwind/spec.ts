@@ -28,6 +28,10 @@ export const TailwindThemeExtendSchema = z.object({
   spacing: z.record(z.string()).optional(),
   /** Map of elevation token name → CSS box-shadow string. */
   boxShadow: z.record(z.string()).optional(),
+  /** Map of motion duration token name → CSS duration string (e.g., '150ms'). */
+  transitionDuration: z.record(z.string()).optional(),
+  /** Map of motion easing token name → CSS easing string (keyword or cubic-bezier). */
+  transitionTimingFunction: z.record(z.string()).optional(),
 });
 
 export type TailwindThemeExtend = z.infer<typeof TailwindThemeExtendSchema>;
