@@ -99,6 +99,7 @@ const ConfigSchema = z.object({
   easing_keywords: z.array(z.string()).min(1),
   component_kinds: z.array(ComponentKindSchema).min(1),
   component_modifiers: z.array(z.string()).min(1),
+  well_known_themes: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
@@ -230,6 +231,16 @@ export const KIND_DEFAULTS: Record<string, { interactive: boolean }> = Object.fr
 
 /** Closed set of permitted name modifiers (the `-modifier` suffix in `noun-modifier`). */
 export const COMPONENT_MODIFIERS: readonly string[] = config.component_modifiers;
+
+/**
+ * Well-known theme names. Informational, not closed — authors may declare
+ * themes outside this set. The implicit `light` base is always present at
+ * the root token tree.
+ */
+export const WELL_KNOWN_THEMES: readonly string[] = config.well_known_themes;
+
+/** The implicit base theme name. The root token tree IS this theme. */
+export const BASE_THEME_NAME = 'light';
 
 /** Non-normative recommended token names, organized by category. */
 export const RECOMMENDED_TOKENS = config.recommended_tokens;

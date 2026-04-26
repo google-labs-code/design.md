@@ -95,6 +95,27 @@ export interface RawIconographyDef {
 }
 
 /**
+ * A theme block — overrides only. Anything not overridden is inherited from
+ * `inheritsFrom` (default: the implicit `light` base = the root token tree).
+ * Resolution is a deep-merge of theme-over-base, scoped per token category.
+ */
+export interface RawThemeDef {
+  /** Optional parent theme name. Default is the implicit `light` base. */
+  inheritsFrom?: string;
+  description?: string;
+  colors?: Record<string, RawColorValue>;
+  typography?: Record<string, Record<string, string | number>>;
+  rounded?: Record<string, string>;
+  spacing?: Record<string, string>;
+  elevation?: Record<string, string>;
+  /**
+   * Per-theme contrast targets used by `theme-contrast-ratio`. Defaults to
+   * WCAG AA when absent (body 4.5:1, large text 3:1, non-text UI 3:1).
+   */
+  contrastTarget?: { body?: number; large?: number; ui?: number };
+}
+
+/**
  * A registry entry — the closed-world declaration that a component name is part
  * of the design system. Adding an entry is a deliberate, reviewable act.
  */
@@ -155,6 +176,12 @@ export interface ParsedDesignSystem {
    * Absent = open-world (back-compat) behavior.
    */
   componentRegistry?: RawRegistryEntry[] | undefined;
+  /**
+   * Theme overrides. Keys are theme names; the implicit `light` base lives
+   * in the root token tree (so a `themes.light` entry is unnecessary, though
+   * tolerated). Values are deep-merged onto the base during model build.
+   */
+  themes?: Record<string, RawThemeDef> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

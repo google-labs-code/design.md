@@ -34,6 +34,8 @@ import { animatingLayoutPropertyRule } from './animating-layout-property.js';
 import { elevationWithoutSemanticsRule } from './elevation-without-semantics.js';
 import { tripleSeparationRule } from './triple-separation.js';
 import { pairContrastRule } from './pair-contrast.js';
+import { themeParityRule } from './theme-parity.js';
+import { pairParityRule } from './pair-parity.js';
 import { mixedPairForegroundRule } from './mixed-pair-foreground.js';
 import { rampAnchorNamingRule } from './ramp-anchor-naming.js';
 import { proseTokenMismatchRule } from './prose-token-mismatch.js';
@@ -52,6 +54,8 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   missingPrimaryRule,
   contrastCheckRule,
   pairContrastRule,
+  themeParityRule,
+  pairParityRule,
   mixedPairForegroundRule,
   rampAnchorNamingRule,
   orphanedTokensRule,
@@ -113,6 +117,8 @@ export { animatingLayoutProperty } from './animating-layout-property.js';
 export { elevationWithoutSemantics } from './elevation-without-semantics.js';
 export { tripleSeparation } from './triple-separation.js';
 export { pairContrast } from './pair-contrast.js';
+export { themeParity } from './theme-parity.js';
+export { pairParity } from './pair-parity.js';
 export { mixedPairForeground } from './mixed-pair-foreground.js';
 export { rampAnchorNaming } from './ramp-anchor-naming.js';
 export { proseTokenMismatch } from './prose-token-mismatch.js';

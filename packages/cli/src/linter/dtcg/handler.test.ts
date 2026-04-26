@@ -29,6 +29,8 @@ function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
     components: new Map(),
     colorRamps: new Map(),
     colorPairs: new Map(),
+    themes: new Map(),
+    activeTheme: 'light',
     symbolTable: new Map(),
     colorIndex: new Map(),
     ...overrides,
@@ -233,6 +235,8 @@ describe('DtcgEmitterHandler', () => {
       resolvedStates,
       unresolvedRefs: [],
       referencedTokens: [],
+      propertyRefs: new Map(),
+      stateRefs: new Map(),
     };
 
     const state = emptyState({

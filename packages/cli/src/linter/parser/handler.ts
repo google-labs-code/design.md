@@ -231,6 +231,7 @@ export class ParserHandler implements ParserSpec {
       iconography: raw['iconography'] as ParsedDesignSystem['iconography'],
       components,
       componentRegistry,
+      themes: raw['themes'] as ParsedDesignSystem['themes'],
       sourceMap,
       sections,
       documentSections,

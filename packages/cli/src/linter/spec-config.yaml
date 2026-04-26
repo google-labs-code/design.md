@@ -29,6 +29,10 @@ sections:
       - Brand & Style
   - canonical: Colors
   - canonical: Typography
+  - canonical: Themes
+    aliases:
+      - Modes
+      - Themes & Modes
   - canonical: Layout
     aliases:
       - Layout & Spacing
@@ -44,6 +48,16 @@ sections:
       - Icons
   - canonical: Components
   - canonical: "Do's and Don'ts"
+
+# Well-known theme names. The list is informational, not closed: authors may
+# declare theme names outside this set. The implicit `light` base is always
+# present at the root token tree; named themes layer overrides on top.
+well_known_themes:
+  - light
+  - dark
+  - high-contrast
+  - comfortable
+  - compact
 
 # Closed enum of supported icon libraries. `custom-svg` is the escape hatch.
 icon_libraries:

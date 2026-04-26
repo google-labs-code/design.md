@@ -171,6 +171,57 @@ export interface RegistryEntry {
   composes?: string;
 }
 
+/**
+ * Per-theme contrast targets. Defaults to WCAG AA when a theme does not
+ * declare its own targets. AAA-style themes (e.g., `high-contrast`) typically
+ * raise `body` to 7 and `ui` to 4.5.
+ */
+export interface ThemeContrastTarget {
+  body: number;
+  large: number;
+  ui: number;
+}
+
+/** Default contrast target — WCAG AA. */
+export const DEFAULT_CONTRAST_TARGET: ThemeContrastTarget = {
+  body: 4.5,
+  large: 3,
+  ui: 3,
+};
+
+/**
+ * A theme's resolved view of the token tree. Ramps and pairs are re-resolved
+ * per theme so the same name can carry different values across themes
+ * (`{colors.primary}` is one hex in `light`, another in `dark`).
+ *
+ * `light` is always present as the implicit base; named themes deep-merge
+ * their overrides on top.
+ */
+export interface ThemeView {
+  name: string;
+  /** Optional parent theme. `undefined` = the implicit `light` base. */
+  inheritsFrom?: string | undefined;
+  description?: string | undefined;
+  colors: Map<string, ResolvedColor>;
+  typography: Map<string, ResolvedTypography>;
+  rounded: Map<string, ResolvedDimension>;
+  spacing: Map<string, ResolvedDimension>;
+  elevation: Map<string, ResolvedShadow>;
+  /** Re-resolved per theme so ramp anchors and steps reflect theme overrides. */
+  colorRamps: Map<string, RampDef>;
+  /** Re-resolved per theme so pair members reflect theme overrides. */
+  colorPairs: Map<string, PairDef>;
+  /**
+   * Color names this theme *explicitly* declared in its overrides, distinct
+   * from values that inherit unchanged from the parent. The `theme-parity`
+   * rule uses this to catch colors that were silently inherited (the
+   * "added a new color, forgot to override it for dark mode" failure).
+   */
+  explicitColorOverrides: Set<string>;
+  /** Per-theme contrast target. Defaults to WCAG AA. */
+  contrastTarget: ThemeContrastTarget;
+}
+
 // ── STATE ──────────────────────────────────────────────────────────
 export interface DesignSystemState {
   name?: string | undefined;
@@ -211,7 +262,21 @@ export interface DesignSystemState {
   colorRamps: Map<string, RampDef>;
   /** Pair definitions, keyed by pair name. */
   colorPairs: Map<string, PairDef>;
-  /** Flat lookup: "colors.primary" → ResolvedColor */
+  /**
+   * Resolved per-theme views, keyed by theme name. Always contains the
+   * implicit `light` base view that mirrors the top-level fields. Other
+   * theme views are deep-merge results of their declared overrides on top
+   * of their `inheritsFrom` parent (default: `light`).
+   */
+  themes: Map<string, ThemeView>;
+  /**
+   * Currently-active theme name. Top-level `colors`/`typography`/etc. are
+   * mirrors of this theme's view. Defaults to `light`. Rules that operate
+   * on the active theme (the existing single-theme rules) keep working
+   * unchanged; rules that need cross-theme reasoning iterate `themes`.
+   */
+  activeTheme: string;
+  /** Flat lookup: "colors.primary" → ResolvedValue (active theme). */
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
   sections?: string[] | undefined;
@@ -259,6 +324,20 @@ export interface ComponentDef {
    * references that get substituted out of the resolved property value.
    */
   referencedTokens: string[];
+  /**
+   * Per-property whole-value token references, recorded pre-resolution.
+   * Keyed by property name (`backgroundColor`); value is the bare path
+   * (e.g., `colors.primary`). Per-theme rules use this to re-resolve a
+   * property's color through the relevant theme's color map without
+   * keeping the raw markdown around.
+   */
+  propertyRefs: Map<string, string>;
+  /**
+   * Per-state whole-value token references, recorded pre-resolution.
+   * Outer key: state name (`hover`, `focus-visible`, ...). Inner key:
+   * property name. Inner value: the bare path (e.g., `colors.primary`).
+   */
+  stateRefs: Map<string, Map<string, string>>;
 }
 
 /**
