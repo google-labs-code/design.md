@@ -101,6 +101,38 @@ component_sub_tokens:
   - name: transition
     type: TransitionShorthand
     description: "CSS shorthand `<property> <duration> <easing>`. Until motion tokens land, literal values are accepted with a warning."
+  - name: outline
+    type: string
+    description: "CSS outline shorthand (typically used in `focus-visible` state)."
+  - name: boxShadow
+    type: string
+    description: "CSS box-shadow string. Prefer `shadow` + the `elevation.*` semantic tokens."
+  - name: cursor
+    type: string
+    description: "CSS cursor keyword. Pair `cursor: not-allowed` with disabled-state contrast changes."
+
+# Interactive component states. The vocabulary is opinionated but not closed
+# (unknown states warn rather than error).
+component_states:
+  - name: hover
+    interaction: pointer-only
+    description: "Pointer hover; never the only affordance signal."
+  - name: focus-visible
+    interaction: keyboard
+    required: true
+    description: "Visible focus ring; never `outline: none` without a replacement."
+  - name: active
+    interaction: any
+    description: "Currently being pressed or otherwise actuated."
+  - name: pressed
+    interaction: any
+    description: "Toggle-style components in the on/selected position."
+  - name: disabled
+    interaction: any
+    description: "Both reduced contrast AND `cursor: not-allowed`. Never opacity-only."
+  - name: loading
+    interaction: any
+    description: "Component remains visible; indicates progress."
 
 color_roles:
   - primary
@@ -195,5 +227,15 @@ examples:
       textColor: "{colors.primary-20}"
       rounded: "{rounded.md}"
       padding: 12px
-    button-primary-hover:
-      backgroundColor: "{colors.primary-70}"
+      interactive: true
+      states:
+        hover:
+          backgroundColor: "{colors.primary-70}"
+        focus-visible:
+          outline: "2px solid {colors.primary-40}"
+        active:
+          opacity: 0.9
+        disabled:
+          backgroundColor: "{colors.surface-variant}"
+          textColor: "{colors.on-surface-variant}"
+          cursor: "not-allowed"

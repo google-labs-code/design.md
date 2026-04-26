@@ -12,16 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { TailwindEmitterSpec, TailwindEmitterResult } from './spec.js';
-import type { DesignSystemState, ResolvedDimension } from '../model/spec.js';
+import type {
+  TailwindEmitterSpec,
+  TailwindEmitterResult,
+  TailwindEmitterOptions,
+  TailwindComponentRule,
+} from './spec.js';
+import type { ComponentDef, DesignSystemState, ResolvedDimension, ResolvedValue } from '../model/spec.js';
+
+const STATE_TO_VARIANT: Record<string, string> = {
+  hover: '&:hover',
+  'focus-visible': '&:focus-visible',
+  active: '&:active',
+  pressed: '&[aria-pressed="true"]',
+  disabled: '&:disabled, &[aria-disabled="true"]',
+  loading: '&[aria-busy="true"]',
+};
+
+const PROPERTY_TO_CSS: Record<string, string | string[]> = {
+  backgroundColor: 'background-color',
+  textColor: 'color',
+  rounded: 'border-radius',
+  padding: 'padding',
+  height: 'height',
+  width: 'width',
+  size: ['width', 'height'],
+  outline: 'outline',
+  boxShadow: 'box-shadow',
+  border: 'border',
+  cursor: 'cursor',
+  opacity: 'opacity',
+};
 
 /**
  * Pure function mapping DesignSystemState → Tailwind theme.extend config.
  * No side effects.
+ *
+ * With `options.components: true`, additionally emits a `plugin` object whose
+ * shape is what `tailwindcss/plugin`'s `addComponents()` expects: each
+ * component becomes a `.<name>` class with its base styles plus per-state
+ * nested rules under `&:hover`, `&:focus-visible`, etc.
  */
 export class TailwindEmitterHandler implements TailwindEmitterSpec {
-  execute(state: DesignSystemState): TailwindEmitterResult {
-    return {
+  execute(state: DesignSystemState, options?: TailwindEmitterOptions): TailwindEmitterResult {
+    const result: TailwindEmitterResult = {
       success: true,
       data: {
         theme: {
@@ -36,6 +70,59 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
         },
       }
     };
+
+    if (options?.components && state.components.size > 0) {
+      result.data.plugin = this.mapComponents(state);
+    }
+
+    return result;
+  }
+
+  private mapComponents(state: DesignSystemState): Record<string, TailwindComponentRule> {
+    const components: Record<string, TailwindComponentRule> = {};
+    for (const [name, comp] of state.components) {
+      components[`.${name}`] = this.componentRule(comp);
+    }
+    return components;
+  }
+
+  private componentRule(comp: ComponentDef): TailwindComponentRule {
+    const rule: TailwindComponentRule = {};
+    for (const [prop, value] of comp.properties) {
+      this.assignProperty(rule, prop, value);
+    }
+    for (const [stateName, overrides] of comp.states) {
+      const variant = STATE_TO_VARIANT[stateName] ?? `&[data-state="${stateName}"]`;
+      const nested: TailwindComponentRule = {};
+      for (const [prop, value] of overrides) {
+        this.assignProperty(nested, prop, value);
+      }
+      rule[variant] = nested;
+    }
+    return rule;
+  }
+
+  private assignProperty(target: TailwindComponentRule, prop: string, value: ResolvedValue): void {
+    const cssNames = PROPERTY_TO_CSS[prop];
+    const stringValue = this.toCssValue(value);
+    if (cssNames === undefined) {
+      target[prop] = stringValue;
+      return;
+    }
+    if (Array.isArray(cssNames)) {
+      for (const css of cssNames) target[css] = stringValue;
+    } else {
+      target[cssNames] = stringValue;
+    }
+  }
+
+  private toCssValue(value: ResolvedValue): string {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object' && value !== null && 'type' in value) {
+      if (value.type === 'color') return value.hex;
+      if (value.type === 'dimension') return `${value.value}${value.unit}`;
+    }
+    return String(value);
   }
 
   private mapElevation(state: DesignSystemState): Record<string, string> {

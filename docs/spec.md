@@ -314,7 +314,12 @@ This section provides style guidance for component atoms within the design syste
 
 The components section defines a collection of design tokens used to ensure consistent styling of common components. It's a map\<string, map\<string, string>> that maps a component identifier to a group of sub token names and values. The design token values may be literal values, or references to previously defined design tokens.
 
-**Variants**. A component may have a variant for different UI states such as active, hover, pressed, etc. Those variant components may be defined under a different but related key, for example, "button-primary", "button-primary-hover", "button-primary-active". The agent will consider all variants and make the appropriate styling decisions.
+**Variants** (configuration: primary/secondary/danger) and **states**
+(transient response to user input: hover/focus/active/disabled/loading) are
+modeled differently. Variants typically appear as separate component entries
+(e.g., `button-primary`, `button-secondary`). States are nested under a
+component's `states:` block and inherit from the base, overriding only the
+properties that change.
 
 ```yaml
 components:
@@ -323,8 +328,18 @@ components:
     textColor: "{colors.primary-20}"
     rounded: "{rounded.md}"
     padding: 12px
-  button-primary-hover:
-    backgroundColor: "{colors.primary-70}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-70}"
+      focus-visible:
+        outline: 2px solid {colors.primary-40}
+      active:
+        opacity: 0.9
+      disabled:
+        backgroundColor: "{colors.surface-variant}"
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
 ```
 
 ### Component Property Tokens
@@ -348,6 +363,9 @@ Each component has a set of properties that are themselves design tokens:
 - iconSize: \<Dimension | "auto"\>
 - opacity: \<Number\>
 - transition: \<TransitionShorthand\>
+- outline: \<string\>
+- boxShadow: \<string\>
+- cursor: \<string\>
 
 ### Authoring Rules
 
@@ -376,6 +394,53 @@ shape; the prose carries the rationale. Cover at least:
 * **Border usage** — borders communicate input affordances and dividers.
   Borders should not be the primary visual identity of a surface —
   reach for color or elevation first.
+
+### Interactive States
+
+States express transient responses to user input. They live under a
+component's `states:` block and override only the properties that change from
+the rest state. A component opts in by setting `interactive: true`.
+
+The recognized state vocabulary is opinionated but not closed; novel state
+names produce a warning rather than an error.
+
+#### State hierarchy
+
+Visual weight order, lightest to heaviest: rest < hover < focus-visible
+< active < pressed. Each state communicates a different message — never
+combine them into one undifferentiated lift.
+
+#### Focus-visible discipline
+
+Every interactive component **must** declare a `focus-visible` state. Never
+suppress the native outline (`outline: none`) without supplying a replacement
+signal — `boxShadow`, `border`, or an `outline-offset` ring. Focus rings use
+their own dedicated token, not the hover color.
+
+#### Disabled affordance
+
+A `disabled` state must reduce contrast **and** set `cursor: not-allowed`.
+Opacity-only signaling fails for users who can't see the cursor change and is
+opaque to assistive tech.
+
+#### Hover is desktop-only
+
+Hover state must never be the only signal of interactivity. Touch devices
+skip hover entirely; the rest state must already communicate affordance via
+shape, weight, or color.
+
+#### State vs. variant
+
+A state is a transient response to user input (hover, active). A variant is
+a persistent configuration (primary, secondary, danger). Don't conflate
+them; the explosion `button-primary-hover-disabled` is exactly what the
+nested `states:` block exists to prevent.
+
+#### Loading / busy
+
+Loading is a state, not an absence. The component must remain visible and
+indicate progress — never collapse, hide, or replace it with a spinner that
+shifts surrounding layout.
 
 ## Do's and Don'ts
 

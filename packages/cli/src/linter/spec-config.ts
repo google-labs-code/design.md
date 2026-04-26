@@ -38,6 +38,26 @@ const PropertyDefSchema = z.object({
   description: z.string().optional(),
 });
 
+const ComponentStateDefSchema = z.object({
+  name: z.string(),
+  interaction: z.enum(['pointer-only', 'keyboard', 'any']),
+  required: z.boolean().optional(),
+  description: z.string().optional(),
+});
+
+/**
+ * Component example values. Each property is a primitive (string/number/boolean)
+ * or a nested map (for `states:` and similar grouped overrides).
+ */
+const ComponentExampleValueSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.record(z.string(), ComponentExampleValueSchema),
+  ])
+);
+
 const ConfigSchema = z.object({
   version: z.string(),
   units: z.array(z.string()).min(1),
@@ -47,13 +67,14 @@ const ConfigSchema = z.object({
   })).min(1),
   typography_properties: z.array(PropertyDefSchema).min(1),
   component_sub_tokens: z.array(PropertyDefSchema).min(1),
+  component_states: z.array(ComponentStateDefSchema).min(1),
   color_roles: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
     elevation: z.record(z.string(), z.string()).optional(),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
-    components: z.record(z.string(), z.record(z.string(), z.string())),
+    components: z.record(z.string(), z.record(z.string(), ComponentExampleValueSchema)),
   }),
 });
 
@@ -109,6 +130,17 @@ export interface ComponentSubTokenDef {
   description?: string | undefined;
 }
 
+export interface ComponentStateDef {
+  /** Canonical state name (e.g., 'hover', 'focus-visible'). */
+  name: string;
+  /** What kind of input triggers the state. */
+  interaction: 'pointer-only' | 'keyboard' | 'any';
+  /** True if every interactive component MUST declare this state. */
+  required?: boolean | undefined;
+  /** Extended description for the spec. */
+  description?: string | undefined;
+}
+
 // ── Constant exports ─────────────────────────────────────────────────
 // These are eagerly initialized from the lazy singleton on first import.
 // The singleton cache ensures the YAML file is read exactly once.
@@ -127,6 +159,14 @@ export const SECTIONS = config.sections;
 export const TYPOGRAPHY_PROPERTIES: readonly TypographyPropertyDef[] = config.typography_properties;
 
 export const COMPONENT_SUB_TOKENS: readonly ComponentSubTokenDef[] = config.component_sub_tokens;
+
+/** Known component states with declared semantics. */
+export const COMPONENT_STATES: readonly ComponentStateDef[] = config.component_states;
+
+/** State names that every interactive component MUST declare. */
+export const INTERACTIVE_REQUIRED_STATES: readonly string[] = config.component_states
+  .filter(s => s.required)
+  .map(s => s.name);
 
 /** Core color roles that every design system should define. */
 export const CORE_COLOR_ROLES = config.color_roles;
@@ -160,6 +200,9 @@ export const VALID_TYPOGRAPHY_PROPS = TYPOGRAPHY_PROPERTIES.map(p => p.name);
 /** Valid component sub-token names (for linter validation). */
 export const VALID_COMPONENT_SUB_TOKENS = COMPONENT_SUB_TOKENS.map(p => p.name);
 
+/** Valid component state names (for linter validation). */
+export const VALID_COMPONENT_STATES = COMPONENT_STATES.map(s => s.name);
+
 // ── Aggregate type ────────────────────────────────────────────────────
 
 /** All config values bundled as a single object for renderer injection. */
@@ -169,6 +212,7 @@ export interface SpecConfig {
   SECTIONS: typeof SECTIONS;
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
+  COMPONENT_STATES: typeof COMPONENT_STATES;
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
   EXAMPLES: typeof EXAMPLES;
@@ -181,6 +225,7 @@ export const SPEC_CONFIG: SpecConfig = {
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,
+  COMPONENT_STATES,
   CORE_COLOR_ROLES,
   RECOMMENDED_TOKENS,
   EXAMPLES,

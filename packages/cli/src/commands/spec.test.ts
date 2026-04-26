@@ -89,6 +89,6 @@ describe('spec command', () => {
     const output = JSON.parse(outputStr);
     expect(output.spec).toBeDefined();
     expect(output.rules).toBeDefined();
-    expect(output.rules.length).toBe(16);
+    expect(output.rules.length).toBe(22);
   });
 });

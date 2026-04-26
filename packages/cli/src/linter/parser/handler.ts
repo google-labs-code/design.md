@@ -224,7 +224,7 @@ export class ParserHandler implements ParserSpec {
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
       elevation: raw['elevation'] as Record<string, string> | undefined,
-      components: raw['components'] as Record<string, Record<string, string>> | undefined,
+      components: raw['components'] as ParsedDesignSystem['components'],
       sourceMap,
       sections,
       documentSections,

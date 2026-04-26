@@ -121,9 +121,17 @@ components:
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
     transition: "opacity 150ms ease-out"
-  button-primary-hover:
-    backgroundColor: "{colors.primary-container}"
-    textColor: "{colors.on-primary-container}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-container}"
+        textColor: "{colors.on-primary-container}"
+      focus-visible:
+        outline: "2px solid {colors.primary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   button-secondary:
     backgroundColor: "{colors.secondary}"
     textColor: "{colors.on-secondary}"
@@ -131,9 +139,17 @@ components:
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
     transition: "opacity 150ms ease-out"
-  button-secondary-hover:
-    backgroundColor: "{colors.secondary-container}"
-    textColor: "{colors.on-secondary-container}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.secondary-container}"
+        textColor: "{colors.on-secondary-container}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   card-profile:
     backgroundColor: "{colors.surface-container-lowest}"
     rounded: "{rounded.xl}"
@@ -154,13 +170,28 @@ components:
     padding: "{spacing.sm}"
     border: "1px solid {colors.outline-variant}"
     iconSize: auto
+    interactive: true
+    states:
+      focus-visible:
+        outline: "2px solid {colors.primary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   list-item-walker:
     backgroundColor: "#00000000"
     padding: "{spacing.sm}"
     rounded: "{rounded.md}"
     transition: "opacity 100ms ease-in"
-  list-item-walker-hover:
-    backgroundColor: "{colors.surface-container-high}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.surface-container-high}"
+      focus-visible:
+        outline: "2px solid {colors.primary}"
+      disabled:
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   badge-status:
     backgroundColor: "{colors.tertiary-container}"
     textColor: "{colors.on-tertiary-container}"

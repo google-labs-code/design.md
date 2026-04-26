@@ -23,6 +23,12 @@ import { tokenSummaryRule } from './token-summary.js';
 import { missingSectionsRule } from './missing-sections.js';
 import { sectionOrderRule } from './section-order.js';
 import { missingTypographyRule } from './missing-typography.js';
+import { unchangedStateRule } from './unchanged-state.js';
+import { missingFocusVisibleRule } from './missing-focus-visible.js';
+import { outlineNoneWithoutReplacementRule } from './outline-none-without-replacement.js';
+import { hoverOnlyAffordanceRule } from './hover-only-affordance.js';
+import { disabledOpacityOnlyRule } from './disabled-opacity-only.js';
+import { unknownStateRule } from './unknown-state.js';
 import { opacityStackingRule } from './opacity-stacking.js';
 import { animatingLayoutPropertyRule } from './animating-layout-property.js';
 import { elevationWithoutSemanticsRule } from './elevation-without-semantics.js';
@@ -49,6 +55,12 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   animatingLayoutPropertyRule,
   elevationWithoutSemanticsRule,
   tripleSeparationRule,
+  unchangedStateRule,
+  missingFocusVisibleRule,
+  outlineNoneWithoutReplacementRule,
+  hoverOnlyAffordanceRule,
+  disabledOpacityOnlyRule,
+  unknownStateRule,
   proseTokenMismatchRule,
 ];
 
@@ -74,6 +86,12 @@ export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
 export { missingTypography } from './missing-typography.js';
 export { sectionOrder } from './section-order.js';
+export { unchangedState } from './unchanged-state.js';
+export { missingFocusVisible } from './missing-focus-visible.js';
+export { outlineNoneWithoutReplacement } from './outline-none-without-replacement.js';
+export { hoverOnlyAffordance } from './hover-only-affordance.js';
+export { disabledOpacityOnly } from './disabled-opacity-only.js';
+export { unknownState } from './unknown-state.js';
 export { opacityStacking } from './opacity-stacking.js';
 export { animatingLayoutProperty } from './animating-layout-property.js';
 export { elevationWithoutSemantics } from './elevation-without-semantics.js';

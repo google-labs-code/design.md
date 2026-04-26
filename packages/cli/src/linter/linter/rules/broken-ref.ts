@@ -18,11 +18,14 @@ import type { RuleDescriptor, RuleFinding } from './types.js';
 
 /**
  * Broken/circular references and unknown component sub-tokens.
+ * Recurses into per-state overrides so a broken ref in `states.hover` is
+ * caught the same as one in the base.
  */
 export function brokenRef(state: DesignSystemState): RuleFinding[] {
   const findings: RuleFinding[] = [];
+  const known = new Set<string>(VALID_COMPONENT_SUB_TOKENS);
   for (const [compName, comp] of state.components) {
-    // Unresolved references
+    // Unresolved references (collected during model build, span base + states)
     for (const ref of comp.unresolvedRefs) {
       findings.push({
         path: `components.${compName}`,
@@ -30,16 +33,29 @@ export function brokenRef(state: DesignSystemState): RuleFinding[] {
       });
     }
 
-    // Unknown component sub-tokens (lower severity override).
+    // Unknown component sub-tokens — base.
     // The hint message lists the full valid set so authors discover the
     // current vocabulary without having to consult the spec.
     for (const [propName] of comp.properties) {
-      if (!(VALID_COMPONENT_SUB_TOKENS as readonly string[]).includes(propName)) {
+      if (!known.has(propName)) {
         findings.push({
           severity: 'warning',
           path: `components.${compName}.${propName}`,
           message: `'${propName}' is not a recognized component sub-token. Recognized: ${VALID_COMPONENT_SUB_TOKENS.join(', ')}.`,
         });
+      }
+    }
+
+    // Unknown component sub-tokens — per-state overrides
+    for (const [stateName, overrides] of comp.states) {
+      for (const [propName] of overrides) {
+        if (!known.has(propName)) {
+          findings.push({
+            severity: 'warning',
+            path: `components.${compName}.states.${stateName}.${propName}`,
+            message: `'${propName}' is not a recognized component sub-token. Valid sub-tokens: ${VALID_COMPONENT_SUB_TOKENS.join(', ')}.`,
+          });
+        }
       }
     }
   }

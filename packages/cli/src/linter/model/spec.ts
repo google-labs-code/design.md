@@ -177,7 +177,21 @@ export interface ColorIndexEntry {
 }
 
 export interface ComponentDef {
+  /** Base property values (rest state). */
   properties: Map<string, ResolvedValue>;
+  /** Whether the component is interactive (drives state requirements). */
+  interactive?: boolean | undefined;
+  /**
+   * State-only overrides. Each entry maps a state name to the properties that
+   * differ from the base.
+   */
+  states: Map<string, Map<string, ResolvedValue>>;
+  /**
+   * Effective property maps per state — `properties` ⊕ each state's overrides.
+   * Computed once during model build so downstream rules and exporters do
+   * not reimplement merging.
+   */
+  resolvedStates: Map<string, Map<string, ResolvedValue>>;
   /** Unresolved references that failed to resolve */
   unresolvedRefs: string[];
 }

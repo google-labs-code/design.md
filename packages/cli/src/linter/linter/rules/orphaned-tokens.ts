@@ -17,6 +17,7 @@ import type { RuleDescriptor, RuleFinding } from './types.js';
 
 /**
  * Orphaned tokens — tokens defined but never referenced by any component.
+ * References inside per-state overrides (`states.hover`, etc.) count.
  *
  * Ramp-derived steps and pair-derived members are exempt: they are synthesized
  * from a single declaration, so flagging each individually would flood the
@@ -27,15 +28,20 @@ export function orphanedTokens(state: DesignSystemState): RuleFinding[] {
   if (state.components.size === 0) return [];
 
   const referencedPaths = new Set<string>();
-  for (const [, comp] of state.components) {
-    for (const [, value] of comp.properties) {
-      if (typeof value === 'object' && value !== null && 'type' in value) {
-        for (const [key, symValue] of state.symbolTable) {
-          if (symValue === value) {
-            referencedPaths.add(key);
-          }
+  const collect = (value: unknown) => {
+    if (typeof value === 'object' && value !== null && 'type' in value) {
+      for (const [key, symValue] of state.symbolTable) {
+        if (symValue === value) {
+          referencedPaths.add(key);
         }
       }
+    }
+  };
+
+  for (const [, comp] of state.components) {
+    for (const [, value] of comp.properties) collect(value);
+    for (const [, overrides] of comp.states) {
+      for (const [, value] of overrides) collect(value);
     }
   }
 

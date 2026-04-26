@@ -220,9 +220,46 @@ export class ModelHandler implements ModelSpec {
       if (input.components) {
         for (const [compName, props] of Object.entries(input.components)) {
           const properties = new Map<string, ResolvedValue>();
+          const states = new Map<string, Map<string, ResolvedValue>>();
+          const resolvedStates = new Map<string, Map<string, ResolvedValue>>();
           const unresolvedRefs: string[] = [];
+          let interactive: boolean | undefined;
 
           for (const [propName, rawValue] of Object.entries(props)) {
+            // `interactive: true` is a meta-flag, not a property.
+            if (propName === 'interactive') {
+              if (typeof rawValue === 'boolean') {
+                interactive = rawValue;
+              }
+              continue;
+            }
+            // `states:` is a nested map of state-name → property overrides.
+            if (propName === 'states') {
+              if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
+                for (const [stateName, stateProps] of Object.entries(rawValue as Record<string, unknown>)) {
+                  if (!stateProps || typeof stateProps !== 'object' || Array.isArray(stateProps)) continue;
+                  const overrides = new Map<string, ResolvedValue>();
+                  for (const [sPropName, sRawValue] of Object.entries(stateProps as Record<string, unknown>)) {
+                    const validator = COMPONENT_SUB_TOKEN_VALIDATORS.get(sPropName);
+                    if (validator && typeof sRawValue === 'string') {
+                      const result = validator(sRawValue);
+                      if (!result.ok) {
+                        findings.push({
+                          severity: 'error',
+                          path: `components.${compName}.states.${stateName}.${sPropName}`,
+                          message: result.error ?? `Invalid value for '${sPropName}'.`,
+                        });
+                      }
+                    }
+                    const resolved = resolveComponentValue(sRawValue, symbolTable, unresolvedRefs);
+                    overrides.set(sPropName, resolved);
+                  }
+                  states.set(stateName, overrides);
+                }
+              }
+              continue;
+            }
+
             // Validate the raw author input against the typed schema.
             // Token references and resolution failures are not validated
             // here — those are handled by the broken-ref rule.
@@ -250,25 +287,21 @@ export class ModelHandler implements ModelSpec {
               }
             }
 
-            if (isTokenReference(rawValue)) {
-              const refPath = rawValue.slice(1, -1);
-              const resolved = resolveReference(symbolTable, refPath, new Set());
-              if (resolved !== null) {
-                properties.set(propName, resolved);
-              } else {
-                unresolvedRefs.push(rawValue);
-                properties.set(propName, rawValue);
-              }
-            } else if (isValidColor(rawValue)) {
-              properties.set(propName, parseColor(rawValue));
-            } else if (isParseableDimension(rawValue)) {
-              properties.set(propName, parseDimension(rawValue));
-            } else {
-              properties.set(propName, rawValue);
-            }
+            properties.set(propName, resolveComponentValue(rawValue, symbolTable, unresolvedRefs));
           }
 
-          components.set(compName, { properties, unresolvedRefs });
+          // Build resolvedStates: base ⊕ state overrides
+          for (const [stateName, overrides] of states) {
+            const merged = new Map<string, ResolvedValue>(properties);
+            for (const [propName, value] of overrides) {
+              merged.set(propName, value);
+            }
+            resolvedStates.set(stateName, merged);
+          }
+
+          const def: ComponentDef = { properties, states, resolvedStates, unresolvedRefs };
+          if (interactive !== undefined) def.interactive = interactive;
+          components.set(compName, def);
         }
       }
 
@@ -503,6 +536,36 @@ function buildColorIndex(colors: Map<string, ResolvedColor>): Map<string, ColorI
 }
 
 // ── Pure utility functions ─────────────────────────────────────────
+
+/**
+ * Resolve a single component property value (string/number/boolean) into
+ * a ResolvedValue, mutating `unresolvedRefs` for any reference that fails.
+ * Numbers and booleans are returned coerced to string so the existing
+ * downstream consumers (which handle `string` as the catch-all) keep working,
+ * but only when the source value is a primitive non-reference scalar.
+ */
+function resolveComponentValue(
+  rawValue: unknown,
+  symbolTable: Map<string, ResolvedValue>,
+  unresolvedRefs: string[],
+): ResolvedValue {
+  if (typeof rawValue === 'number' || typeof rawValue === 'boolean') {
+    return String(rawValue);
+  }
+  if (typeof rawValue !== 'string') {
+    return String(rawValue);
+  }
+  if (isTokenReference(rawValue)) {
+    const refPath = rawValue.slice(1, -1);
+    const resolved = resolveReference(symbolTable, refPath, new Set());
+    if (resolved !== null) return resolved;
+    unresolvedRefs.push(rawValue);
+    return rawValue;
+  }
+  if (isValidColor(rawValue)) return parseColor(rawValue);
+  if (isParseableDimension(rawValue)) return parseDimension(rawValue);
+  return rawValue;
+}
 
 /**
  * Parse a hex color string into a ResolvedColor with RGB + WCAG luminance.
