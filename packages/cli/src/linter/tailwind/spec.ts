@@ -51,6 +51,25 @@ export const TailwindEmitterOptionsSchema = z.object({
 });
 export type TailwindEmitterOptions = z.infer<typeof TailwindEmitterOptionsSchema>;
 
+/**
+ * Per-theme color overrides. Keyed by theme name (excluding the implicit
+ * `light` base which lives in `theme.extend.colors`). Each entry holds the
+ * theme's full color map. Consumers project these into CSS layers — typically
+ * `.dark { --color-primary: ... }` for `darkMode: 'class'` or via
+ * `tailwindcss-themer`.
+ */
+export const TailwindThemesSchema = z.record(z.object({
+  colors: z.record(z.union([z.string(), z.record(z.string())])),
+  /** Optional contrast targets for downstream tools that emit per-theme docs. */
+  contrastTarget: z.object({
+    body: z.number(),
+    large: z.number(),
+    ui: z.number(),
+  }).optional(),
+}));
+
+export type TailwindThemes = z.infer<typeof TailwindThemesSchema>;
+
 export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
   z.object({
     success: z.literal(true),
@@ -59,6 +78,12 @@ export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
         extend: TailwindThemeExtendSchema
       }),
       plugin: z.record(z.unknown()).optional(),
+      /**
+       * Per-theme overrides for non-base themes. Empty / omitted when no
+       * additional themes are declared. Authors who don't use themes see
+       * no behavioral change.
+       */
+      themes: TailwindThemesSchema.optional(),
     })
   }),
   z.object({

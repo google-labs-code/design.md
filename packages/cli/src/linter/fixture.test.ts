@@ -145,6 +145,49 @@ describe('Fixture Test', () => {
     expect(colors['primary-container']).toBeDefined();
   });
 
+  it('processes THEMES.md with light/dark/high-contrast theme views', () => {
+    const path = join(import.meta.dir, 'fixtures', 'THEMES.md');
+    const content = readFileSync(path, 'utf-8');
+    const result = lint(content);
+
+    const ds = result.designSystem;
+
+    // Three theme views: implicit light + declared dark + high-contrast.
+    expect(ds.themes.size).toBe(3);
+    expect(ds.themes.has('light')).toBe(true);
+    expect(ds.themes.has('dark')).toBe(true);
+    expect(ds.themes.has('high-contrast')).toBe(true);
+    expect(ds.activeTheme).toBe('light');
+
+    // Light view mirrors the root token tree.
+    const light = ds.themes.get('light')!;
+    expect(light.colors.get('primary')?.hex).toBe('#3b82f6');
+    expect(light.contrastTarget).toEqual({ body: 4.5, large: 3, ui: 3 });
+
+    // Dark view replaces the primary ramp cleanly — anchor + steps update.
+    const dark = ds.themes.get('dark')!;
+    expect(dark.colors.get('primary')?.hex).toBe('#a3c9ff');
+    expect(dark.colors.get('primary.500')?.hex).toBe('#a3c9ff');
+    expect(dark.colors.get('surface')?.hex).toBe('#0b1220');
+    // Re-declared inline pair on the ramp also lives in the theme view.
+    expect(dark.colors.get('primary-container')).toBeDefined();
+
+    // High-contrast view raises the body contrast floor to AAA.
+    const hc = ds.themes.get('high-contrast')!;
+    expect(hc.contrastTarget.body).toBe(7);
+    expect(hc.contrastTarget.ui).toBe(4.5);
+
+    // Tailwind exporter surfaces dark + high-contrast as additional themes.
+    if (!result.tailwindConfig.success) throw new Error('Tailwind emit failed');
+    const themes = result.tailwindConfig.data.themes!;
+    expect(themes['dark']?.colors['surface']).toBe('#0b1220');
+    expect(themes['high-contrast']?.contrastTarget?.body).toBe(7);
+
+    // Lint runs end-to-end without errors.
+    const errors = result.findings.filter(d => d.severity === 'error');
+    expect(errors).toEqual([]);
+  });
+
   it('processes MOTION_AND_ICONS.md end-to-end', () => {
     const path = join(import.meta.dir, 'fixtures', 'MOTION_AND_ICONS.md');
     const content = readFileSync(path, 'utf-8');

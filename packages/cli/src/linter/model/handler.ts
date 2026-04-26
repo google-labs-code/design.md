@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef, RawRegistryEntry, RawComponentValue } from '../parser/spec.js';
+import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef, RawRegistryEntry, RawComponentValue, RawThemeDef } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -31,7 +31,11 @@ import type {
   MotionState,
   IconographyState,
   RegistryEntry,
+  ThemeView,
+  ThemeContrastTarget,
 } from './spec.js';
+import { DEFAULT_CONTRAST_TARGET } from './spec.js';
+import { BASE_THEME_NAME } from '../spec-config.js';
 
 import {
   isValidColor,
@@ -267,6 +271,8 @@ export class ModelHandler implements ModelSpec {
           const resolvedStates = new Map<string, Map<string, ResolvedValue>>();
           const unresolvedRefs: string[] = [];
           const referencedTokens: string[] = [];
+          const propertyRefs = new Map<string, string>();
+          const stateRefs = new Map<string, Map<string, string>>();
           let interactive: boolean | undefined;
 
           const collectRefs = (value: unknown) => {
@@ -290,8 +296,11 @@ export class ModelHandler implements ModelSpec {
                 for (const [stateName, stateProps] of Object.entries(rawValue as Record<string, unknown>)) {
                   if (!stateProps || typeof stateProps !== 'object' || Array.isArray(stateProps)) continue;
                   const overrides = new Map<string, ResolvedValue>();
+                  const stateRefMap = new Map<string, string>();
                   for (const [sPropName, sRawValue] of Object.entries(stateProps as Record<string, unknown>)) {
                     collectRefs(sRawValue);
+                    const wholeRef = wholeValueTokenRef(sRawValue);
+                    if (wholeRef !== null) stateRefMap.set(sPropName, wholeRef);
                     const validator = COMPONENT_SUB_TOKEN_VALIDATORS.get(sPropName);
                     if (validator && typeof sRawValue === 'string') {
                       const result = validator(sRawValue);
@@ -307,12 +316,15 @@ export class ModelHandler implements ModelSpec {
                     overrides.set(sPropName, resolved);
                   }
                   states.set(stateName, overrides);
+                  if (stateRefMap.size > 0) stateRefs.set(stateName, stateRefMap);
                 }
               }
               continue;
             }
 
             collectRefs(rawValue);
+            const wholeRef = wholeValueTokenRef(rawValue);
+            if (wholeRef !== null) propertyRefs.set(propName, wholeRef);
 
             // Validate the raw author input against the typed schema.
             // Token references and resolution failures are not validated
@@ -353,13 +365,39 @@ export class ModelHandler implements ModelSpec {
             resolvedStates.set(stateName, merged);
           }
 
-          const def: ComponentDef = { properties, states, resolvedStates, unresolvedRefs, referencedTokens };
+          const def: ComponentDef = {
+            properties,
+            states,
+            resolvedStates,
+            unresolvedRefs,
+            referencedTokens,
+            propertyRefs,
+            stateRefs,
+          };
           if (interactive !== undefined) def.interactive = interactive;
           components.set(compName, def);
         }
       }
 
       const colorIndex = buildColorIndex(colors);
+
+      // ── Phase 4: Theme views ───────────────────────────────────────
+      // Build the implicit `light` base view from the resolved top-level
+      // state, then deep-merge each declared theme's overrides on top of
+      // its `inheritsFrom` parent (default: `light`). Theme views carry
+      // their own re-resolved colors / pairs / ramps so the same token
+      // name can hold different values across themes.
+      const themes = buildThemeViews({
+        baseColors: colors,
+        baseTypography: typography,
+        baseRounded: rounded,
+        baseSpacing: spacing,
+        baseElevation: elevation,
+        baseColorRamps: colorRamps,
+        baseColorPairs: colorPairs,
+        rawThemes: input.themes,
+        findings,
+      });
 
       return {
         designSystem: {
@@ -376,6 +414,8 @@ export class ModelHandler implements ModelSpec {
           componentRegistry,
           colorRamps,
           colorPairs,
+          themes,
+          activeTheme: BASE_THEME_NAME,
           symbolTable,
           sections: input.sections,
           documentSections: input.documentSections,
@@ -395,6 +435,8 @@ export class ModelHandler implements ModelSpec {
           components: new Map(),
           colorRamps: new Map(),
           colorPairs: new Map(),
+          themes: new Map(),
+          activeTheme: BASE_THEME_NAME,
           symbolTable: new Map(),
           colorIndex: new Map(),
         },
@@ -481,6 +523,16 @@ interface ExpansionContext {
   colorPairs: Map<string, PairDef>;
   symbolTable: Map<string, ResolvedValue>;
   findings: Finding[];
+  /**
+   * Optional prefix prepended to all error `path:` values. Defaults to
+   * `'colors'`. Theme-scoped expansions pass `'themes.<name>.colors'` so
+   * findings are clearly attributable to the theme.
+   */
+  pathPrefix?: string;
+}
+
+function colorPath(ctx: ExpansionContext): string {
+  return ctx.pathPrefix ?? 'colors';
 }
 
 /**
@@ -496,7 +548,7 @@ function expandObjectColor(name: string, raw: RawRampDef | RawPairDef, ctx: Expa
   } else {
     ctx.findings.push({
       severity: 'error',
-      path: `colors.${name}`,
+      path: `${colorPath(ctx)}.${name}`,
       message: `Unknown color shape '${(raw as { type?: string }).type ?? 'object'}'. Expected 'ramp' or 'pair'.`,
     });
   }
@@ -506,7 +558,7 @@ function expandRamp(name: string, raw: RawRampDef, ctx: ExpansionContext): void 
   if (typeof raw.anchor !== 'string' || !isValidColor(raw.anchor)) {
     ctx.findings.push({
       severity: 'error',
-      path: `colors.${name}.anchor`,
+      path: `${colorPath(ctx)}.${name}.anchor`,
       message: `'${raw.anchor}' is not a valid hex anchor. Expected a hex color code (e.g., #ffffff).`,
     });
     return;
@@ -548,7 +600,7 @@ function expandRamp(name: string, raw: RawRampDef, ctx: ExpansionContext): void 
       if (!bgColor || !fgColor) {
         ctx.findings.push({
           severity: 'error',
-          path: `colors.${name}.pairs.${pairKey}`,
+          path: `${colorPath(ctx)}.${name}.pairs.${pairKey}`,
           message: `Pair '${pairKey}' references step ${!bgColor ? bg : fg}, but the ramp does not declare that step.`,
         });
         continue;
@@ -586,7 +638,7 @@ function expandPair(name: string, raw: RawPairDef, ctx: ExpansionContext): void 
   if (typeof raw.container !== 'string' || !isValidColor(raw.container)) {
     ctx.findings.push({
       severity: 'error',
-      path: `colors.${name}.container`,
+      path: `${colorPath(ctx)}.${name}.container`,
       message: `'${raw.container}' is not a valid hex color.`,
     });
     return;
@@ -594,7 +646,7 @@ function expandPair(name: string, raw: RawPairDef, ctx: ExpansionContext): void 
   if (typeof raw.onContainer !== 'string' || !isValidColor(raw.onContainer)) {
     ctx.findings.push({
       severity: 'error',
-      path: `colors.${name}.onContainer`,
+      path: `${colorPath(ctx)}.${name}.onContainer`,
       message: `'${raw.onContainer}' is not a valid hex color.`,
     });
     return;
@@ -657,6 +709,17 @@ function buildColorIndex(colors: Map<string, ResolvedColor>): Map<string, ColorI
 }
 
 // ── Pure utility functions ─────────────────────────────────────────
+
+/**
+ * If the raw value is a single whole-value token reference (`{colors.primary}`),
+ * return its bare path (`colors.primary`). Otherwise return `null` (the value
+ * is a literal, an embedded-ref shorthand, or a non-string).
+ */
+function wholeValueTokenRef(rawValue: unknown): string | null {
+  if (typeof rawValue !== 'string') return null;
+  if (!isTokenReference(rawValue)) return null;
+  return rawValue.slice(1, -1);
+}
 
 /**
  * Resolve a single component property value (string/number/boolean) into
@@ -1078,4 +1141,388 @@ export function resolveEmbeddedRefs(
     return match;
   });
   return { value: replaced, unresolved };
+}
+
+// ── Theme views ────────────────────────────────────────────────────
+
+interface ThemeBuildInputs {
+  baseColors: Map<string, ResolvedColor>;
+  baseTypography: Map<string, ResolvedTypography>;
+  baseRounded: Map<string, ResolvedDimension>;
+  baseSpacing: Map<string, ResolvedDimension>;
+  baseElevation: Map<string, ResolvedShadow>;
+  baseColorRamps: Map<string, RampDef>;
+  baseColorPairs: Map<string, PairDef>;
+  rawThemes: Record<string, RawThemeDef> | undefined;
+  findings: Finding[];
+}
+
+/**
+ * Build the per-theme resolved views. The implicit `light` base is always
+ * present. Other themes inherit from `light` (or the named `inheritsFrom`
+ * theme), then deep-merge their overrides on top.
+ *
+ * Cycles or unknown `inheritsFrom` parents fall back to the `light` base
+ * with a warning.
+ */
+function buildThemeViews(input: ThemeBuildInputs): Map<string, ThemeView> {
+  const out = new Map<string, ThemeView>();
+
+  const lightView: ThemeView = {
+    name: BASE_THEME_NAME,
+    colors: new Map(input.baseColors),
+    typography: new Map(input.baseTypography),
+    rounded: new Map(input.baseRounded),
+    spacing: new Map(input.baseSpacing),
+    elevation: new Map(input.baseElevation),
+    colorRamps: new Map(input.baseColorRamps),
+    colorPairs: new Map(input.baseColorPairs),
+    // The base view "overrides" every color by definition — it owns them.
+    explicitColorOverrides: new Set(input.baseColors.keys()),
+    contrastTarget: { ...DEFAULT_CONTRAST_TARGET },
+  };
+  out.set(BASE_THEME_NAME, lightView);
+
+  if (!input.rawThemes) return out;
+
+  // Resolve themes in declaration order so a theme can extend another that
+  // appears earlier. Cycles short-circuit to the `light` base.
+  const visiting = new Set<string>();
+  const resolve = (name: string, raw: RawThemeDef): ThemeView => {
+    if (out.has(name)) return out.get(name)!;
+    if (visiting.has(name)) {
+      input.findings.push({
+        severity: 'warning',
+        path: `themes.${name}.inheritsFrom`,
+        message: `Theme '${name}' has a cyclic inheritsFrom chain. Falling back to the '${BASE_THEME_NAME}' base.`,
+      });
+      return lightView;
+    }
+    visiting.add(name);
+
+    let parent: ThemeView = lightView;
+    if (raw.inheritsFrom && raw.inheritsFrom !== BASE_THEME_NAME) {
+      const parentRaw = input.rawThemes?.[raw.inheritsFrom];
+      if (!parentRaw) {
+        input.findings.push({
+          severity: 'warning',
+          path: `themes.${name}.inheritsFrom`,
+          message: `Theme '${name}' inherits from '${raw.inheritsFrom}', which is not declared. Falling back to the '${BASE_THEME_NAME}' base.`,
+        });
+      } else {
+        parent = resolve(raw.inheritsFrom, parentRaw);
+      }
+    }
+
+    const view = mergeThemeOnto(name, raw, parent, input.findings);
+    out.set(name, view);
+    visiting.delete(name);
+    return view;
+  };
+
+  for (const [name, raw] of Object.entries(input.rawThemes)) {
+    if (name === BASE_THEME_NAME) {
+      // A `themes.light` block layers on top of the root token tree. Treat
+      // it as overrides on the implicit base — useful when an author wants
+      // a separate Light section while keeping a darker base.
+      const merged = mergeThemeOnto(name, raw, lightView, input.findings);
+      // Replace the lightView entry; subsequent themes still inherit
+      // from this merged version.
+      out.set(BASE_THEME_NAME, merged);
+      continue;
+    }
+    resolve(name, raw);
+  }
+
+  return out;
+}
+
+/**
+ * Deep-merge a single theme's overrides onto a parent view. Returns a new
+ * `ThemeView`; does not mutate the parent.
+ */
+function mergeThemeOnto(
+  name: string,
+  raw: RawThemeDef,
+  parent: ThemeView,
+  findings: Finding[],
+): ThemeView {
+  // Start from a clone of the parent.
+  const colors = new Map(parent.colors);
+  const typography = new Map(parent.typography);
+  const rounded = new Map(parent.rounded);
+  const spacing = new Map(parent.spacing);
+  const elevation = new Map(parent.elevation);
+  const colorRamps = new Map(parent.colorRamps);
+  const colorPairs = new Map(parent.colorPairs);
+
+  // Theme-local symbol table: starts as a flat snapshot of the parent's
+  // tokens. References inside this theme resolve here, not against the
+  // global root symbol table — so `{colors.primary}` in a dark override
+  // resolves to dark-primary, not light-primary.
+  const symbolTable = new Map<string, ResolvedValue>();
+  for (const [k, v] of colors) symbolTable.set(`colors.${k}`, v);
+  for (const [k, v] of typography) symbolTable.set(`typography.${k}`, v);
+  for (const [k, v] of rounded) symbolTable.set(`rounded.${k}`, v);
+  for (const [k, v] of spacing) symbolTable.set(`spacing.${k}`, v);
+  for (const [k, v] of elevation) symbolTable.set(`elevation.${k}`, v);
+
+  const explicitColorOverrides = new Set<string>();
+
+  // Apply color overrides.
+  if (raw.colors) {
+    for (const [colorName, val] of Object.entries(raw.colors)) {
+      explicitColorOverrides.add(colorName);
+      // Re-declaring a ramp or pair under the same name in a theme should
+      // cleanly replace the parent's expansion, not leave dotted/derived
+      // members behind from the parent.
+      if (val && typeof val === 'object') {
+        clearGroupedColors(colorName, colors, symbolTable, colorRamps, colorPairs);
+      }
+
+      if (typeof val === 'string') {
+        if (isTokenReference(val)) {
+          const resolved = resolveReferenceForTheme(symbolTable, val.slice(1, -1));
+          if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
+            colors.set(colorName, resolved as ResolvedColor);
+            symbolTable.set(`colors.${colorName}`, resolved);
+            updatePairFromFlatOverride(colorName, resolved as ResolvedColor, colorPairs);
+          } else {
+            findings.push({
+              severity: 'error',
+              path: `themes.${name}.colors.${colorName}`,
+              message: `'${val}' does not resolve to a color in theme '${name}'.`,
+            });
+          }
+        } else if (isValidColor(val)) {
+          const resolved = parseColor(val);
+          colors.set(colorName, resolved);
+          symbolTable.set(`colors.${colorName}`, resolved);
+          updatePairFromFlatOverride(colorName, resolved, colorPairs);
+        } else {
+          findings.push({
+            severity: 'error',
+            path: `themes.${name}.colors.${colorName}`,
+            message: `'${val}' is not a valid color. Expected a hex color code (e.g., #ffffff).`,
+          });
+        }
+      } else if (val && typeof val === 'object') {
+        expandObjectColor(colorName, val, {
+          colors,
+          colorRamps,
+          colorPairs,
+          symbolTable,
+          findings,
+          pathPrefix: `themes.${name}.colors`,
+        });
+      }
+    }
+  }
+
+  // Typography overrides — merge property maps on top of the parent's
+  // typography scale entry. A theme may override only `fontSize` without
+  // restating `fontFamily`.
+  if (raw.typography) {
+    for (const [tName, props] of Object.entries(raw.typography)) {
+      const base = typography.get(tName);
+      const merged = parseTypographyProps(
+        props,
+        `themes.${name}.typography.${tName}`,
+        findings,
+        base,
+      );
+      typography.set(tName, merged);
+      symbolTable.set(`typography.${tName}`, merged);
+    }
+  }
+
+  if (raw.rounded) {
+    for (const [rName, value] of Object.entries(raw.rounded)) {
+      if (typeof value !== 'string') continue;
+      if (!isParseableDimension(value)) {
+        findings.push({
+          severity: 'error',
+          path: `themes.${name}.rounded.${rName}`,
+          message: `'${value}' is not a valid dimension.`,
+        });
+        continue;
+      }
+      const dim = parseDimensionAsDim(value);
+      rounded.set(rName, dim);
+      symbolTable.set(`rounded.${rName}`, dim);
+    }
+  }
+
+  if (raw.spacing) {
+    for (const [sName, value] of Object.entries(raw.spacing)) {
+      if (typeof value !== 'string') continue;
+      if (!isParseableDimension(value)) {
+        findings.push({
+          severity: 'error',
+          path: `themes.${name}.spacing.${sName}`,
+          message: `'${value}' is not a valid dimension.`,
+        });
+        continue;
+      }
+      const dim = parseDimensionAsDim(value);
+      spacing.set(sName, dim);
+      symbolTable.set(`spacing.${sName}`, dim);
+    }
+  }
+
+  if (raw.elevation) {
+    for (const [eName, value] of Object.entries(raw.elevation)) {
+      if (typeof value !== 'string') continue;
+      const shadow: ResolvedShadow = { type: 'shadow', raw: value };
+      elevation.set(eName, shadow);
+      symbolTable.set(`elevation.${eName}`, shadow);
+    }
+  }
+
+  const contrastTarget: ThemeContrastTarget = {
+    body: raw.contrastTarget?.body ?? parent.contrastTarget.body,
+    large: raw.contrastTarget?.large ?? parent.contrastTarget.large,
+    ui: raw.contrastTarget?.ui ?? parent.contrastTarget.ui,
+  };
+
+  const view: ThemeView = {
+    name,
+    colors,
+    typography,
+    rounded,
+    spacing,
+    elevation,
+    colorRamps,
+    colorPairs,
+    explicitColorOverrides,
+    contrastTarget,
+  };
+  if (raw.inheritsFrom !== undefined) view.inheritsFrom = raw.inheritsFrom;
+  if (raw.description !== undefined) view.description = raw.description;
+  return view;
+}
+
+/**
+ * When a theme re-declares a ramp or pair under an existing name, drop the
+ * parent's grouped entries (steps, dotted members, on-* aliases) so the new
+ * expansion fully replaces the prior one. Bare flat overrides do not trigger
+ * this — they only override the single anchor entry.
+ */
+function clearGroupedColors(
+  name: string,
+  colors: Map<string, ResolvedColor>,
+  symbolTable: Map<string, ResolvedValue>,
+  colorRamps: Map<string, RampDef>,
+  colorPairs: Map<string, PairDef>,
+): void {
+  const dottedPrefix = `${name}.`;
+  const hyphenPrefix = `${name}-`;
+  const onHyphenPrefix = `on-${name}-`;
+  const onFlat = `on-${name}`;
+  for (const key of [...colors.keys()]) {
+    if (key.startsWith(dottedPrefix) || key.startsWith(hyphenPrefix) || key.startsWith(onHyphenPrefix) || key === onFlat) {
+      colors.delete(key);
+      symbolTable.delete(`colors.${key}`);
+    }
+  }
+  colorRamps.delete(name);
+  colorPairs.delete(name);
+  // Standalone-pair ramps register additional entries; sweep any pair
+  // whose name is rooted at this name.
+  for (const pairName of [...colorPairs.keys()]) {
+    if (pairName === name || pairName.startsWith(`${name}-`)) {
+      colorPairs.delete(pairName);
+    }
+  }
+}
+
+function resolveReferenceForTheme(
+  symbolTable: Map<string, ResolvedValue>,
+  path: string,
+): ResolvedValue | null {
+  return resolveReference(symbolTable, path, new Set());
+}
+
+/**
+ * When a theme's flat color override touches a pair-member alias, mirror
+ * the new value into the pair definition so `pair-parity` and exporters
+ * see the half-update. The bare pair name and the `on-<pair>` alias map
+ * to `container` / `onContainer`. We keep parity by cloning the prior
+ * pair definition before mutating.
+ */
+function updatePairFromFlatOverride(
+  name: string,
+  newColor: ResolvedColor,
+  colorPairs: Map<string, PairDef>,
+): void {
+  // Bare alias: matches a pair name directly → update container.
+  const direct = colorPairs.get(name);
+  if (direct) {
+    colorPairs.set(name, { ...direct, container: newColor });
+    return;
+  }
+  // `on-<pair>` alias → update the underlying pair's onContainer.
+  if (name.startsWith('on-')) {
+    const pairName = name.slice(3);
+    const pair = colorPairs.get(pairName);
+    if (pair) {
+      colorPairs.set(pairName, { ...pair, onContainer: newColor });
+    }
+  }
+}
+
+function parseDimensionAsDim(raw: string): ResolvedDimension {
+  const parts = parseDimensionParts(raw)!;
+  return { type: 'dimension', value: parts.value, unit: parts.unit };
+}
+
+/**
+ * Parse typography properties for a theme override. Differs from the
+ * top-level `parseTypography` only in that it merges on top of an
+ * optional `base` ResolvedTypography so unspecified properties inherit
+ * from the parent theme.
+ */
+function parseTypographyProps(
+  props: Record<string, string | number>,
+  path: string,
+  findings: Finding[],
+  base: ResolvedTypography | undefined,
+): ResolvedTypography {
+  const result: ResolvedTypography = base ? { ...base } : { type: 'typography' };
+
+  if (typeof props['fontFamily'] === 'string') result.fontFamily = props['fontFamily'];
+  if (typeof props['fontFeature'] === 'string') result.fontFeature = props['fontFeature'];
+  if (typeof props['fontVariation'] === 'string') result.fontVariation = props['fontVariation'];
+
+  if (props['fontWeight'] !== undefined) {
+    const fw = props['fontWeight'];
+    const fwValue = typeof fw === 'number' ? fw : Number(fw);
+    if (Number.isNaN(fwValue)) {
+      findings.push({
+        severity: 'error',
+        path: `${path}.fontWeight`,
+        message: `'${fw}' is not a valid font weight.`,
+      });
+    } else {
+      result.fontWeight = fwValue;
+    }
+  }
+
+  for (const prop of ['fontSize', 'lineHeight', 'letterSpacing'] as const) {
+    const raw = props[prop];
+    if (typeof raw !== 'string') continue;
+    if (isParseableDimension(raw)) {
+      result[prop] = parseDimensionAsDim(raw);
+    } else if (prop === 'lineHeight' && /^\d*\.?\d+$/.test(raw)) {
+      result[prop] = { type: 'dimension', value: parseFloat(raw), unit: '' };
+    } else if (!isTokenReference(raw)) {
+      findings.push({
+        severity: 'error',
+        path: `${path}.${prop}`,
+        message: `'${raw}' is not a valid dimension.`,
+      });
+    }
+  }
+
+  return result;
 }

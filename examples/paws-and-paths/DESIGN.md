@@ -235,6 +235,69 @@ components:
     rounded: "{rounded.full}"
     padding: "{spacing.xs}"
     iconSize: "{iconography.sizes.sm}"
+themes:
+  dark:
+    description: "Evening walk: orange recedes, deep night-blue carries the surface, and golden retriever orange shifts to a desaturated container step so it sits well against the dark canvas."
+    colors:
+      surface: "#0f1420"
+      surface-dim: "#0a0e18"
+      surface-bright: "#1c2230"
+      surface-container-lowest: "#070a12"
+      surface-container-low: "#141a26"
+      surface-container: "#1a2030"
+      surface-container-high: "#212838"
+      surface-container-highest: "#2a3142"
+      on-surface: "#e7ecf8"
+      on-surface-variant: "#bfbab2"
+      inverse-surface: "#e7ecf8"
+      inverse-on-surface: "#151c27"
+      outline: "#9c8a76"
+      outline-variant: "#574a3c"
+      surface-tint: "#ffb95f"
+      primary: "#ffb95f"
+      on-primary: "#3d2400"
+      primary-container: "#5b3500"
+      on-primary-container: "#ffddb8"
+      inverse-primary: "#855300"
+      secondary: "#adc6ff"
+      on-secondary: "#001a42"
+      secondary-container: "#003a89"
+      on-secondary-container: "#d8e2ff"
+      tertiary: "#7fd0ff"
+      on-tertiary: "#001e2d"
+      tertiary-container: "#004966"
+      on-tertiary-container: "#c5e7ff"
+      error: "#ffb4ab"
+      on-error: "#690005"
+      error-container: "#93000a"
+      on-error-container: "#ffdad6"
+      primary-fixed: "#ffddb8"
+      primary-fixed-dim: "#ffb95f"
+      on-primary-fixed: "#2a1700"
+      on-primary-fixed-variant: "#653e00"
+      secondary-fixed: "#d8e2ff"
+      secondary-fixed-dim: "#adc6ff"
+      on-secondary-fixed: "#001a42"
+      on-secondary-fixed-variant: "#004395"
+      tertiary-fixed: "#c5e7ff"
+      tertiary-fixed-dim: "#7fd0ff"
+      on-tertiary-fixed: "#001e2d"
+      on-tertiary-fixed-variant: "#004c6a"
+      background: "#0f1420"
+      on-background: "#e7ecf8"
+      surface-variant: "#2a3142"
+    elevation:
+      # Dark surfaces lift via lighter color, not darker shadows. Shadows still
+      # ground the element against scroll edges, but the surface tint does
+      # most of the elevation work.
+      resting: "0 1px 2px rgba(0,0,0,0.45)"
+      raised: "0 4px 12px rgba(0,0,0,0.55)"
+      overlay: "0 12px 24px rgba(0,0,0,0.65)"
+      modal: "0 24px 48px rgba(0,0,0,0.75)"
+    contrastTarget:
+      body: 4.5
+      large: 3
+      ui: 3
 ---
 
 ## Brand & Style
@@ -259,6 +322,17 @@ This design system utilizes **Plus Jakarta Sans** for its friendly, rounded term
 - **Headlines:** Bold weights are used to create a clear hierarchy and guide the eye quickly to key information.
 - **Body:** Generous line heights are applied to the body text to maintain the "premium and clean" feel.
 - **Labels:** Used for buttons and small metadata, utilizing a medium or semi-bold weight to remain distinct even at small scales.
+
+## Themes
+
+Paws & Paths ships with a single base palette (the `light` mode) and a `dark` mode counterpart for evening walks and OS-level dark preferences. Themes here are alternate values, not alternate brands — the personality, type family, and shape language stay constant.
+
+- **Don't invert, reconsider.** The dark mode is not "light with inverted colors." Surfaces *lift* via lighter color steps (e.g., `surface-container-high` is paler than `surface`) instead of stacking deeper shadows. The Golden Retriever orange recedes to a desaturated container step (`#5b3500`) — fully-saturated `#855300` would vibrate against the deep navy backgrounds.
+- **Contrast targets that hold across themes.** Both themes target WCAG AA (`body: 4.5`, `large: 3`, `ui: 3`). The `contrast-ratio` rule runs per theme; a dark-only state that drops below the body floor surfaces explicitly with the theme name in the diagnostic.
+<!-- design.md disable-next-line prose-token-mismatch -->
+- **Saturation discipline in dark mode.** Use `primary-container` / `on-primary-container` for dark backgrounds and accents; reserve the bare `primary` (now `#ffb95f`) for elements that want to read as "lit from above," not as a saturated brand mark.
+- **High-contrast (future).** A high-contrast theme would inherit from `light`, set `contrastTarget.body` to 7, strip decorative shadows from `elevation.resting`, and replace tonal hover affordances with explicit borders. Adding it is a follow-up — themes are expensive (every component is reviewed in every theme) and we add them only when the use case is durable.
+- **When to add a theme.** Themes are durable identity surfaces (light vs. dark, normal vs. high-contrast, comfortable vs. compact density). Never per-customer or per-campaign — those belong elsewhere.
 
 ## Layout & Spacing
 
