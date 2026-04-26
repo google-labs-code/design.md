@@ -71,6 +71,51 @@ export interface RawPairDef {
 export type RawColorValue = string | RawRampDef | RawPairDef;
 
 /**
+ * Raw motion block (mirrors the YAML schema). Durations and easings live in
+ * separate sub-maps; `reducedMotion` declares the fallback applied under
+ * `prefers-reduced-motion`.
+ */
+export interface RawMotionDef {
+  duration?: Record<string, string>;
+  easing?: Record<string, string>;
+  reducedMotion?: { duration?: string; easing?: string };
+}
+
+/**
+ * Raw iconography block (mirrors the YAML schema). One library/style per
+ * system; `sizes` is the icon-size scale referenced by `iconSize:` on
+ * components.
+ */
+export interface RawIconographyDef {
+  library?: { name: string; version?: string; style?: string };
+  strokeWeight?: string;
+  sizes?: Record<string, string>;
+  defaultSize?: string;
+  colorBinding?: string;
+}
+
+/**
+ * A theme block — overrides only. Anything not overridden is inherited from
+ * `inheritsFrom` (default: the implicit `light` base = the root token tree).
+ * Resolution is a deep-merge of theme-over-base, scoped per token category.
+ */
+export interface RawThemeDef {
+  /** Optional parent theme name. Default is the implicit `light` base. */
+  inheritsFrom?: string;
+  description?: string;
+  colors?: Record<string, RawColorValue>;
+  typography?: Record<string, Record<string, string | number>>;
+  rounded?: Record<string, string>;
+  spacing?: Record<string, string>;
+  elevation?: Record<string, string>;
+  /**
+   * Per-theme contrast targets used by `theme-contrast-ratio`. Defaults to
+   * WCAG AA when absent (body 4.5:1, large text 3:1, non-text UI 3:1).
+   */
+  contrastTarget?: { body?: number; large?: number; ui?: number };
+}
+
+/**
  * A registry entry — the closed-world declaration that a component name is part
  * of the design system. Adding an entry is a deliberate, reviewable act.
  */
@@ -137,6 +182,18 @@ export interface ParsedDesignSystem {
    * `{elevation.<name>}`.
    */
   elevation?: Record<string, string> | undefined;
+  /**
+   * Motion primitives — durations, easings, and the reduced-motion fallback.
+   * Components reference them via `{motion.duration.*}` / `{motion.easing.*}`
+   * inside `transition:` shorthands.
+   */
+  motion?: RawMotionDef | undefined;
+  /**
+   * Iconography — library reference, size scale, stroke weight, color
+   * binding. Components reference sizes via `{iconography.sizes.*}` on
+   * `iconSize:`.
+   */
+  iconography?: RawIconographyDef | undefined;
   components?: Record<string, Record<string, RawComponentValue>> | undefined;
   /**
    * Closed-world registry of component names. When present, every entry in
@@ -148,6 +205,12 @@ export interface ParsedDesignSystem {
   voice?: RawVoice | undefined;
   /** Content rules. */
   copy?: RawCopy | undefined;
+  /**
+   * Theme overrides. Keys are theme names; the implicit `light` base lives
+   * in the root token tree (so a `themes.light` entry is unnecessary, though
+   * tolerated). Values are deep-merged onto the base during model build.
+   */
+  themes?: Record<string, RawThemeDef> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

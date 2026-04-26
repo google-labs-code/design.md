@@ -13,7 +13,8 @@
 // limitations under the License.
 
 import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue, DesignMdStatesExtension } from './spec.js';
-import type { ComponentDef, DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedShadow, ResolvedTypography, ResolvedValue } from '../model/spec.js';
+import type { ComponentDef, DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedShadow, ResolvedTypography, ResolvedDuration, ResolvedEasing, ResolvedValue } from '../model/spec.js';
+import { parseCubicBezier } from '../model/spec.js';
 
 const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.json';
 const DESIGN_MD_EXTENSION_KEY = 'design.md';
@@ -46,6 +47,12 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
 
     const elevationGroup = this.mapElevation(state);
     if (elevationGroup) file['elevation'] = elevationGroup;
+
+    const motionGroup = this.mapMotion(state);
+    if (motionGroup) file['motion'] = motionGroup;
+
+    const iconographyGroup = this.mapIconography(state);
+    if (iconographyGroup) file['iconography'] = iconographyGroup;
 
     const componentGroup = this.mapComponents(state);
     if (componentGroup) file['component'] = componentGroup;
@@ -88,6 +95,104 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
       if (Object.keys(copy).length > 0) out['copy'] = copy;
     }
     return Object.keys(out).length > 0 ? out : null;
+  }
+
+  /**
+   * Motion → DTCG `duration` + `cubicBezier` token types. Reduced-motion
+   * is encoded under the vendor extension as a pair of references back to
+   * the named duration / easing tokens.
+   */
+  private mapMotion(state: DesignSystemState): DtcgGroup | null {
+    const { duration, easing, reducedMotion } = state.motion;
+    if (duration.size === 0 && easing.size === 0 && !reducedMotion) return null;
+    const group: DtcgGroup = {};
+
+    if (duration.size > 0) {
+      const durGroup: DtcgGroup = { $type: 'duration' };
+      for (const [name, dur] of duration) {
+        durGroup[name] = {
+          $value: this.durationToValue(dur),
+        } as DtcgToken;
+      }
+      group['duration'] = durGroup;
+    }
+
+    if (easing.size > 0) {
+      const easeGroup: DtcgGroup = { $type: 'cubicBezier' };
+      for (const [name, ease] of easing) {
+        easeGroup[name] = this.easingToToken(ease);
+      }
+      group['easing'] = easeGroup;
+    }
+
+    if (reducedMotion) {
+      group['$extensions'] = {
+        'design.md': {
+          reducedMotion: {
+            duration: `{motion.duration.${reducedMotion.duration}}`,
+            easing: `{motion.easing.${reducedMotion.easing}}`,
+          },
+        },
+      };
+    }
+
+    return group;
+  }
+
+  private durationToValue(dur: ResolvedDuration): DtcgDimensionValue {
+    return { value: dur.value, unit: dur.unit };
+  }
+
+  /**
+   * Emit cubic-bezier easings as DTCG `cubicBezier` ($value is a 4-tuple);
+   * keyword and step easings fall back to a string $value with an extension
+   * so consumers can detect the kind without re-parsing.
+   */
+  private easingToToken(ease: ResolvedEasing): DtcgToken {
+    const points = ease.controlPoints ?? parseCubicBezier(ease.raw) ?? null;
+    if (points) {
+      return {
+        $type: 'cubicBezier',
+        $value: points,
+      } as DtcgToken;
+    }
+    return {
+      $type: 'cubicBezier',
+      $value: ease.raw,
+      $extensions: { 'design.md': { kind: 'keyword' } },
+    } as DtcgToken;
+  }
+
+  /**
+   * Iconography has no DTCG-native type. Emit the structured config under
+   * `$extensions['design.md'].iconography`; sizes are exposed as a sibling
+   * `dimension` group so consumers can address `{iconography.sizes.md}`.
+   */
+  private mapIconography(state: DesignSystemState): DtcgGroup | null {
+    if (!state.iconography) return null;
+    const ico = state.iconography;
+    const group: DtcgGroup = {
+      $extensions: {
+        'design.md': {
+          iconography: {
+            library: ico.library,
+            defaultSize: ico.defaultSize,
+            colorBinding: ico.colorBinding,
+            ...(ico.strokeWeight ? { strokeWeight: this.dimToValue(ico.strokeWeight) } : {}),
+          },
+        },
+      },
+    };
+    if (ico.sizes.size > 0) {
+      const sizeGroup: DtcgGroup = { $type: 'dimension' };
+      for (const [name, dim] of ico.sizes) {
+        sizeGroup[name] = {
+          $value: this.dimToValue(dim),
+        } as DtcgToken;
+      }
+      group['sizes'] = sizeGroup;
+    }
+    return group;
   }
 
   private mapElevation(state: DesignSystemState): DtcgGroup | null {

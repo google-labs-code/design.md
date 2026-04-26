@@ -17,8 +17,10 @@ import type {
   TailwindEmitterResult,
   TailwindEmitterOptions,
   TailwindComponentRule,
+  TailwindThemes,
 } from './spec.js';
-import type { ComponentDef, DesignSystemState, ResolvedDimension, ResolvedValue } from '../model/spec.js';
+import type { ComponentDef, DesignSystemState, RampDef, ResolvedColor, ResolvedDimension, ResolvedValue, ThemeView } from '../model/spec.js';
+import { BASE_THEME_NAME } from '../spec-config.js';
 
 const STATE_TO_VARIANT: Record<string, string> = {
   hover: '&:hover',
@@ -60,12 +62,14 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
       data: {
         theme: {
           extend: {
-            colors: this.mapColors(state),
+            colors: this.mapColors(state.colors, state.colorRamps),
             fontFamily: this.mapFontFamilies(state),
             fontSize: this.mapFontSizes(state),
             borderRadius: this.mapDimensions(state.rounded),
             spacing: this.mapDimensions(state.spacing),
             boxShadow: this.mapElevation(state),
+            transitionDuration: this.mapDurations(state),
+            transitionTimingFunction: this.mapEasings(state),
           },
         },
       }
@@ -75,7 +79,32 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
       result.data.plugin = this.mapComponents(state);
     }
 
+    const themes = this.mapThemes(state);
+    if (themes !== undefined) {
+      result.data.themes = themes;
+    }
+
     return result;
+  }
+
+  /**
+   * Emit per-theme color overrides for every declared theme except the
+   * implicit `light` base (whose values already live in `theme.extend.colors`).
+   * Returns `undefined` when no additional themes are declared so the field
+   * stays omitted in the simple single-theme case.
+   */
+  private mapThemes(state: DesignSystemState): TailwindThemes | undefined {
+    const out: TailwindThemes = {};
+    let any = false;
+    for (const [themeName, view] of state.themes) {
+      if (themeName === BASE_THEME_NAME) continue;
+      out[themeName] = {
+        colors: this.mapColors(view.colors, view.colorRamps),
+        contrastTarget: { ...view.contrastTarget },
+      };
+      any = true;
+    }
+    return any ? out : undefined;
   }
 
   private mapComponents(state: DesignSystemState): Record<string, TailwindComponentRule> {
@@ -125,6 +154,22 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
     return String(value);
   }
 
+  private mapDurations(state: DesignSystemState): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [name, dur] of state.motion.duration) {
+      result[name] = `${dur.value}${dur.unit}`;
+    }
+    return result;
+  }
+
+  private mapEasings(state: DesignSystemState): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [name, easing] of state.motion.easing) {
+      result[name] = easing.raw;
+    }
+    return result;
+  }
+
   private mapElevation(state: DesignSystemState): Record<string, string> {
     const result: Record<string, string> = {};
     for (const [name, shadow] of state.elevation) {
@@ -133,12 +178,15 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
     return result;
   }
 
-  private mapColors(state: DesignSystemState): Record<string, string | Record<string, string>> {
+  private mapColors(
+    colors: Map<string, ResolvedColor>,
+    colorRamps: Map<string, RampDef>,
+  ): Record<string, string | Record<string, string>> {
     const result: Record<string, string | Record<string, string>> = {};
 
     // Ramps emit as nested objects: { DEFAULT: '...', '50': '...', '500': '...', ... }
     // The flat colors map carries every step plus the anchor; group them by ramp.
-    for (const [rampName, ramp] of state.colorRamps) {
+    for (const [rampName, ramp] of colorRamps) {
       const group: Record<string, string> = { DEFAULT: ramp.anchor.hex };
       for (const [step, color] of [...ramp.steps].sort(([a], [b]) => a - b)) {
         group[String(step)] = color.hex;
@@ -149,7 +197,7 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
     // Flat colors and pair members emit as top-level strings. Skip step entries
     // (already nested under their ramp), the bare anchor (already in group), and
     // dotted standalone-pair members (encoded via hyphen flat aliases below).
-    for (const [name, color] of state.colors) {
+    for (const [name, color] of colors) {
       if (color.rampMember) continue;
       if (color.pairRole && name.includes('.')) continue;
       result[name] = color.hex;

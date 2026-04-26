@@ -507,6 +507,101 @@ describe('ModelHandler', () => {
     });
   });
 
+  describe('motion parsing', () => {
+    it('parses durations and easings into the model + symbol table', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          duration: { fast: '150ms', slow: '0.4s' },
+          easing: { standard: 'cubic-bezier(0.4, 0, 0.2, 1)', linear: 'linear' },
+        },
+      }));
+      const ds = result.designSystem;
+      expect(ds.motion.duration.get('fast')?.value).toBe(150);
+      expect(ds.motion.duration.get('fast')?.unit).toBe('ms');
+      expect(ds.motion.duration.get('slow')?.unit).toBe('s');
+      expect(ds.motion.easing.get('standard')?.controlPoints).toEqual([0.4, 0, 0.2, 1]);
+      expect(ds.motion.easing.get('linear')?.raw).toBe('linear');
+      expect(ds.symbolTable.get('motion.duration.fast')).toBeDefined();
+      expect(ds.symbolTable.get('motion.easing.standard')).toBeDefined();
+    });
+
+    it('rejects malformed durations and easings with error findings', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          duration: { broken: '100' },
+          easing: { weird: 'wiggle()' },
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.some(e => e.path === 'motion.duration.broken')).toBe(true);
+      expect(errors.some(e => e.path === 'motion.easing.weird')).toBe(true);
+    });
+
+    it('warns when reducedMotion references undeclared duration / easing', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          duration: { fast: '150ms' },
+          easing: { standard: 'ease-in' },
+          reducedMotion: { duration: 'instant', easing: 'standard' },
+        },
+      }));
+      expect(result.findings.some(f => f.path === 'motion.reducedMotion.duration')).toBe(true);
+    });
+
+    it('substitutes embedded motion refs in component transitions', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          duration: { fast: '150ms' },
+          easing: { standard: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+        },
+        components: {
+          btn: { transition: 'opacity {motion.duration.fast} {motion.easing.standard}' },
+        },
+      }));
+      const transition = result.designSystem.components.get('btn')?.properties.get('transition');
+      expect(transition).toBe('opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)');
+    });
+  });
+
+  describe('iconography parsing', () => {
+    it('parses library + sizes + stroke weight + color binding', () => {
+      const result = handler.execute(makeParsed({
+        iconography: {
+          library: { name: 'lucide', version: '0.451.0', style: 'outlined' },
+          strokeWeight: '1.5px',
+          sizes: { sm: '16px', md: '20px' },
+          defaultSize: 'md',
+          colorBinding: 'currentColor',
+        },
+      }));
+      const ico = result.designSystem.iconography!;
+      expect(ico.library.name).toBe('lucide');
+      expect(ico.library.style).toBe('outlined');
+      expect(ico.sizes.get('sm')?.value).toBe(16);
+      expect(ico.strokeWeight?.value).toBe(1.5);
+      expect(ico.colorBinding).toBe('currentColor');
+      expect(result.designSystem.symbolTable.get('iconography.sizes.md')).toBeDefined();
+    });
+
+    it('warns on unknown library name (not in closed enum)', () => {
+      const result = handler.execute(makeParsed({
+        iconography: {
+          library: { name: 'made-up-icons', style: 'outlined' },
+          sizes: { md: '20px' },
+        },
+      }));
+      expect(result.findings.some(f => f.path === 'iconography.library.name')).toBe(true);
+    });
+
+    it('rejects iconography without a library name', () => {
+      const result = handler.execute(makeParsed({
+        iconography: { sizes: { md: '20px' } },
+      }));
+      expect(result.designSystem.iconography).toBeUndefined();
+      expect(result.findings.some(f => f.severity === 'error' && f.path === 'iconography.library')).toBe(true);
+    });
+  });
+
   describe('component registry', () => {
     it('omits componentRegistry when not declared (open-world back-compat)', () => {
       const result = handler.execute(makeParsed({

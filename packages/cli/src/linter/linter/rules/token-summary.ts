@@ -25,6 +25,12 @@ export function tokenSummary(state: DesignSystemState): RuleFinding[] {
   if (state.typography.size > 0) parts.push(`${state.typography.size} typography scale${state.typography.size !== 1 ? 's' : ''}`);
   if (state.rounded.size > 0) parts.push(`${state.rounded.size} rounding level${state.rounded.size !== 1 ? 's' : ''}`);
   if (state.spacing.size > 0) parts.push(`${state.spacing.size} spacing token${state.spacing.size !== 1 ? 's' : ''}`);
+  const motionCount = state.motion.duration.size + state.motion.easing.size;
+  if (motionCount > 0) parts.push(`${motionCount} motion token${motionCount !== 1 ? 's' : ''}`);
+  if (state.iconography && state.iconography.sizes.size > 0) {
+    const iconCount = state.iconography.sizes.size;
+    parts.push(`${iconCount} icon size${iconCount !== 1 ? 's' : ''}`);
+  }
   if (state.components.size > 0) parts.push(`${state.components.size} component${state.components.size !== 1 ? 's' : ''}`);
   if (state.copy) {
     const banned = state.copy.bannedTerms.length + state.copy.bannedRegex.length;

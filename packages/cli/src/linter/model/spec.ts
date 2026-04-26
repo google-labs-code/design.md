@@ -116,12 +116,37 @@ export interface ResolvedBorder {
   raw: string;
 }
 
+/**
+ * A motion duration token. The unit is `ms` or `s`; numeric value is the
+ * count in that unit. Renderers can convert with `value * (unit === 's' ? 1000 : 1)`.
+ */
+export interface ResolvedDuration {
+  type: 'duration';
+  value: number;
+  unit: 'ms' | 's';
+}
+
+/**
+ * A motion easing token — either a CSS keyword (`linear`, `ease-in`, ...)
+ * or a `cubic-bezier(...)` literal. The four control points are extracted
+ * for cubic-bezier values to support DTCG `cubicBezier` token emission.
+ */
+export interface ResolvedEasing {
+  type: 'easing';
+  /** The raw CSS easing string, preserved for exporters. */
+  raw: string;
+  /** When `raw` is a `cubic-bezier(x1, y1, x2, y2)`, the four control points. */
+  controlPoints?: [number, number, number, number];
+}
+
 export type ResolvedValue =
   | ResolvedColor
   | ResolvedDimension
   | ResolvedTypography
   | ResolvedShadow
   | ResolvedBorder
+  | ResolvedDuration
+  | ResolvedEasing
   | string;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
@@ -195,6 +220,59 @@ export interface Copy {
   knownProperNouns?: string[];
 }
 
+// ── THEMES ─────────────────────────────────────────────────────────
+
+/**
+ * Per-theme contrast targets. Defaults to WCAG AA when a theme does not
+ * declare its own targets. AAA-style themes (e.g., `high-contrast`) typically
+ * raise `body` to 7 and `ui` to 4.5.
+ */
+export interface ThemeContrastTarget {
+  body: number;
+  large: number;
+  ui: number;
+}
+
+/** Default contrast target — WCAG AA. */
+export const DEFAULT_CONTRAST_TARGET: ThemeContrastTarget = {
+  body: 4.5,
+  large: 3,
+  ui: 3,
+};
+
+/**
+ * A theme's resolved view of the token tree. Ramps and pairs are re-resolved
+ * per theme so the same name can carry different values across themes
+ * (`{colors.primary}` is one hex in `light`, another in `dark`).
+ *
+ * `light` is always present as the implicit base; named themes deep-merge
+ * their overrides on top.
+ */
+export interface ThemeView {
+  name: string;
+  /** Optional parent theme. `undefined` = the implicit `light` base. */
+  inheritsFrom?: string | undefined;
+  description?: string | undefined;
+  colors: Map<string, ResolvedColor>;
+  typography: Map<string, ResolvedTypography>;
+  rounded: Map<string, ResolvedDimension>;
+  spacing: Map<string, ResolvedDimension>;
+  elevation: Map<string, ResolvedShadow>;
+  /** Re-resolved per theme so ramp anchors and steps reflect theme overrides. */
+  colorRamps: Map<string, RampDef>;
+  /** Re-resolved per theme so pair members reflect theme overrides. */
+  colorPairs: Map<string, PairDef>;
+  /**
+   * Color names this theme *explicitly* declared in its overrides, distinct
+   * from values that inherit unchanged from the parent. The `theme-parity`
+   * rule uses this to catch colors that were silently inherited (the
+   * "added a new color, forgot to override it for dark mode" failure).
+   */
+  explicitColorOverrides: Set<string>;
+  /** Per-theme contrast target. Defaults to WCAG AA. */
+  contrastTarget: ThemeContrastTarget;
+}
+
 // ── STATE ──────────────────────────────────────────────────────────
 export interface DesignSystemState {
   name?: string | undefined;
@@ -214,6 +292,17 @@ export interface DesignSystemState {
    * `overlay`, `modal`. Values carry the raw CSS shadow string.
    */
   elevation: Map<string, ResolvedShadow>;
+  /**
+   * Motion primitives. `duration` carries timing tokens (ms or s),
+   * `easing` carries CSS easings, and `reducedMotion` is the optional
+   * fallback applied under `prefers-reduced-motion`.
+   */
+  motion: MotionState;
+  /**
+   * Iconography. A single library reference per system plus the size
+   * scale, stroke weight, and color-binding rule.
+   */
+  iconography?: IconographyState | undefined;
   components: Map<string, ComponentDef>;
   /**
    * Closed-world registry of component names. Absent = open-world (back-compat);
@@ -224,7 +313,21 @@ export interface DesignSystemState {
   colorRamps: Map<string, RampDef>;
   /** Pair definitions, keyed by pair name. */
   colorPairs: Map<string, PairDef>;
-  /** Flat lookup: "colors.primary" → ResolvedColor */
+  /**
+   * Resolved per-theme views, keyed by theme name. Always contains the
+   * implicit `light` base view that mirrors the top-level fields. Other
+   * theme views are deep-merge results of their declared overrides on top
+   * of their `inheritsFrom` parent (default: `light`).
+   */
+  themes: Map<string, ThemeView>;
+  /**
+   * Currently-active theme name. Top-level `colors`/`typography`/etc. are
+   * mirrors of this theme's view. Defaults to `light`. Rules that operate
+   * on the active theme (the existing single-theme rules) keep working
+   * unchanged; rules that need cross-theme reasoning iterate `themes`.
+   */
+  activeTheme: string;
+  /** Flat lookup: "colors.primary" → ResolvedValue (active theme). */
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
   sections?: string[] | undefined;
@@ -270,6 +373,49 @@ export interface ComponentDef {
   resolvedStates: Map<string, Map<string, ResolvedValue>>;
   /** Unresolved references that failed to resolve */
   unresolvedRefs: string[];
+  /**
+   * Token paths the component referenced (whole-value or embedded). Recorded
+   * pre-resolution so usage-aware rules (e.g., `orphaned-tokens`) can see
+   * references that get substituted out of the resolved property value.
+   */
+  referencedTokens: string[];
+  /**
+   * Per-property whole-value token references, recorded pre-resolution.
+   * Keyed by property name (`backgroundColor`); value is the bare path
+   * (e.g., `colors.primary`). Per-theme rules use this to re-resolve a
+   * property's color through the relevant theme's color map without
+   * keeping the raw markdown around.
+   */
+  propertyRefs: Map<string, string>;
+  /**
+   * Per-state whole-value token references, recorded pre-resolution.
+   * Outer key: state name (`hover`, `focus-visible`, ...). Inner key:
+   * property name. Inner value: the bare path (e.g., `colors.primary`).
+   */
+  stateRefs: Map<string, Map<string, string>>;
+}
+
+/**
+ * Resolved motion state. `duration` and `easing` are independently keyed
+ * sub-maps. `reducedMotion` carries the names of the motion tokens that
+ * become the active values under `prefers-reduced-motion` (the names are
+ * resolved against `duration` / `easing` at consume time so authors can
+ * see the canonical token instead of a duplicated literal).
+ */
+export interface MotionState {
+  duration: Map<string, ResolvedDuration>;
+  easing: Map<string, ResolvedEasing>;
+  reducedMotion?: { duration: string; easing: string };
+}
+
+/** Resolved iconography state. */
+export interface IconographyState {
+  library: { name: string; version?: string; style: 'outlined' | 'filled' };
+  strokeWeight?: ResolvedDimension;
+  sizes: Map<string, ResolvedDimension>;
+  defaultSize: string;
+  /** `currentColor` (default), a hex literal, or a `{colors.*}` reference string. */
+  colorBinding: string;
 }
 
 // ── ERROR CODES ────────────────────────────────────────────────────
@@ -366,4 +512,52 @@ export const isValidDimension = isStandardDimension;
  */
 export function isTokenReference(raw: string): boolean {
   return /^\{[a-zA-Z0-9._-]+\}$/.test(raw);
+}
+
+/**
+ * Parse a duration string (ms or s) into a numeric value + unit.
+ * Returns null for non-duration strings (other CSS units, keywords, refs).
+ */
+export function parseDurationParts(raw: string): { value: number; unit: 'ms' | 's' } | null {
+  const parts = parseDimensionParts(raw);
+  if (!parts) return null;
+  if (parts.unit !== 'ms' && parts.unit !== 's') return null;
+  return { value: parts.value, unit: parts.unit };
+}
+
+/**
+ * Validate a CSS easing string. Accepts:
+ *   - keywords: linear, ease, ease-in, ease-out, ease-in-out, step-start, step-end
+ *   - `cubic-bezier(x1, y1, x2, y2)` with four numeric control points
+ *   - `steps(<int>[, <position>])`
+ * Returns the parsed cubic-bezier control points when present, or `null`
+ * when the easing is keyword-only / steps(...) / unparseable.
+ */
+const EASING_KEYWORD_SET = new Set([
+  'linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out',
+  'step-start', 'step-end',
+]);
+
+export function isValidEasing(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (EASING_KEYWORD_SET.has(trimmed)) return true;
+  if (parseCubicBezier(trimmed) !== null) return true;
+  if (/^steps\s*\(\s*\d+\s*(,\s*[a-z-]+\s*)?\)$/i.test(trimmed)) return true;
+  return false;
+}
+
+/**
+ * Parse `cubic-bezier(x1, y1, x2, y2)` into its four control points.
+ * Returns null if the input is not a cubic-bezier literal.
+ */
+export function parseCubicBezier(raw: string): [number, number, number, number] | null {
+  const match = raw.trim().match(/^cubic-bezier\s*\(\s*(-?\d*\.?\d+)\s*,\s*(-?\d*\.?\d+)\s*,\s*(-?\d*\.?\d+)\s*,\s*(-?\d*\.?\d+)\s*\)$/);
+  if (!match) return null;
+  const points: number[] = [];
+  for (let i = 1; i <= 4; i++) {
+    const n = parseFloat(match[i]!);
+    if (Number.isNaN(n)) return null;
+    points.push(n);
+  }
+  return [points[0]!, points[1]!, points[2]!, points[3]!];
 }

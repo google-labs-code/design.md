@@ -79,6 +79,56 @@ export function orphanedTokens(state: DesignSystemState): RuleFinding[] {
       message: `'${name}' is defined but never referenced by any component.`,
     });
   }
+
+  // Motion + iconography: components record their pre-resolution references
+  // in `referencedTokens` so we can see motion/iconography refs that get
+  // substituted out of the resolved property value. The reduced-motion
+  // fallback also counts as a reference to its named duration / easing.
+  const referencedMotionDurations = new Set<string>();
+  const referencedMotionEasings = new Set<string>();
+  const referencedIconSizes = new Set<string>();
+  if (state.motion.reducedMotion) {
+    referencedMotionDurations.add(state.motion.reducedMotion.duration);
+    referencedMotionEasings.add(state.motion.reducedMotion.easing);
+  }
+  for (const [, comp] of state.components) {
+    for (const path of comp.referencedTokens) {
+      if (path.startsWith('motion.duration.')) {
+        referencedMotionDurations.add(path.slice('motion.duration.'.length));
+      } else if (path.startsWith('motion.easing.')) {
+        referencedMotionEasings.add(path.slice('motion.easing.'.length));
+      } else if (path.startsWith('iconography.sizes.')) {
+        referencedIconSizes.add(path.slice('iconography.sizes.'.length));
+      }
+    }
+  }
+  for (const name of state.motion.duration.keys()) {
+    if (!referencedMotionDurations.has(name)) {
+      findings.push({
+        path: `motion.duration.${name}`,
+        message: `Motion duration '${name}' is defined but never referenced by any component.`,
+      });
+    }
+  }
+  for (const name of state.motion.easing.keys()) {
+    if (!referencedMotionEasings.has(name)) {
+      findings.push({
+        path: `motion.easing.${name}`,
+        message: `Motion easing '${name}' is defined but never referenced by any component.`,
+      });
+    }
+  }
+  if (state.iconography) {
+    for (const name of state.iconography.sizes.keys()) {
+      if (!referencedIconSizes.has(name) && state.iconography.defaultSize !== name) {
+        findings.push({
+          path: `iconography.sizes.${name}`,
+          message: `Icon size '${name}' is defined but never referenced by any component.`,
+        });
+      }
+    }
+  }
+
   return findings;
 }
 

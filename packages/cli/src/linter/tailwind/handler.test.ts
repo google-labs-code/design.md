@@ -183,6 +183,32 @@ describe('TailwindEmitterHandler', () => {
     });
   });
 
+  describe('motion mapping', () => {
+    it('emits motion durations and easings as transition tokens', () => {
+      const state = buildState({
+        motion: {
+          duration: { fast: '150ms', medium: '0.25s' },
+          easing: { standard: 'cubic-bezier(0.4, 0, 0.2, 1)', linear: 'linear' },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const ext = result.data.theme.extend;
+      expect(ext.transitionDuration?.['fast']).toBe('150ms');
+      expect(ext.transitionDuration?.['medium']).toBe('0.25s');
+      expect(ext.transitionTimingFunction?.['standard']).toBe('cubic-bezier(0.4, 0, 0.2, 1)');
+      expect(ext.transitionTimingFunction?.['linear']).toBe('linear');
+    });
+
+    it('omits transition keys when motion is undeclared', () => {
+      const state = buildState({});
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.theme.extend.transitionDuration).toEqual({});
+      expect(result.data.theme.extend.transitionTimingFunction).toEqual({});
+    });
+  });
+
   describe('components plugin (opt-in)', () => {
     it('omits the plugin block by default', () => {
       const state = buildState({
@@ -223,6 +249,59 @@ describe('TailwindEmitterHandler', () => {
       expect(focus?.['outline']).toContain('solid');
       const disabled = btn?.['&:disabled, &[aria-disabled="true"]'] as Record<string, unknown>;
       expect(disabled?.['cursor']).toBe('not-allowed');
+    });
+  });
+
+  describe('themes mapping', () => {
+    it('omits the themes field when no extra themes are declared', () => {
+      const state = buildState({ colors: { primary: '#1A1C1E' } });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.themes).toBeUndefined();
+    });
+
+    it('emits per-theme color overrides for dark and high-contrast', () => {
+      const state = buildState({
+        colors: { primary: '#1A1C1E', surface: '#FFFFFF' },
+        themes: {
+          dark: { colors: { primary: '#A3C9FF', surface: '#1A1C1E' } },
+          'high-contrast': {
+            colors: { primary: '#000000', surface: '#FFFFFF' },
+            contrastTarget: { body: 7, large: 4.5, ui: 4.5 },
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+
+      // Base colors live in theme.extend.colors as the light defaults.
+      expect(result.data.theme.extend.colors?.['primary']).toBe('#1a1c1e');
+
+      // Themes carries the dark and high-contrast overrides.
+      const themes = result.data.themes!;
+      expect(themes['dark']?.colors['primary']).toBe('#a3c9ff');
+      expect(themes['dark']?.colors['surface']).toBe('#1a1c1e');
+      expect(themes['high-contrast']?.colors['primary']).toBe('#000000');
+      expect(themes['high-contrast']?.contrastTarget).toEqual({ body: 7, large: 4.5, ui: 4.5 });
+    });
+
+    it('emits per-theme ramp groups, mirroring the base shape', () => {
+      const state = buildState({
+        colors: { primary: { type: 'ramp', anchor: '#1A1C1E', humanName: 'Charcoal' } },
+        themes: {
+          dark: { colors: { primary: { type: 'ramp', anchor: '#A3C9FF', humanName: 'Sky' } } },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+
+      const lightPrimary = result.data.theme.extend.colors?.['primary'] as Record<string, string>;
+      expect(lightPrimary?.['DEFAULT']).toBe('#1a1c1e');
+      expect(lightPrimary?.['500']).toBe('#1a1c1e');
+
+      const darkPrimary = result.data.themes!['dark']?.colors['primary'] as Record<string, string>;
+      expect(darkPrimary?.['DEFAULT']).toBe('#a3c9ff');
+      expect(darkPrimary?.['500']).toBe('#a3c9ff');
     });
   });
 });

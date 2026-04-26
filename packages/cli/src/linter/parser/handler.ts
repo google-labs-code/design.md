@@ -230,6 +230,8 @@ export class ParserHandler implements ParserSpec {
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
       elevation: raw['elevation'] as Record<string, string> | undefined,
+      motion: raw['motion'] as ParsedDesignSystem['motion'],
+      iconography: raw['iconography'] as ParsedDesignSystem['iconography'],
       components,
       componentRegistry,
       voice: raw['voice'] && typeof raw['voice'] === 'object' && !Array.isArray(raw['voice'])
@@ -238,6 +240,7 @@ export class ParserHandler implements ParserSpec {
       copy: raw['copy'] && typeof raw['copy'] === 'object' && !Array.isArray(raw['copy'])
         ? (raw['copy'] as ParsedDesignSystem['copy'])
         : undefined,
+      themes: raw['themes'] as ParsedDesignSystem['themes'],
       sourceMap,
       sections,
       documentSections,

@@ -1,5 +1,5 @@
-import { SPEC_VERSION, STANDARD_UNITS, SECTIONS, TYPOGRAPHY_PROPERTIES, COMPONENT_SUB_TOKENS, CORE_COLOR_ROLES, RECOMMENDED_TOKENS, EXAMPLES, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES } from '../spec-config.js'
-import { frontmatterExample, colorsExample, typographyExample, componentsExample, typographyPropertyList, sectionOrderList, componentSubTokenList, recommendedTokens, voiceExample, copyExample, voiceAxesTable, casingTable } from './renderers.js'
+import { SPEC_VERSION, STANDARD_UNITS, SECTIONS, TYPOGRAPHY_PROPERTIES, COMPONENT_SUB_TOKENS, CORE_COLOR_ROLES, ICON_LIBRARIES, EASING_KEYWORDS, RECOMMENDED_TOKENS, EXAMPLES, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES } from '../spec-config.js'
+import { frontmatterExample, colorsExample, typographyExample, componentsExample, motionExample, iconographyExample, typographyPropertyList, sectionOrderList, componentSubTokenList, recommendedTokens, voiceExample, copyExample, voiceAxesTable, casingTable } from './renderers.js'
 
 # DESIGN.md Format
 
@@ -219,6 +219,35 @@ spacing:
   margin: 32px
 ```
 
+## Motion
+
+Also known as "Motion & Animation".
+
+This section describes when and how the interface moves. Motion communicates causality (this caused that), state change, and spatial relationship. It is never decorative.
+
+- **Easing semantics** — entrance uses *decelerate* (fast in, slow stop); exit uses *accelerate*; movement on screen uses *standard*. Match easing to physical intuition.
+- **Duration scale** — `fast` for state changes (button press), `medium` for component transitions (modal open), `slow` for page-level transitions only. Anything over 400ms feels broken (`overlong-duration`).
+- **Reduced motion** — every system declares a `reducedMotion:` fallback. Required, not optional (`missing-reduced-motion`).
+- **What never animates** — layout properties (`width`, `height`, `padding`, `margin`) cause thrash; animate `transform` and `opacity` instead (`animating-layout-property`).
+
+### Design Tokens
+
+The `motion` section defines the temporal vocabulary. `duration` carries timing primitives in ms or s; `easing` carries CSS easings (keyword or `cubic-bezier(...)`); `reducedMotion` names the duration and easing applied under `prefers-reduced-motion`.
+
+It is a record with three optional sub-blocks: `duration`, `easing`, and `reducedMotion`.
+
+{motionExample()}
+
+Components reference motion tokens from `transition:` shorthands:
+
+```yaml
+components:
+  button-primary:
+    transition: "opacity {motion.duration.fast} {motion.easing.standard}"
+```
+
+The model resolves the embedded references after validation, so exporters see substituted literal values (`"opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)"`).
+
 ## Elevation & Depth
 
 Also known as "Elevation".
@@ -285,6 +314,24 @@ rounded:
   lg: 12px
   full: 9999px
 ```
+
+## Iconography
+
+Also known as "Icons".
+
+This section commits the system to a single icon library and a single stroke weight, plus an icon-size scale that components reference from `iconSize:`.
+
+- **One library, one weight** — never mix Lucide and Material Symbols in the same product. Pick one stroke weight and hold it across the system.
+- **Filled vs. outlined** — outlined is the default; filled signals selection or emphasis (active tab, favorited item). Never mix in the same set.
+- **Icon-text alignment** — icons inside buttons match the cap height of the label, not the line height. Always include accessible labels for icon-only controls.
+- **Color binding** — icons inherit `currentColor` by default. Brand-colored icons are the exception, not the rule.
+- **Sizing** — icons follow text size unless they are the primary affordance (toolbar button, navigation). Document the size scale; component `iconSize` values not on the scale are flagged by `icon-size-off-scale`.
+
+### Design Tokens
+
+The `iconography` section names the library, the stroke weight, the size scale, the default size, and the color binding rule. Library names are validated against a closed enum: {ICON_LIBRARIES.map(l => `\`${l}\``).join(', ')}.
+
+{iconographyExample()}
 
 ## Components
 
@@ -480,7 +527,7 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 
 | Scenario | Behavior | Example |
 |---|---|---|
-| Unknown section heading | Preserve; do not error | `## Iconography` |
+| Unknown section heading | Preserve; do not error | `## Voice & Tone` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |

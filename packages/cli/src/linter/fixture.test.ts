@@ -180,4 +180,84 @@ describe('Fixture Test', () => {
     );
     expect(ctaWarnings).toEqual([]);
   });
+
+  it('processes THEMES.md with light/dark/high-contrast theme views', () => {
+    const path = join(import.meta.dir, 'fixtures', 'THEMES.md');
+    const content = readFileSync(path, 'utf-8');
+    const result = lint(content);
+
+    const ds = result.designSystem;
+
+    // Three theme views: implicit light + declared dark + high-contrast.
+    expect(ds.themes.size).toBe(3);
+    expect(ds.themes.has('light')).toBe(true);
+    expect(ds.themes.has('dark')).toBe(true);
+    expect(ds.themes.has('high-contrast')).toBe(true);
+    expect(ds.activeTheme).toBe('light');
+
+    // Light view mirrors the root token tree.
+    const light = ds.themes.get('light')!;
+    expect(light.colors.get('primary')?.hex).toBe('#3b82f6');
+    expect(light.contrastTarget).toEqual({ body: 4.5, large: 3, ui: 3 });
+
+    // Dark view replaces the primary ramp cleanly — anchor + steps update.
+    const dark = ds.themes.get('dark')!;
+    expect(dark.colors.get('primary')?.hex).toBe('#a3c9ff');
+    expect(dark.colors.get('primary.500')?.hex).toBe('#a3c9ff');
+    expect(dark.colors.get('surface')?.hex).toBe('#0b1220');
+    // Re-declared inline pair on the ramp also lives in the theme view.
+    expect(dark.colors.get('primary-container')).toBeDefined();
+
+    // High-contrast view raises the body contrast floor to AAA.
+    const hc = ds.themes.get('high-contrast')!;
+    expect(hc.contrastTarget.body).toBe(7);
+    expect(hc.contrastTarget.ui).toBe(4.5);
+
+    // Tailwind exporter surfaces dark + high-contrast as additional themes.
+    if (!result.tailwindConfig.success) throw new Error('Tailwind emit failed');
+    const themes = result.tailwindConfig.data.themes!;
+    expect(themes['dark']?.colors['surface']).toBe('#0b1220');
+    expect(themes['high-contrast']?.contrastTarget?.body).toBe(7);
+
+    // Lint runs end-to-end without errors.
+    const errors = result.findings.filter(d => d.severity === 'error');
+    expect(errors).toEqual([]);
+  });
+
+  it('processes MOTION_AND_ICONS.md end-to-end', () => {
+    const path = join(import.meta.dir, 'fixtures', 'MOTION_AND_ICONS.md');
+    const content = readFileSync(path, 'utf-8');
+    const result = lint(content);
+
+    // No errors expected — motion + iconography parse cleanly and every
+    // declared token is referenced by at least one component.
+    const errors = result.findings.filter(d => d.severity === 'error');
+    expect(errors).toEqual([]);
+    expect(result.findings.some(d => d.path?.startsWith('motion.'))).toBe(false);
+    expect(result.findings.some(d => d.path?.startsWith('iconography.'))).toBe(false);
+
+    // Motion model is populated.
+    const ds = result.designSystem;
+    expect(ds.motion.duration.get('fast')?.value).toBe(150);
+    expect(ds.motion.duration.get('fast')?.unit).toBe('ms');
+    const std = ds.motion.easing.get('standard');
+    expect(std?.controlPoints).toEqual([0.4, 0, 0.2, 1]);
+    expect(ds.motion.reducedMotion?.duration).toBe('instant');
+
+    // Iconography model is populated.
+    expect(ds.iconography?.library.name).toBe('lucide');
+    expect(ds.iconography?.library.style).toBe('outlined');
+    expect(ds.iconography?.sizes.get('md')?.value).toBe(20);
+    expect(ds.iconography?.strokeWeight?.value).toBe(1.5);
+
+    // Tailwind exporter surfaces motion as transitionDuration / timingFunction.
+    if (!result.tailwindConfig.success) throw new Error('Tailwind emit failed');
+    const ext = result.tailwindConfig.data.theme.extend;
+    expect(ext.transitionDuration?.['fast']).toBe('150ms');
+    expect(ext.transitionTimingFunction?.['standard']).toBe('cubic-bezier(0.4, 0, 0.2, 1)');
+
+    // Component transitions resolve embedded motion refs to literal values.
+    const button = ds.components.get('button-primary')!;
+    expect(button.properties.get('transition')).toBe('opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)');
+  });
 });

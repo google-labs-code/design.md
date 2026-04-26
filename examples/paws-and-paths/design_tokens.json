@@ -736,6 +736,119 @@
       "$value": "0 24px 48px rgba(133,83,0,0.18)"
     }
   },
+  "motion": {
+    "duration": {
+      "$type": "duration",
+      "instant": {
+        "$value": {
+          "value": 0,
+          "unit": "ms"
+        }
+      },
+      "fast": {
+        "$value": {
+          "value": 150,
+          "unit": "ms"
+        }
+      },
+      "medium": {
+        "$value": {
+          "value": 250,
+          "unit": "ms"
+        }
+      },
+      "slow": {
+        "$value": {
+          "value": 400,
+          "unit": "ms"
+        }
+      }
+    },
+    "easing": {
+      "$type": "cubicBezier",
+      "standard": {
+        "$type": "cubicBezier",
+        "$value": [
+          0.4,
+          0,
+          0.2,
+          1
+        ]
+      },
+      "decelerate": {
+        "$type": "cubicBezier",
+        "$value": [
+          0,
+          0,
+          0.2,
+          1
+        ]
+      },
+      "accelerate": {
+        "$type": "cubicBezier",
+        "$value": [
+          0.4,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    "$extensions": {
+      "design.md": {
+        "reducedMotion": {
+          "duration": "{motion.duration.instant}",
+          "easing": "{motion.easing.standard}"
+        }
+      }
+    }
+  },
+  "iconography": {
+    "$extensions": {
+      "design.md": {
+        "iconography": {
+          "library": {
+            "name": "lucide",
+            "style": "outlined",
+            "version": "0.451.0"
+          },
+          "defaultSize": "md",
+          "colorBinding": "currentColor",
+          "strokeWeight": {
+            "value": 1.5,
+            "unit": "px"
+          }
+        }
+      }
+    },
+    "sizes": {
+      "$type": "dimension",
+      "sm": {
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "md": {
+        "$value": {
+          "value": 20,
+          "unit": "px"
+        }
+      },
+      "lg": {
+        "$value": {
+          "value": 24,
+          "unit": "px"
+        }
+      },
+      "xl": {
+        "$value": {
+          "value": 32,
+          "unit": "px"
+        }
+      }
+    }
+  },
   "component": {
     "button-primary": {
       "backgroundColor": {
@@ -793,7 +906,7 @@
         }
       },
       "transition": {
-        "$value": "opacity 150ms ease-out"
+        "$value": "opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)"
       },
       "$extensions": {
         "design.md": {
@@ -871,7 +984,7 @@
         }
       },
       "transition": {
-        "$value": "opacity 150ms ease-out"
+        "$value": "opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)"
       },
       "$extensions": {
         "design.md": {
@@ -930,6 +1043,58 @@
       "shadow": {
         "$type": "shadow",
         "$value": "0 4px 12px rgba(133,83,0,0.10)"
+      },
+      "transition": {
+        "$value": "transform 250ms cubic-bezier(0, 0, 0.2, 1)"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": {
+          "value": 24,
+          "unit": "px"
+        }
+      }
+    },
+    "modal-walker-detail": {
+      "backgroundColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "rounded": {
+        "$type": "dimension",
+        "$value": {
+          "value": 1.5,
+          "unit": "rem"
+        }
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": {
+          "value": 40,
+          "unit": "px"
+        }
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "0 24px 48px rgba(133,83,0,0.18)"
+      },
+      "transition": {
+        "$value": "opacity 400ms cubic-bezier(0, 0, 0.2, 1)"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": {
+          "value": 32,
+          "unit": "px"
+        }
       }
     },
     "card-walk-stat": {
@@ -1031,7 +1196,11 @@
         "$value": "1px solid {colors.outline-variant}"
       },
       "iconSize": {
-        "$value": "auto"
+        "$type": "dimension",
+        "$value": {
+          "value": 20,
+          "unit": "px"
+        }
       },
       "$extensions": {
         "design.md": {
@@ -1077,7 +1246,14 @@
         }
       },
       "transition": {
-        "$value": "opacity 100ms ease-in"
+        "$value": "opacity 150ms cubic-bezier(0.4, 0, 1, 1)"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
       },
       "$extensions": {
         "design.md": {
@@ -1145,6 +1321,13 @@
         "$type": "dimension",
         "$value": {
           "value": 4,
+          "unit": "px"
+        }
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": {
+          "value": 16,
           "unit": "px"
         }
       }

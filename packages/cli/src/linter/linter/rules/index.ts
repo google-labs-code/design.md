@@ -34,9 +34,14 @@ import { animatingLayoutPropertyRule } from './animating-layout-property.js';
 import { elevationWithoutSemanticsRule } from './elevation-without-semantics.js';
 import { tripleSeparationRule } from './triple-separation.js';
 import { pairContrastRule } from './pair-contrast.js';
+import { themeParityRule } from './theme-parity.js';
+import { pairParityRule } from './pair-parity.js';
 import { mixedPairForegroundRule } from './mixed-pair-foreground.js';
 import { rampAnchorNamingRule } from './ramp-anchor-naming.js';
 import { proseTokenMismatchRule } from './prose-token-mismatch.js';
+import { missingReducedMotionRule } from './missing-reduced-motion.js';
+import { overlongDurationRule } from './overlong-duration.js';
+import { iconSizeOffScaleRule } from './icon-size-off-scale.js';
 import { unboundComponentRule } from './unbound-component.js';
 import { missingRequiredPropertyRule } from './missing-required-property.js';
 import { registryWithoutDefinitionRule } from './registry-without-definition.js';
@@ -55,6 +60,8 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   missingPrimaryRule,
   contrastCheckRule,
   pairContrastRule,
+  themeParityRule,
+  pairParityRule,
   mixedPairForegroundRule,
   rampAnchorNamingRule,
   orphanedTokensRule,
@@ -73,6 +80,9 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   disabledOpacityOnlyRule,
   unknownStateRule,
   proseTokenMismatchRule,
+  missingReducedMotionRule,
+  overlongDurationRule,
+  iconSizeOffScaleRule,
   unboundComponentRule,
   missingRequiredPropertyRule,
   registryWithoutDefinitionRule,
@@ -119,9 +129,14 @@ export { animatingLayoutProperty } from './animating-layout-property.js';
 export { elevationWithoutSemantics } from './elevation-without-semantics.js';
 export { tripleSeparation } from './triple-separation.js';
 export { pairContrast } from './pair-contrast.js';
+export { themeParity } from './theme-parity.js';
+export { pairParity } from './pair-parity.js';
 export { mixedPairForeground } from './mixed-pair-foreground.js';
 export { rampAnchorNaming } from './ramp-anchor-naming.js';
 export { proseTokenMismatch } from './prose-token-mismatch.js';
+export { missingReducedMotion } from './missing-reduced-motion.js';
+export { overlongDuration } from './overlong-duration.js';
+export { iconSizeOffScale } from './icon-size-off-scale.js';
 export { unboundComponent } from './unbound-component.js';
 export { missingRequiredProperty } from './missing-required-property.js';
 export { registryWithoutDefinition } from './registry-without-definition.js';
