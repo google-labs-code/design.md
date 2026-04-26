@@ -19,6 +19,7 @@ import type {
   ParserResult,
   ParsedDesignSystem,
   RawRegistryEntry,
+  RawComponentValue,
   SourceLocation,
   DocumentSection,
   SuppressionDirective,
@@ -350,7 +351,7 @@ function parseSuppressionDirectives(contentLines: string[]): SuppressionDirectiv
  * flat form.
  */
 function normalizeComponents(raw: unknown): {
-  components: Record<string, Record<string, string>> | undefined;
+  components: Record<string, Record<string, RawComponentValue>> | undefined;
   componentRegistry: RawRegistryEntry[] | undefined;
 } {
   if (!raw || typeof raw !== 'object') {
@@ -360,7 +361,7 @@ function normalizeComponents(raw: unknown): {
   const hasRegistry = Array.isArray(obj['registry']);
   if (!hasRegistry) {
     return {
-      components: obj as Record<string, Record<string, string>>,
+      components: obj as Record<string, Record<string, RawComponentValue>>,
       componentRegistry: undefined,
     };
   }
@@ -382,7 +383,7 @@ function normalizeComponents(raw: unknown): {
   }).filter(e => e.name.length > 0);
 
   const definitions = obj['definitions'] && typeof obj['definitions'] === 'object'
-    ? (obj['definitions'] as Record<string, Record<string, string>>)
+    ? (obj['definitions'] as Record<string, Record<string, RawComponentValue>>)
     : {};
 
   return { components: definitions, componentRegistry: registry };

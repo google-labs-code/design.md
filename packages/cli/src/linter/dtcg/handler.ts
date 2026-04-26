@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue } from './spec.js';
-import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedShadow, ResolvedTypography } from '../model/spec.js';
+import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue, DesignMdStatesExtension } from './spec.js';
+import type { ComponentDef, DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedShadow, ResolvedTypography, ResolvedValue } from '../model/spec.js';
 
 const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.json';
+const DESIGN_MD_EXTENSION_KEY = 'design.md';
 
 /**
  * Pure function mapping DesignSystemState → DTCG tokens.json (W3C Design Tokens Format Module 2025.10).
@@ -46,6 +47,9 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     const elevationGroup = this.mapElevation(state);
     if (elevationGroup) file['elevation'] = elevationGroup;
 
+    const componentGroup = this.mapComponents(state);
+    if (componentGroup) file['component'] = componentGroup;
+
     return { success: true, data: file as Record<string, unknown> };
   }
 
@@ -68,6 +72,81 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
    */
   private shadowToValue(shadow: ResolvedShadow): string {
     return shadow.raw;
+  }
+
+  /**
+   * Project the component map into a DTCG group. DTCG has no native component
+   * concept, so each component becomes a sub-group whose tokens are its base
+   * properties plus a `$extensions['design.md']` block carrying the
+   * `interactive` flag and per-state overrides.
+   */
+  private mapComponents(state: DesignSystemState): DtcgGroup | null {
+    if (state.components.size === 0) return null;
+    const group: DtcgGroup = {};
+    for (const [name, comp] of state.components) {
+      group[name] = this.componentToGroup(comp);
+    }
+    return group;
+  }
+
+  private componentToGroup(comp: ComponentDef): DtcgGroup {
+    const sub: DtcgGroup = {};
+    for (const [propName, value] of comp.properties) {
+      const token = this.componentValueToToken(value);
+      if (token) sub[propName] = token;
+    }
+    const extension = this.buildStatesExtension(comp);
+    if (extension) {
+      sub.$extensions = { [DESIGN_MD_EXTENSION_KEY]: extension };
+    }
+    return sub;
+  }
+
+  private buildStatesExtension(comp: ComponentDef): DesignMdStatesExtension | null {
+    if (comp.states.size === 0 && !comp.interactive) return null;
+    const states: Record<string, Record<string, string | number>> = {};
+    for (const [stateName, overrides] of comp.states) {
+      const flat: Record<string, string | number> = {};
+      for (const [prop, value] of overrides) {
+        flat[prop] = this.flattenForExtension(value);
+      }
+      states[stateName] = flat;
+    }
+    const ext: DesignMdStatesExtension = { states };
+    if (comp.interactive !== undefined) ext.interactive = comp.interactive;
+    return ext;
+  }
+
+  private flattenForExtension(value: ResolvedValue): string | number {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'object' && value !== null && 'type' in value) {
+      if (value.type === 'color') return value.hex;
+      if (value.type === 'dimension') return `${value.value}${value.unit}`;
+      if (value.type === 'shadow') return value.raw;
+    }
+    return String(value);
+  }
+
+  private componentValueToToken(value: ResolvedValue): DtcgToken | null {
+    if (typeof value === 'object' && value !== null && 'type' in value) {
+      if (value.type === 'color') {
+        return { $type: 'color', $value: this.colorToValue(value as ResolvedColor) };
+      }
+      if (value.type === 'dimension') {
+        return { $type: 'dimension', $value: this.dimToValue(value as ResolvedDimension) };
+      }
+      if (value.type === 'typography') {
+        return { $type: 'typography', $value: this.typographyToValue(value as ResolvedTypography) };
+      }
+      if (value.type === 'shadow') {
+        return { $type: 'shadow', $value: (value as ResolvedShadow).raw };
+      }
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+      return { $value: value };
+    }
+    return null;
   }
 
   private mapColors(state: DesignSystemState): DtcgGroup | null {

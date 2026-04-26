@@ -15,7 +15,7 @@
 import { describe, test, expect } from 'bun:test';
 import { DtcgEmitterHandler } from './handler.js';
 import { ModelHandler } from '../model/handler.js';
-import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography } from '../model/spec.js';
+import type { ComponentDef, DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography, ResolvedValue } from '../model/spec.js';
 import type { ParsedDesignSystem } from '../parser/spec.js';
 
 function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
@@ -197,6 +197,63 @@ describe('DtcgEmitterHandler', () => {
 
     const raised = elevationGroup['raised'] as Record<string, unknown>;
     expect(raised['$value']).toBe('0 4px 8px rgba(0,0,0,0.08)');
+  });
+
+  test('components → DTCG group with $extensions[design.md].states', () => {
+    const primary = makeColor('#1a1c1e', 0x1A, 0x1C, 0x1E);
+    const accent = makeColor('#ffffff', 255, 255, 255);
+
+    const baseProps = new Map<string, ResolvedValue>([
+      ['backgroundColor', primary],
+      ['padding', makeDim(12, 'px')],
+    ]);
+    const hoverOverrides = new Map<string, ResolvedValue>([
+      ['backgroundColor', accent],
+    ]);
+    const focusOverrides = new Map<string, ResolvedValue>([
+      ['outline', '2px solid #ffffff'],
+    ]);
+
+    const states = new Map<string, Map<string, ResolvedValue>>([
+      ['hover', hoverOverrides],
+      ['focus-visible', focusOverrides],
+    ]);
+    const resolvedStates = new Map<string, Map<string, ResolvedValue>>();
+    for (const [name, overrides] of states) {
+      const merged = new Map<string, ResolvedValue>(baseProps);
+      for (const [k, v] of overrides) merged.set(k, v);
+      resolvedStates.set(name, merged);
+    }
+
+    const btn: ComponentDef = {
+      properties: baseProps,
+      interactive: true,
+      states,
+      resolvedStates,
+      unresolvedRefs: [],
+    };
+
+    const state = emptyState({
+      components: new Map<string, ComponentDef>([['btn', btn]]),
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const componentGroup = result.data['component'] as Record<string, unknown>;
+    expect(componentGroup).toBeDefined();
+    const btnTok = componentGroup['btn'] as Record<string, unknown>;
+    const bgToken = btnTok['backgroundColor'] as Record<string, unknown>;
+    expect(bgToken['$type']).toBe('color');
+
+    const ext = btnTok['$extensions'] as Record<string, unknown>;
+    expect(ext).toBeDefined();
+    const designMd = ext['design.md'] as Record<string, unknown>;
+    expect(designMd['interactive']).toBe(true);
+    const stateMap = designMd['states'] as Record<string, Record<string, unknown>>;
+    expect(stateMap['hover']?.['backgroundColor']).toBe('#ffffff');
+    expect(stateMap['focus-visible']?.['outline']).toBe('2px solid #ffffff');
   });
 
   test('typography with missing fields omits them from $value', () => {

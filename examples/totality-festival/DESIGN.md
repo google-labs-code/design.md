@@ -106,8 +106,16 @@ components:
     rounded: "{rounded.lg}"
     padding: 12px
     height: 48px
-  button-primary-hover:
-    backgroundColor: "{colors.primary-fixed}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-fixed}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   button-secondary:
     backgroundColor: "#00000000"
     textColor: "{colors.secondary}"
@@ -115,25 +123,64 @@ components:
     rounded: "{rounded.lg}"
     padding: 12px
     height: 48px
-  button-secondary-hover:
-    backgroundColor: "#00e3fd1a"
+    border: "1px solid {colors.secondary}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "#00e3fd1a"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface}"
+        border: "1px solid {colors.outline}"
+        cursor: not-allowed
   card-glass-level-2:
     backgroundColor: "#34343a33"
     rounded: "{rounded.xl}"
     padding: "{spacing.gutter}"
-  card-glass-interactive-hover:
-    backgroundColor: "#38393f66"
+  card-glass-interactive:
+    backgroundColor: "#34343a33"
+    rounded: "{rounded.xl}"
+    padding: "{spacing.gutter}"
+    border: "1px solid #ffffff14"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "#38393f66"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        cursor: not-allowed
+        textColor: "{colors.on-surface}"
   input-field:
     backgroundColor: "{colors.surface-container-lowest}"
     textColor: "{colors.on-surface}"
     typography: "{typography.body-md}"
     rounded: "{rounded.lg}"
     padding: 12px
-  list-item-hover:
-    backgroundColor: "{colors.surface-container-high}"
-    textColor: "{colors.primary}"
+    interactive: true
+    states:
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
+  list-item:
+    backgroundColor: "#00000000"
+    textColor: "{colors.on-surface}"
     rounded: "{rounded.md}"
     padding: 8px
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.primary}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   hero-headline:
     textColor: "{colors.primary}"
     typography: "{typography.headline-xl}"

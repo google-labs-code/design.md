@@ -18,6 +18,30 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 describe('Fixture Test', () => {
+  it('processes STATES.md with nested component states', () => {
+    const path = join(import.meta.dir, 'fixtures', 'STATES.md');
+    const content = readFileSync(path, 'utf-8');
+
+    const result = lint(content);
+
+    const btn = result.designSystem.components.get('button-primary');
+    expect(btn).toBeDefined();
+    expect(btn?.interactive).toBe(true);
+    expect(btn?.states.size).toBe(4);
+
+    // base ⊕ hover override
+    const hover = btn?.resolvedStates.get('hover');
+    expect(hover).toBeDefined();
+    const hoverBg = hover?.get('backgroundColor');
+    expect(typeof hoverBg === 'object' && hoverBg !== null && 'hex' in hoverBg && hoverBg.hex).toBe('#3d3f42');
+    // base padding survives in merged hover state
+    expect(hover?.has('padding')).toBe(true);
+
+    // No errors expected — all states defined, focus-visible present, etc.
+    const errors = result.findings.filter(f => f.severity === 'error');
+    expect(errors).toEqual([]);
+  });
+
   it('processes DESIGN-test.md', () => {
     // Use import.meta.dir to get the current directory in Bun ESM
     const path = join(import.meta.dir, 'fixtures', 'DESIGN-test.md');

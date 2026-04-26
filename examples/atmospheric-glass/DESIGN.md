@@ -123,8 +123,16 @@ components:
     height: 48px
     padding: 0px 24px
     transition: "opacity 150ms ease-out"
-  button-primary-hover:
-    backgroundColor: "{colors.primary-fixed-dim}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-fixed-dim}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-variant}"
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
   button-ghost:
     backgroundColor: "#ffffff0d"
     textColor: "{colors.primary}"
@@ -132,6 +140,15 @@ components:
     rounded: "{rounded.xl}"
     border: "1px solid #ffffff33"
     transition: "opacity 150ms ease-out"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "#ffffff26"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
   input-field:
     backgroundColor: "#ffffff1a"
     textColor: "{colors.primary}"
@@ -141,6 +158,14 @@ components:
     height: 48px
     border: "1px solid #ffffff33"
     iconSize: auto
+    interactive: true
+    states:
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "#ffffff0d"
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
   weather-display-large:
     textColor: "{colors.primary}"
     typography: "{typography.display-lg}"
@@ -152,8 +177,15 @@ components:
     rounded: "{rounded.md}"
     padding: 12px
     transition: "opacity 100ms ease-in"
-  list-item-interactive-hover:
-    backgroundColor: "#ffffff1a"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "#ffffff1a"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
 ---
 
 ## Brand & Style

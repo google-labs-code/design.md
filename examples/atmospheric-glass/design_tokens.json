@@ -1,11 +1,9 @@
 {
-  "name": {
-    "$type": "string",
-    "$value": "Atmospheric Glass"
-  },
-  "colors": {
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "$description": "Atmospheric Glass",
+  "color": {
+    "$type": "color",
     "surface": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -17,7 +15,6 @@
       }
     },
     "surface-dim": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -29,7 +26,6 @@
       }
     },
     "surface-bright": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -41,7 +37,6 @@
       }
     },
     "surface-container-lowest": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -53,7 +48,6 @@
       }
     },
     "surface-container-low": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -65,7 +59,6 @@
       }
     },
     "surface-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -77,7 +70,6 @@
       }
     },
     "surface-container-high": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -89,7 +81,6 @@
       }
     },
     "surface-container-highest": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -101,7 +92,6 @@
       }
     },
     "on-surface": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -113,7 +103,6 @@
       }
     },
     "on-surface-variant": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -125,7 +114,6 @@
       }
     },
     "inverse-surface": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -137,7 +125,6 @@
       }
     },
     "inverse-on-surface": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -149,7 +136,6 @@
       }
     },
     "outline": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -161,7 +147,6 @@
       }
     },
     "outline-variant": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -173,7 +158,6 @@
       }
     },
     "surface-tint": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -185,19 +169,17 @@
       }
     },
     "primary": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1.0,
-          1.0,
-          1.0
+          1,
+          1,
+          1
         ],
         "hex": "#ffffff"
       }
     },
     "on-primary": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -209,7 +191,6 @@
       }
     },
     "primary-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -221,7 +202,6 @@
       }
     },
     "on-primary-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -233,7 +213,6 @@
       }
     },
     "inverse-primary": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -245,7 +224,6 @@
       }
     },
     "secondary": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -257,7 +235,6 @@
       }
     },
     "on-secondary": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -269,7 +246,6 @@
       }
     },
     "secondary-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -281,7 +257,6 @@
       }
     },
     "on-secondary-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -293,35 +268,32 @@
       }
     },
     "tertiary": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1.0,
-          1.0,
-          1.0
+          1,
+          1,
+          1
         ],
         "hex": "#ffffff"
       }
     },
     "on-tertiary": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
           0.384,
-          0.0,
+          0,
           0.251
         ],
         "hex": "#620040"
       }
     },
     "tertiary-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1.0,
+          1,
           0.847,
           0.906
         ],
@@ -329,7 +301,6 @@
       }
     },
     "on-tertiary-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -341,11 +312,10 @@
       }
     },
     "error": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1.0,
+          1,
           0.706,
           0.671
         ],
@@ -353,35 +323,32 @@
       }
     },
     "on-error": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
           0.412,
-          0.0,
+          0,
           0.02
         ],
         "hex": "#690005"
       }
     },
     "error-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
           0.576,
-          0.0,
+          0,
           0.039
         ],
         "hex": "#93000a"
       }
     },
     "on-error-container": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1.0,
+          1,
           0.855,
           0.839
         ],
@@ -389,7 +356,6 @@
       }
     },
     "primary-fixed": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -401,7 +367,6 @@
       }
     },
     "primary-fixed-dim": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -413,7 +378,6 @@
       }
     },
     "on-primary-fixed": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -425,7 +389,6 @@
       }
     },
     "on-primary-fixed-variant": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -437,19 +400,17 @@
       }
     },
     "secondary-fixed": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
           0.816,
           0.894,
-          1.0
+          1
         ],
         "hex": "#d0e4ff"
       }
     },
     "secondary-fixed-dim": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -461,11 +422,10 @@
       }
     },
     "on-secondary-fixed": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          0.0,
+          0,
           0.114,
           0.208
         ],
@@ -473,7 +433,6 @@
       }
     },
     "on-secondary-fixed-variant": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -485,11 +444,10 @@
       }
     },
     "tertiary-fixed": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1.0,
+          1,
           0.847,
           0.906
         ],
@@ -497,11 +455,10 @@
       }
     },
     "tertiary-fixed-dim": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
-          1.0,
+          1,
           0.686,
           0.827
         ],
@@ -509,19 +466,17 @@
       }
     },
     "on-tertiary-fixed": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
           0.239,
-          0.0,
+          0,
           0.149
         ],
         "hex": "#3d0026"
       }
     },
     "on-tertiary-fixed-variant": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -533,7 +488,6 @@
       }
     },
     "background": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -545,7 +499,6 @@
       }
     },
     "on-background": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -557,7 +510,6 @@
       }
     },
     "surface-variant": {
-      "$type": "color",
       "$value": {
         "colorSpace": "srgb",
         "components": [
@@ -566,6 +518,78 @@
           0.286
         ],
         "hex": "#2d3449"
+      }
+    }
+  },
+  "spacing": {
+    "$type": "dimension",
+    "unit": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "container-padding": {
+      "$value": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "card-gap": {
+      "$value": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "section-margin": {
+      "$value": {
+        "value": 40,
+        "unit": "px"
+      }
+    },
+    "glass-padding": {
+      "$value": {
+        "value": 20,
+        "unit": "px"
+      }
+    }
+  },
+  "rounded": {
+    "$type": "dimension",
+    "sm": {
+      "$value": {
+        "value": 0.25,
+        "unit": "rem"
+      }
+    },
+    "DEFAULT": {
+      "$value": {
+        "value": 0.5,
+        "unit": "rem"
+      }
+    },
+    "md": {
+      "$value": {
+        "value": 0.75,
+        "unit": "rem"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 1,
+        "unit": "rem"
+      }
+    },
+    "xl": {
+      "$value": {
+        "value": 1.5,
+        "unit": "rem"
+      }
+    },
+    "full": {
+      "$value": {
+        "value": 9999,
+        "unit": "px"
       }
     }
   },
@@ -579,14 +603,11 @@
           "unit": "px"
         },
         "fontWeight": 700,
-        "lineHeight": {
-          "value": 90,
-          "unit": "px"
-        },
         "letterSpacing": {
           "value": -0.04,
           "unit": "em"
-        }
+        },
+        "lineHeight": 90
       }
     },
     "headline-lg": {
@@ -598,14 +619,11 @@
           "unit": "px"
         },
         "fontWeight": 600,
-        "lineHeight": {
-          "value": 40,
-          "unit": "px"
-        },
         "letterSpacing": {
           "value": -0.02,
           "unit": "em"
-        }
+        },
+        "lineHeight": 40
       }
     },
     "headline-md": {
@@ -617,10 +635,7 @@
           "unit": "px"
         },
         "fontWeight": 500,
-        "lineHeight": {
-          "value": 32,
-          "unit": "px"
-        }
+        "lineHeight": 32
       }
     },
     "body-lg": {
@@ -632,10 +647,7 @@
           "unit": "px"
         },
         "fontWeight": 400,
-        "lineHeight": {
-          "value": 28,
-          "unit": "px"
-        }
+        "lineHeight": 28
       }
     },
     "body-md": {
@@ -647,10 +659,7 @@
           "unit": "px"
         },
         "fontWeight": 400,
-        "lineHeight": {
-          "value": 24,
-          "unit": "px"
-        }
+        "lineHeight": 24
       }
     },
     "label-sm": {
@@ -662,115 +671,80 @@
           "unit": "px"
         },
         "fontWeight": 600,
-        "lineHeight": {
-          "value": 16,
-          "unit": "px"
-        },
         "letterSpacing": {
           "value": 0.05,
           "unit": "em"
-        }
+        },
+        "lineHeight": 16
       }
     }
   },
-  "rounded": {
-    "sm": {
-      "$type": "dimension",
-      "$value": {
-        "value": 0.25,
-        "unit": "rem"
-      }
+  "elevation": {
+    "$type": "shadow",
+    "resting": {
+      "$value": "0 1px 2px rgba(0,0,0,0.20)"
     },
-    "DEFAULT": {
-      "$type": "dimension",
-      "$value": {
-        "value": 0.5,
-        "unit": "rem"
-      }
+    "raised": {
+      "$value": "0 8px 24px rgba(0,0,0,0.25)"
     },
-    "md": {
-      "$type": "dimension",
-      "$value": {
-        "value": 0.75,
-        "unit": "rem"
-      }
+    "overlay": {
+      "$value": "0 12px 32px rgba(0,0,0,0.40)"
     },
-    "lg": {
-      "$type": "dimension",
-      "$value": {
-        "value": 1,
-        "unit": "rem"
-      }
-    },
-    "xl": {
-      "$type": "dimension",
-      "$value": {
-        "value": 1.5,
-        "unit": "rem"
-      }
-    },
-    "full": {
-      "$type": "dimension",
-      "$value": {
-        "value": 9999,
-        "unit": "px"
-      }
+    "modal": {
+      "$value": "0 24px 48px rgba(0,0,0,0.50)"
     }
   },
-  "spacing": {
-    "unit": {
-      "$type": "dimension",
-      "$value": {
-        "value": 8,
-        "unit": "px"
-      }
-    },
-    "container-padding": {
-      "$type": "dimension",
-      "$value": {
-        "value": 24,
-        "unit": "px"
-      }
-    },
-    "card-gap": {
-      "$type": "dimension",
-      "$value": {
-        "value": 16,
-        "unit": "px"
-      }
-    },
-    "section-margin": {
-      "$type": "dimension",
-      "$value": {
-        "value": 40,
-        "unit": "px"
-      }
-    },
-    "glass-padding": {
-      "$type": "dimension",
-      "$value": {
-        "value": 20,
-        "unit": "px"
-      }
-    }
-  },
-  "components": {
+  "component": {
     "glass-card-standard": {
       "backgroundColor": {
         "$type": "color",
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ],
-          "alpha": 0.1
+          "hex": "#ffffff1a"
         }
       },
-      "textColor": "{colors.primary}",
-      "rounded": "{rounded.lg}",
-      "padding": "{spacing.glass-padding}"
+      "textColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "rounded": {
+        "$type": "dimension",
+        "$value": {
+          "value": 1,
+          "unit": "rem"
+        }
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": {
+          "value": 20,
+          "unit": "px"
+        }
+      },
+      "gap": {
+        "$type": "dimension",
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "0 8px 24px rgba(0,0,0,0.25)"
+      }
     },
     "glass-card-elevated": {
       "backgroundColor": {
@@ -778,22 +752,99 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ],
-          "alpha": 0.2
+          "hex": "#ffffff33"
         }
       },
-      "textColor": "{colors.primary}",
-      "rounded": "{rounded.xl}",
-      "padding": "{spacing.glass-padding}"
+      "textColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "rounded": {
+        "$type": "dimension",
+        "$value": {
+          "value": 1.5,
+          "unit": "rem"
+        }
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": {
+          "value": 20,
+          "unit": "px"
+        }
+      },
+      "gap": {
+        "$type": "dimension",
+        "$value": {
+          "value": 16,
+          "unit": "px"
+        }
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "0 12px 32px rgba(0,0,0,0.40)"
+      }
     },
     "button-primary": {
-      "backgroundColor": "{colors.primary}",
-      "textColor": "{colors.on-primary}",
-      "typography": "{typography.label-sm}",
-      "rounded": "{rounded.xl}",
+      "backgroundColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "textColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.184,
+            0.192,
+            0.192
+          ],
+          "hex": "#2f3131"
+        }
+      },
+      "typography": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "Inter",
+          "fontSize": {
+            "value": 12,
+            "unit": "px"
+          },
+          "fontWeight": 600,
+          "letterSpacing": {
+            "value": 0.05,
+            "unit": "em"
+          },
+          "lineHeight": 16
+        }
+      },
+      "rounded": {
+        "$type": "dimension",
+        "$value": {
+          "value": 1.5,
+          "unit": "rem"
+        }
+      },
       "height": {
         "$type": "dimension",
         "$value": {
@@ -802,12 +853,29 @@
         }
       },
       "padding": {
-        "$type": "dimension",
-        "$value": "0 24px"
+        "$value": "0px 24px"
+      },
+      "transition": {
+        "$value": "opacity 150ms ease-out"
+      },
+      "$extensions": {
+        "design.md": {
+          "states": {
+            "hover": {
+              "backgroundColor": "#c6c6c7"
+            },
+            "focus-visible": {
+              "outline": "2px solid {colors.secondary}"
+            },
+            "disabled": {
+              "backgroundColor": "#2d3449",
+              "textColor": "#c4c7c8",
+              "cursor": "not-allowed"
+            }
+          },
+          "interactive": true
+        }
       }
-    },
-    "button-primary-hover": {
-      "backgroundColor": "{colors.primary-fixed-dim}"
     },
     "button-ghost": {
       "backgroundColor": {
@@ -815,16 +883,71 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ],
-          "alpha": 0.05
+          "hex": "#ffffff0d"
         }
       },
-      "textColor": "{colors.primary}",
-      "typography": "{typography.label-sm}",
-      "rounded": "{rounded.xl}"
+      "textColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "typography": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "Inter",
+          "fontSize": {
+            "value": 12,
+            "unit": "px"
+          },
+          "fontWeight": 600,
+          "letterSpacing": {
+            "value": 0.05,
+            "unit": "em"
+          },
+          "lineHeight": 16
+        }
+      },
+      "rounded": {
+        "$type": "dimension",
+        "$value": {
+          "value": 1.5,
+          "unit": "rem"
+        }
+      },
+      "border": {
+        "$value": "1px solid #ffffff33"
+      },
+      "transition": {
+        "$value": "opacity 150ms ease-out"
+      },
+      "$extensions": {
+        "design.md": {
+          "states": {
+            "hover": {
+              "backgroundColor": "#ffffff26"
+            },
+            "focus-visible": {
+              "outline": "2px solid {colors.secondary}"
+            },
+            "disabled": {
+              "textColor": "#c4c7c8",
+              "cursor": "not-allowed"
+            }
+          },
+          "interactive": true
+        }
+      }
     },
     "input-field": {
       "backgroundColor": {
@@ -832,16 +955,44 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            1.0,
-            1.0,
-            1.0
+            1,
+            1,
+            1
           ],
-          "alpha": 0.1
+          "hex": "#ffffff1a"
         }
       },
-      "textColor": "{colors.primary}",
-      "typography": "{typography.body-md}",
-      "rounded": "{rounded.xl}",
+      "textColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "typography": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "Inter",
+          "fontSize": {
+            "value": 16,
+            "unit": "px"
+          },
+          "fontWeight": 400,
+          "lineHeight": 24
+        }
+      },
+      "rounded": {
+        "$type": "dimension",
+        "$value": {
+          "value": 1.5,
+          "unit": "rem"
+        }
+      },
       "padding": {
         "$type": "dimension",
         "$value": {
@@ -855,18 +1006,87 @@
           "value": 48,
           "unit": "px"
         }
+      },
+      "border": {
+        "$value": "1px solid #ffffff33"
+      },
+      "iconSize": {
+        "$value": "auto"
+      },
+      "$extensions": {
+        "design.md": {
+          "states": {
+            "focus-visible": {
+              "outline": "2px solid {colors.secondary}"
+            },
+            "disabled": {
+              "backgroundColor": "#ffffff0d",
+              "textColor": "#c4c7c8",
+              "cursor": "not-allowed"
+            }
+          },
+          "interactive": true
+        }
       }
     },
     "weather-display-large": {
-      "textColor": "{colors.primary}",
-      "typography": "{typography.display-lg}"
+      "textColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1,
+            1,
+            1
+          ],
+          "hex": "#ffffff"
+        }
+      },
+      "typography": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "Inter",
+          "fontSize": {
+            "value": 84,
+            "unit": "px"
+          },
+          "fontWeight": 700,
+          "letterSpacing": {
+            "value": -0.04,
+            "unit": "em"
+          },
+          "lineHeight": 90
+        }
+      }
     },
     "metric-label": {
-      "textColor": "{colors.on-surface-variant}",
-      "typography": "{typography.label-sm}",
-      "textTransform": {
-        "$type": "string",
-        "$value": "uppercase"
+      "textColor": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.769,
+            0.78,
+            0.784
+          ],
+          "hex": "#c4c7c8"
+        }
+      },
+      "typography": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "Inter",
+          "fontSize": {
+            "value": 12,
+            "unit": "px"
+          },
+          "fontWeight": 600,
+          "letterSpacing": {
+            "value": 0.05,
+            "unit": "em"
+          },
+          "lineHeight": 16
+        }
       }
     },
     "list-item-interactive": {
@@ -875,33 +1095,45 @@
         "$value": {
           "colorSpace": "srgb",
           "components": [
-            0,
-            0,
-            0
+            1,
+            1,
+            1
           ],
-          "alpha": 0
+          "hex": "#ffffff00"
         }
       },
-      "rounded": "{rounded.md}",
+      "rounded": {
+        "$type": "dimension",
+        "$value": {
+          "value": 0.75,
+          "unit": "rem"
+        }
+      },
       "padding": {
         "$type": "dimension",
         "$value": {
           "value": 12,
           "unit": "px"
         }
-      }
-    },
-    "list-item-interactive-hover": {
-      "backgroundColor": {
-        "$type": "color",
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [
-            1.0,
-            1.0,
-            1.0
-          ],
-          "alpha": 0.1
+      },
+      "transition": {
+        "$value": "opacity 100ms ease-in"
+      },
+      "$extensions": {
+        "design.md": {
+          "states": {
+            "hover": {
+              "backgroundColor": "#ffffff1a"
+            },
+            "focus-visible": {
+              "outline": "2px solid {colors.secondary}"
+            },
+            "disabled": {
+              "textColor": "#c4c7c8",
+              "cursor": "not-allowed"
+            }
+          },
+          "interactive": true
         }
       }
     }

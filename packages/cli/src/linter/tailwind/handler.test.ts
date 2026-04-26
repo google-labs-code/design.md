@@ -182,4 +182,47 @@ describe('TailwindEmitterHandler', () => {
       expect(colors['on-primary-container']).toBeDefined();
     });
   });
+
+  describe('components plugin (opt-in)', () => {
+    it('omits the plugin block by default', () => {
+      const state = buildState({
+        colors: { primary: '#1A1C1E' },
+        components: { 'btn': { backgroundColor: '{colors.primary}' } },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.plugin).toBeUndefined();
+    });
+
+    it('emits a plugin object with state variants when opted in', () => {
+      const state = buildState({
+        colors: { primary: '#1A1C1E', accent: '#FFFFFF' },
+        components: {
+          'btn': {
+            backgroundColor: '{colors.primary}',
+            interactive: true,
+            states: {
+              hover: { backgroundColor: '{colors.accent}' },
+              'focus-visible': { outline: '2px solid {colors.accent}' },
+              disabled: { cursor: 'not-allowed' },
+            },
+          },
+        },
+      });
+      const result = emitter.execute(state, { components: true });
+      if (!result.success) throw new Error('Expected success');
+
+      const plugin = result.data.plugin as Record<string, Record<string, unknown>>;
+      expect(plugin).toBeDefined();
+      const btn = plugin['.btn'];
+      expect(btn).toBeDefined();
+      expect(btn?.['background-color']).toBe('#1a1c1e');
+      const hover = btn?.['&:hover'] as Record<string, unknown>;
+      expect(hover?.['background-color']).toBe('#ffffff');
+      const focus = btn?.['&:focus-visible'] as Record<string, unknown>;
+      expect(focus?.['outline']).toContain('solid');
+      const disabled = btn?.['&:disabled, &[aria-disabled="true"]'] as Record<string, unknown>;
+      expect(disabled?.['cursor']).toBe('not-allowed');
+    });
+  });
 });

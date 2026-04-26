@@ -44,7 +44,8 @@ export interface DtcgToken {
   $description?: string;
   /**
    * DTCG vendor extensions. We use `design.md` as the namespace for ramp
-   * provenance, pair role, and human-readable anchor names.
+   * provenance, pair role, human-readable anchor names, and per-component
+   * `interactive` / `states` overrides.
    */
   $extensions?: Record<string, unknown>;
 }
@@ -59,6 +60,12 @@ export interface DtcgGroup {
 /** The complete tokens.json output file. */
 export interface DtcgTokenFile extends DtcgGroup {
   $schema?: string;
+}
+
+/** Per-state overrides surfaced under `$extensions['design.md'].states`. */
+export interface DesignMdStatesExtension {
+  interactive?: boolean;
+  states: Record<string, Record<string, string | number>>;
 }
 
 // ── Result ─────────────────────────────────────────────────────────
