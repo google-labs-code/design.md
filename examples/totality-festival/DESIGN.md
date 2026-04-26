@@ -190,6 +190,24 @@ components:
     typography: "{typography.label-md}"
     rounded: "{rounded.full}"
     padding: 4px
+voice:
+  formality: 3
+  warmth: 3
+  authority: 4
+  playfulness: 4
+  person: second
+  tense: present-active
+  oxfordComma: true
+  contractions: permitted
+copy:
+  casing:
+    button: UPPERCASE
+    nav: UPPERCASE
+  buttonLabelMaxWords: 3
+  bannedTerms:
+    - revolutionary
+    - effortless
+    - synergy
 ---
 
 ## Brand & Style
@@ -217,6 +235,18 @@ This design system uses a dual-font strategy to balance cinematic impact with ut
 - **Inter** provides a neutral, highly legible counterpoint for long-form content and descriptions, ensuring that even in low-light environments, the information remains accessible.
 
 For a truly cinematic feel, apply a subtle text-shadow or "glow" to `headline-xl` elements when they appear on the darkest backgrounds, using a low-opacity version of the Primary color.
+
+## Voice
+
+The festival speaks like a film trailer for the cosmos: dramatic, second-person, theatrical without slipping into cliché. The voice runs even on the formality and warmth axes (3/3) and high on playfulness (4) — copy is meant to feel cinematic, not corporate.
+
+- **Person:** Second-person — "Witness Totality" beats "Festivalgoers will witness the eclipse."
+- **Tense:** Present-active. Always.
+- **Contractions:** Permitted; the festival is not a courtroom.
+<!-- design.md disable-next-line banned-term-in-prose -->
+- **Banned terms:** `revolutionary`, `effortless`, `synergy`. They puncture the mystique on contact.
+
+Buttons and nav use UPPERCASE for a monumental, all-caps marquee feel — and stay short (≤ 3 words) so they never wrap.
 
 ## Layout & Spacing
 

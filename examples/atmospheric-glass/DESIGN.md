@@ -186,6 +186,24 @@ components:
       disabled:
         textColor: "{colors.on-surface-variant}"
         cursor: not-allowed
+voice:
+  formality: 4
+  warmth: 2
+  authority: 4
+  playfulness: 1
+  person: third
+  tense: present-active
+  oxfordComma: true
+  contractions: avoided
+copy:
+  casing:
+    button: sentence-case
+    nav: title-case
+  buttonLabelMaxWords: 3
+  bannedTerms:
+    - seamless
+    - unlock
+    - leverage
 ---
 
 ## Brand & Style
@@ -210,6 +228,18 @@ The design system utilizes **Inter** for its neutral, geometric clarity which ba
 - **Hierarchy:** Large display sizes are used for temperature readings to create a clear focal point.
 - **Legibility:** On frosted glass, font weight is increased by one tier (e.g., using Medium instead of Regular) to counteract the visual noise of the background blur.
 - **Treatment:** Subtle text-shadows (`0px 2px 4px rgba(0,0,0,0.15)`) may be applied to small labels to ensure they "pop" against lighter areas of the background gradient.
+
+## Voice
+
+The product speaks in the precise, observational register of an atmospheric scientist briefing a board. Sentences are short, declarative, and never marketing-flavored. The voice is formal (`formality: 4`) and reserved (`warmth: 2`); it earns trust by sounding correct rather than by sounding friendly.
+
+- **Person:** Third-person impersonal — "the system reports", not "we report".
+- **Tense:** Present-active. Avoid passive constructions where the subject is unclear.
+- **Contractions:** Avoided. "Will not" reads as more authoritative than "won't" in this register.
+<!-- design.md disable-next-line banned-term-in-prose -->
+- **Banned terms:** `seamless`, `unlock`, `leverage`. These read as buzzwords against an otherwise technical voice.
+
+Buttons stay short (≤ 3 words) and use sentence-case. Nav uses title-case to mirror the air-traffic-display feel.
 
 ## Layout & Spacing
 

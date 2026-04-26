@@ -32,6 +32,10 @@ export function tokenSummary(state: DesignSystemState): RuleFinding[] {
     parts.push(`${iconCount} icon size${iconCount !== 1 ? 's' : ''}`);
   }
   if (state.components.size > 0) parts.push(`${state.components.size} component${state.components.size !== 1 ? 's' : ''}`);
+  if (state.copy) {
+    const banned = state.copy.bannedTerms.length + state.copy.bannedRegex.length;
+    if (banned > 0) parts.push(`${banned} banned term${banned !== 1 ? 's' : ''}`);
+  }
 
   if (parts.length > 0) {
     return [{

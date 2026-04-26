@@ -54,10 +54,13 @@ export class ParserHandler implements ParserSpec {
       visit(ast, (node) => {
         if (node.type === 'yaml') {
           const yamlNode = node as Yaml;
+          const startLine = node.position?.start.line ?? 1;
+          const endLine = node.position?.end.line ?? startLine;
+          allCodeBlockRanges.push({ startLine, endLine });
           blocks.push({
             yaml: yamlNode.value,
             block: 'frontmatter',
-            startLine: node.position?.start.line ?? 1
+            startLine,
           });
         }
 
@@ -231,6 +234,12 @@ export class ParserHandler implements ParserSpec {
       iconography: raw['iconography'] as ParsedDesignSystem['iconography'],
       components,
       componentRegistry,
+      voice: raw['voice'] && typeof raw['voice'] === 'object' && !Array.isArray(raw['voice'])
+        ? (raw['voice'] as Record<string, string | number | boolean>)
+        : undefined,
+      copy: raw['copy'] && typeof raw['copy'] === 'object' && !Array.isArray(raw['copy'])
+        ? (raw['copy'] as ParsedDesignSystem['copy'])
+        : undefined,
       themes: raw['themes'] as ParsedDesignSystem['themes'],
       sourceMap,
       sections,

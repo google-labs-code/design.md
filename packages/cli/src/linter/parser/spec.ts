@@ -143,6 +143,31 @@ export type RawComponentValue =
   | boolean
   | { [key: string]: RawComponentValue };
 
+/**
+ * Raw `voice:` block — characters of brand voice. Axes are numeric dials;
+ * `person`, `tense`, `contractions` are short keyword strings; `oxfordComma`
+ * is a boolean. The shape is intentionally flat.
+ */
+export type RawVoice = Record<string, string | number | boolean>;
+
+/**
+ * Raw `copy:` block — content rules. Free-form by design; the model validates
+ * known keys and ignores unknown ones with a warning.
+ */
+export interface RawCopy {
+  casing?: Record<string, string>;
+  buttonLabelMaxWords?: number;
+  errorPattern?: string;
+  emptyStateTone?: string;
+  bannedTerms?: string[];
+  bannedRegex?: string[];
+  approvedTerms?: Record<string, string>;
+  reservedNames?: string[];
+  titleCase?: { exceptions?: string[]; knownProperNouns?: string[] };
+  /** Authors may extend with custom keys; preserved on the way through. */
+  [key: string]: unknown;
+}
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   name?: string | undefined;
@@ -176,6 +201,10 @@ export interface ParsedDesignSystem {
    * Absent = open-world (back-compat) behavior.
    */
   componentRegistry?: RawRegistryEntry[] | undefined;
+  /** Voice axes + grammatical defaults. */
+  voice?: RawVoice | undefined;
+  /** Content rules. */
+  copy?: RawCopy | undefined;
   /**
    * Theme overrides. Keys are theme names; the implicit `light` base lives
    * in the root token tree (so a `themes.light` entry is unnecessary, though

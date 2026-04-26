@@ -84,13 +84,15 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 1. **Overview** (also: "Brand & Style")
 2. **Colors**
 3. **Typography**
-4. **Layout** (also: "Layout & Spacing")
-5. **Motion** (also: "Motion & Animation")
-6. **Elevation & Depth** (also: "Elevation")
-7. **Shapes**
-8. **Iconography** (also: "Icons")
-9. **Components**
-10. **Do's and Don'ts**
+4. **Voice** (also: "Tone", "Voice & Tone")
+5. **Themes** (also: "Modes", "Themes & Modes")
+6. **Layout** (also: "Layout & Spacing")
+7. **Motion** (also: "Motion & Animation")
+8. **Elevation & Depth** (also: "Elevation")
+9. **Shapes**
+10. **Iconography** (also: "Icons")
+11. **Components**
+12. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -192,6 +194,97 @@ typography:
     lineHeight: 1
     letterSpacing: 0.1em
 ```
+
+## Voice
+
+Also known as "Tone" or "Voice & Tone".
+
+This section captures the **verbal** half of the brand — the personality of the words on the page. Two products with identical visual tokens but different brands should sound different. Voice carries that difference.
+
+The block has two halves: `voice:` (a small set of dials describing the personality) and `copy:` (concrete content rules a linter can enforce).
+
+### Voice axes
+
+Voice axes are 1–5 integer dials. Pick the four that pay for themselves with examples that read distinctly:
+
+| Axis | Range | Meaning |
+| --- | --- | --- |
+| `formality` | 1–5 | The voice's formality dial. 1 = low, 5 = high. |
+| `warmth` | 1–5 | The voice's warmth dial. 1 = low, 5 = high. |
+| `authority` | 1–5 | The voice's authority dial. 1 = low, 5 = high. |
+| `playfulness` | 1–5 | The voice's playfulness dial. 1 = low, 5 = high. |
+
+`person`, `tense`, `oxfordComma`, and `contractions` are flat brand facts that complement the axes.
+
+```yaml
+voice:
+    formality: 3
+    warmth: 4
+    authority: 3
+    playfulness: 2
+    person: second
+    tense: present-active
+    oxfordComma: true
+    contractions: permitted
+```
+
+### Casing rules
+
+Per-surface casing conventions live under `copy.casing`. The `casing-mismatch` rule reads them and verifies component labels for matching component kinds.
+
+| Surface | Allowed values |
+| --- | --- |
+| `button` | `sentence-case`, `title-case`, `UPPERCASE`, `lowercase` |
+| `nav` | `sentence-case`, `title-case`, `UPPERCASE`, `lowercase` |
+| `section-heading` | `sentence-case`, `title-case`, `UPPERCASE`, `lowercase` |
+
+### Banned and approved terms
+
+`copy.bannedTerms` is the list of words and phrases the brand never uses. The `banned-term-in-prose` rule flags every occurrence in document prose, in component labels (`label`, `placeholder`, `title`, `aria-label`), and — when the CLI is pointed at source — in JSX text and string props.
+
+`copy.approvedTerms` is a `canonical → approved` mapping: when prose mentions the canonical name, the approved form is required (`user → customer`). Mostly used for product-specific jargon and renames.
+
+`copy.bannedRegex` adds phrasal patterns (`(?i)\bgame[- ]?changer\b`) that literal terms can't cover. Patterns are compiled once during model build.
+
+`copy.reservedNames` is the list of product / feature names that must appear verbatim. The `reserved-name-form` rule flags lowercased, hyphenated, or mixed-case variants.
+
+```yaml
+copy:
+    casing:
+      button: sentence-case
+      nav: title-case
+      section-heading: sentence-case
+    buttonLabelMaxWords: 3
+    errorPattern: "{what-happened}. {how-to-fix}."
+    emptyStateTone: encouraging
+    bannedTerms:
+      0: seamless
+      1: unlock
+      2: leverage
+      3: delight
+      4: revolutionary
+      5: effortless
+      6: one-stop shop
+      7: synergy
+    bannedRegex:
+      0: (?i)\bgame[- ]?changer\b
+      1: (?i)\bnext[- ]?gen\b
+    approvedTerms:
+      user: customer
+      dashboard: Home
+    reservedNames:
+      0: DesignMD
+```
+
+### Error and empty-state patterns
+
+`copy.errorPattern` is a string template like `"{what-happened}. {how-to-fix}."`. Components matching the `error-message` kind whose `label` violates the pattern's slot count or literal separators are flagged by `error-pattern-violation`.
+
+`copy.emptyStateTone` records the tone the brand wants its empty states to project (e.g., `encouraging`, `neutral`). Recorded for downstream tools; not enforced in v1.
+
+### Why first-class
+
+Every prior content style guide (Mailchimp, Polaris, GOV.UK) is human-readable only. Encoding voice + copy as data lets the linter enforce them — the contribution opportunity is the enforceability, not the categories themselves.
 
 ## Layout
 
@@ -445,6 +538,10 @@ Each component has a set of properties that are themselves design tokens:
 - outline: \<string\>
 - boxShadow: \<string\>
 - cursor: \<string\>
+- label: \<string\>
+- placeholder: \<string\>
+- title: \<string\>
+- aria-label: \<string\>
 
 ### Authoring Rules
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef, RawRegistryEntry, RawComponentValue, RawThemeDef } from '../parser/spec.js';
+import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef, RawRegistryEntry, RawComponentValue, RawThemeDef, RawVoice, RawCopy } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -31,11 +31,13 @@ import type {
   MotionState,
   IconographyState,
   RegistryEntry,
+  Voice,
+  Copy,
+  BannedRegex,
   ThemeView,
   ThemeContrastTarget,
 } from './spec.js';
 import { DEFAULT_CONTRAST_TARGET } from './spec.js';
-import { BASE_THEME_NAME } from '../spec-config.js';
 
 import {
   isValidColor,
@@ -48,7 +50,7 @@ import {
 } from './spec.js';
 import { COMPONENT_SUB_TOKEN_VALIDATORS } from '../component-validators.js';
 import { generateRampSteps, DEFAULT_RAMP_STEPS } from './color-ramp.js';
-import { ICON_LIBRARIES, KIND_DEFAULTS } from '../spec-config.js';
+import { ICON_LIBRARIES, KIND_DEFAULTS, BASE_THEME_NAME, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES } from '../spec-config.js';
 
 const MAX_REFERENCE_DEPTH = 10;
 
@@ -399,6 +401,28 @@ export class ModelHandler implements ModelSpec {
         findings,
       });
 
+      // ── Phase 5: Voice + copy ──────────────────────────────────────
+      const voice = input.voice ? parseVoice(input.voice, findings) : undefined;
+      const copy = input.copy ? parseCopy(input.copy, findings) : undefined;
+
+      // Populate the symbol table with voice.* and copy.* keys so that
+      // `{voice.warmth}` and friends resolve through the broken-ref rule.
+      if (voice) {
+        for (const [axis, value] of voice.axes) symbolTable.set(`voice.${axis}`, String(value));
+        if (voice.person) symbolTable.set('voice.person', voice.person);
+        if (voice.tense) symbolTable.set('voice.tense', voice.tense);
+        if (voice.contractions) symbolTable.set('voice.contractions', voice.contractions);
+        if (voice.oxfordComma !== undefined) symbolTable.set('voice.oxfordComma', String(voice.oxfordComma));
+      }
+      if (copy) {
+        if (copy.buttonLabelMaxWords !== undefined) {
+          symbolTable.set('copy.buttonLabelMaxWords', String(copy.buttonLabelMaxWords));
+        }
+        if (copy.errorPattern) symbolTable.set('copy.errorPattern', copy.errorPattern);
+        if (copy.emptyStateTone) symbolTable.set('copy.emptyStateTone', copy.emptyStateTone);
+        for (const [surface, value] of copy.casing) symbolTable.set(`copy.casing.${surface}`, value);
+      }
+
       return {
         designSystem: {
           name: input.name,
@@ -420,6 +444,8 @@ export class ModelHandler implements ModelSpec {
           sections: input.sections,
           documentSections: input.documentSections,
           colorIndex,
+          voice,
+          copy,
         },
         findings,
       };
@@ -927,6 +953,179 @@ export function contrastRatio(a: ResolvedColor, b: ResolvedColor): number {
   const L1 = Math.max(a.luminance, b.luminance);
   const L2 = Math.min(a.luminance, b.luminance);
   return (L1 + 0.05) / (L2 + 0.05);
+}
+
+// ── Voice / Copy parsing ────────────────────────────────────────────
+
+/**
+ * Parse the `voice:` block. Axis values must be integers 1–5; out-of-range or
+ * non-integer values produce an error finding and the axis is dropped. Unknown
+ * top-level keys produce a warning so authors discover the closed set.
+ */
+export function parseVoice(raw: RawVoice, findings: Finding[]): Voice {
+  const axes = new Map<string, number>();
+  const voice: Voice = { axes };
+  const validAxes = new Set(VOICE_AXES);
+  const validPersons = new Set(VOICE_PERSON);
+
+  for (const [key, value] of Object.entries(raw)) {
+    if (validAxes.has(key)) {
+      if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 5) {
+        findings.push({
+          severity: 'error',
+          path: `voice.${key}`,
+          message: `Voice axis '${key}' must be an integer between 1 and 5 (got ${JSON.stringify(value)}).`,
+        });
+        continue;
+      }
+      axes.set(key, value);
+      continue;
+    }
+
+    if (key === 'person') {
+      if (typeof value !== 'string' || !validPersons.has(value)) {
+        findings.push({
+          severity: 'error',
+          path: 'voice.person',
+          message: `voice.person must be one of: ${VOICE_PERSON.join(', ')} (got ${JSON.stringify(value)}).`,
+        });
+        continue;
+      }
+      voice.person = value;
+      continue;
+    }
+    if (key === 'tense') {
+      if (typeof value === 'string') voice.tense = value;
+      continue;
+    }
+    if (key === 'oxfordComma') {
+      if (typeof value === 'boolean') voice.oxfordComma = value;
+      continue;
+    }
+    if (key === 'contractions') {
+      if (typeof value === 'string') voice.contractions = value;
+      continue;
+    }
+
+    findings.push({
+      severity: 'warning',
+      path: `voice.${key}`,
+      message: `Unknown voice key '${key}'. Recognized: ${[...VOICE_AXES, 'person', 'tense', 'oxfordComma', 'contractions'].join(', ')}.`,
+    });
+  }
+
+  return voice;
+}
+
+/**
+ * Parse the `copy:` block. Validates the casing enum, compiles bannedRegex
+ * once, and surfaces unknown surfaces / values via warning findings.
+ */
+export function parseCopy(raw: RawCopy, findings: Finding[]): Copy {
+  const casing = new Map<string, string>();
+  const bannedTerms: string[] = [];
+  const bannedRegex: BannedRegex[] = [];
+  const approvedTerms = new Map<string, string>();
+  const reservedNames: string[] = [];
+  const validCasings = new Set(CASING_VALUES);
+  const validSurfaces = new Set(CASING_SURFACES);
+
+  if (raw.casing && typeof raw.casing === 'object') {
+    for (const [surface, value] of Object.entries(raw.casing)) {
+      if (!validSurfaces.has(surface)) {
+        findings.push({
+          severity: 'warning',
+          path: `copy.casing.${surface}`,
+          message: `Unknown casing surface '${surface}'. Recognized: ${CASING_SURFACES.join(', ')}.`,
+        });
+        continue;
+      }
+      if (typeof value !== 'string' || !validCasings.has(value)) {
+        findings.push({
+          severity: 'error',
+          path: `copy.casing.${surface}`,
+          message: `copy.casing.${surface} must be one of: ${CASING_VALUES.join(', ')} (got ${JSON.stringify(value)}).`,
+        });
+        continue;
+      }
+      casing.set(surface, value);
+    }
+  }
+
+  if (Array.isArray(raw.bannedTerms)) {
+    for (const term of raw.bannedTerms) {
+      if (typeof term === 'string' && term.length > 0) bannedTerms.push(term);
+    }
+  }
+
+  if (Array.isArray(raw.bannedRegex)) {
+    for (const src of raw.bannedRegex) {
+      if (typeof src !== 'string') continue;
+      try {
+        // Strip an inline `(?i)` PCRE-style flag and translate to JS `i`.
+        let flags = 'g';
+        let body = src;
+        const inlineI = body.match(/^\(\?i\)/);
+        if (inlineI) {
+          flags += 'i';
+          body = body.slice(inlineI[0].length);
+        }
+        bannedRegex.push({ source: src, pattern: new RegExp(body, flags) });
+      } catch (e) {
+        findings.push({
+          severity: 'error',
+          path: 'copy.bannedRegex',
+          message: `Invalid regex '${src}': ${e instanceof Error ? e.message : String(e)}.`,
+        });
+      }
+    }
+  }
+
+  if (raw.approvedTerms && typeof raw.approvedTerms === 'object') {
+    for (const [from, to] of Object.entries(raw.approvedTerms)) {
+      if (typeof to === 'string' && to.length > 0) approvedTerms.set(from, to);
+    }
+  }
+
+  if (Array.isArray(raw.reservedNames)) {
+    for (const name of raw.reservedNames) {
+      if (typeof name === 'string' && name.length > 0) reservedNames.push(name);
+    }
+  }
+
+  const copy: Copy = {
+    casing,
+    bannedTerms,
+    bannedRegex,
+    approvedTerms,
+    reservedNames,
+  };
+
+  if (typeof raw.buttonLabelMaxWords === 'number' && Number.isInteger(raw.buttonLabelMaxWords) && raw.buttonLabelMaxWords > 0) {
+    copy.buttonLabelMaxWords = raw.buttonLabelMaxWords;
+  } else if (raw.buttonLabelMaxWords !== undefined) {
+    findings.push({
+      severity: 'error',
+      path: 'copy.buttonLabelMaxWords',
+      message: `copy.buttonLabelMaxWords must be a positive integer (got ${JSON.stringify(raw.buttonLabelMaxWords)}).`,
+    });
+  }
+  if (typeof raw.errorPattern === 'string') copy.errorPattern = raw.errorPattern;
+  if (typeof raw.emptyStateTone === 'string') copy.emptyStateTone = raw.emptyStateTone;
+  if (raw.titleCase && typeof raw.titleCase === 'object') {
+    if (Array.isArray(raw.titleCase.exceptions)) {
+      copy.titleCaseExceptions = raw.titleCase.exceptions.filter(
+        (s): s is string => typeof s === 'string',
+      );
+    }
+    if (Array.isArray(raw.titleCase.knownProperNouns)) {
+      copy.knownProperNouns = raw.titleCase.knownProperNouns.filter(
+        (s): s is string => typeof s === 'string',
+      );
+    }
+  }
+
+  return copy;
 }
 
 // ── Motion parsing ────────────────────────────────────────────────

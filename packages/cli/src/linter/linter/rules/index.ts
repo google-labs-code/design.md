@@ -47,6 +47,12 @@ import { missingRequiredPropertyRule } from './missing-required-property.js';
 import { registryWithoutDefinitionRule } from './registry-without-definition.js';
 import { composesCycleRule } from './composes-cycle.js';
 import { namingConventionRule } from './naming-convention.js';
+import { bannedTermInProseRule } from './banned-term-in-prose.js';
+import { buttonExceedsWordLimitRule } from './button-exceeds-word-limit.js';
+import { casingMismatchRule } from './casing-mismatch.js';
+import { approvedTermViolationRule } from './approved-term-violation.js';
+import { reservedNameFormRule } from './reserved-name-form.js';
+import { errorPatternViolationRule } from './error-pattern-violation.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -82,6 +88,12 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   registryWithoutDefinitionRule,
   composesCycleRule,
   namingConventionRule,
+  bannedTermInProseRule,
+  buttonExceedsWordLimitRule,
+  casingMismatchRule,
+  approvedTermViolationRule,
+  reservedNameFormRule,
+  errorPatternViolationRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -130,4 +142,10 @@ export { missingRequiredProperty } from './missing-required-property.js';
 export { registryWithoutDefinition } from './registry-without-definition.js';
 export { composesCycle } from './composes-cycle.js';
 export { namingConvention } from './naming-convention.js';
+export { bannedTermInProse } from './banned-term-in-prose.js';
+export { buttonExceedsWordLimit } from './button-exceeds-word-limit.js';
+export { casingMismatch } from './casing-mismatch.js';
+export { approvedTermViolation } from './approved-term-violation.js';
+export { reservedNameForm } from './reserved-name-form.js';
+export { errorPatternViolation } from './error-pattern-violation.js';
 export type { LintRule } from './types.js';

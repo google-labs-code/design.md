@@ -145,6 +145,42 @@ describe('Fixture Test', () => {
     expect(colors['primary-container']).toBeDefined();
   });
 
+  it('processes VOICE.md with voice + copy primitives end-to-end', () => {
+    const path = join(import.meta.dir, 'fixtures', 'VOICE.md');
+    const content = readFileSync(path, 'utf-8');
+
+    const result = lint(content);
+
+    // Voice + copy parsed.
+    const voice = result.designSystem.voice!;
+    expect(voice).toBeDefined();
+    expect(voice.axes.get('warmth')).toBe(5);
+    expect(voice.person).toBe('second');
+
+    const copy = result.designSystem.copy!;
+    expect(copy).toBeDefined();
+    expect(copy.casing.get('button')).toBe('sentence-case');
+    expect(copy.bannedTerms).toContain('seamless');
+    expect(copy.approvedTerms.get('user')).toBe('customer');
+
+    // No model errors.
+    const errors = result.findings.filter(f => f.severity === 'error');
+    expect(errors).toEqual([]);
+
+    // Long button label triggers button-exceeds-word-limit (warning).
+    const overLimit = result.findings.filter(f =>
+      f.path?.includes('button-long.label')
+      && f.message.includes('words')
+    );
+    expect(overLimit.length).toBeGreaterThan(0);
+
+    // Compliant labels (button-cta, error-banner) do not trigger warnings.
+    const ctaWarnings = result.findings.filter(f =>
+      f.path?.includes('button-cta.label')
+    );
+    expect(ctaWarnings).toEqual([]);
+  });
+
   it('processes THEMES.md with light/dark/high-contrast theme views', () => {
     const path = join(import.meta.dir, 'fixtures', 'THEMES.md');
     const content = readFileSync(path, 'utf-8');

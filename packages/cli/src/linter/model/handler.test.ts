@@ -670,4 +670,88 @@ describe('ModelHandler', () => {
       expect(result.designSystem.components.has('b')).toBe(true);
     });
   });
+
+  // ── Voice + Copy ─────────────────────────────────────────────────
+  describe('voice and copy parsing', () => {
+    it('parses voice axes with valid integer values', () => {
+      const result = handler.execute(makeParsed({
+        voice: { formality: 3, warmth: 4, person: 'second' },
+      }));
+      const voice = result.designSystem.voice!;
+      expect(voice.axes.get('formality')).toBe(3);
+      expect(voice.axes.get('warmth')).toBe(4);
+      expect(voice.person).toBe('second');
+    });
+
+    it('errors on out-of-range voice axis', () => {
+      const result = handler.execute(makeParsed({
+        voice: { formality: 7 },
+      }));
+      const errs = result.findings.filter(f => f.severity === 'error' && f.path === 'voice.formality');
+      expect(errs.length).toBe(1);
+      expect(result.designSystem.voice?.axes.has('formality')).toBe(false);
+    });
+
+    it('errors on invalid voice.person', () => {
+      const result = handler.execute(makeParsed({
+        voice: { person: 'fourth' },
+      }));
+      const errs = result.findings.filter(f => f.severity === 'error' && f.path === 'voice.person');
+      expect(errs.length).toBe(1);
+    });
+
+    it('warns on unknown voice key', () => {
+      const result = handler.execute(makeParsed({
+        voice: { vibe: 5 },
+      }));
+      const warns = result.findings.filter(f => f.severity === 'warning' && f.path === 'voice.vibe');
+      expect(warns.length).toBe(1);
+    });
+
+    it('parses copy block with casing, banned terms, and approved terms', () => {
+      const result = handler.execute(makeParsed({
+        copy: {
+          casing: { button: 'sentence-case', nav: 'title-case' },
+          bannedTerms: ['seamless'],
+          approvedTerms: { user: 'customer' },
+          buttonLabelMaxWords: 3,
+        },
+      }));
+      const copy = result.designSystem.copy!;
+      expect(copy.casing.get('button')).toBe('sentence-case');
+      expect(copy.casing.get('nav')).toBe('title-case');
+      expect(copy.bannedTerms).toEqual(['seamless']);
+      expect(copy.approvedTerms.get('user')).toBe('customer');
+      expect(copy.buttonLabelMaxWords).toBe(3);
+    });
+
+    it('compiles bannedRegex with case-insensitive inline flag', () => {
+      const result = handler.execute(makeParsed({
+        copy: { bannedRegex: ['(?i)\\bgame[- ]?changer\\b'] },
+      }));
+      const copy = result.designSystem.copy!;
+      expect(copy.bannedRegex.length).toBe(1);
+      expect(copy.bannedRegex[0]!.pattern.flags).toContain('i');
+      expect(copy.bannedRegex[0]!.pattern.test('Game-Changer')).toBe(true);
+    });
+
+    it('errors on invalid casing surface and value', () => {
+      const result = handler.execute(makeParsed({
+        copy: {
+          casing: { button: 'whateverCase', toolbar: 'sentence-case' },
+        },
+      }));
+      const enumErr = result.findings.filter(f => f.path === 'copy.casing.button');
+      expect(enumErr.length).toBe(1);
+      const surfaceWarn = result.findings.filter(f => f.path === 'copy.casing.toolbar');
+      expect(surfaceWarn.length).toBe(1);
+    });
+
+    it('exposes voice.* references via the symbol table', () => {
+      const result = handler.execute(makeParsed({
+        voice: { warmth: 4 },
+      }));
+      expect(result.designSystem.symbolTable.get('voice.warmth')).toBe('4');
+    });
+  });
 });
