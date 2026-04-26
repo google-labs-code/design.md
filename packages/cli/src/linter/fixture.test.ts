@@ -83,6 +83,33 @@ describe('Fixture Test', () => {
     expect(result.summary.infos).toBeGreaterThan(0);
   });
 
+  it('processes REGISTRY.md with closed-world rules engaged', () => {
+    const path = join(import.meta.dir, 'fixtures', 'REGISTRY.md');
+    const content = readFileSync(path, 'utf-8');
+
+    const result = lint(content);
+
+    // Registry shape parses end-to-end and the resolved state carries it.
+    const registry = result.designSystem.componentRegistry;
+    expect(registry).toBeDefined();
+    expect(registry!.size).toBe(5);
+
+    // Kind-derived interactivity.
+    expect(registry!.get('button-primary')!.interactive).toBe(true);
+    expect(registry!.get('card')!.interactive).toBe(false);
+
+    // composes pre-merge — card-elevated inherits backgroundColor from card.
+    const cardElevated = result.designSystem.components.get('card-elevated')!;
+    const bg = cardElevated.properties.get('backgroundColor');
+    expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+
+    // No unbound-component or missing-required-property errors.
+    const unboundErrors = result.findings.filter(d => d.message.includes('not in the component registry'));
+    expect(unboundErrors).toEqual([]);
+    const missingRequired = result.findings.filter(d => d.message.includes('requires '));
+    expect(missingRequired).toEqual([]);
+  });
+
   it('processes RAMPS_AND_PAIRS.md end-to-end with no errors', () => {
     const path = join(import.meta.dir, 'fixtures', 'RAMPS_AND_PAIRS.md');
     const content = readFileSync(path, 'utf-8');

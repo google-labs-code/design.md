@@ -395,6 +395,67 @@ shape; the prose carries the rationale. Cover at least:
   Borders should not be the primary visual identity of a surface —
   reach for color or elevation first.
 
+### Component Registry (Closed-World)
+
+By default, the components map is **open-world**: any component name is
+accepted and the linter will not complain. To opt into a closed set —
+the equivalent of TypeScript's `noImplicitAny` for components — split
+the components block into a `registry` (the catalog) and `definitions`
+(the values):
+
+```yaml
+components:
+  registry:
+    - name: button-primary
+      kind: button
+      requiredProperties: [backgroundColor, padding]
+    - name: card
+      kind: container
+    - name: card-elevated
+      kind: container
+      composes: card           # pre-merge card's props before overrides
+  definitions:
+    button-primary:
+      backgroundColor: "{colors.primary}"
+      padding: 12px
+    card:
+      backgroundColor: "{colors.surface}"
+    card-elevated:
+      shadow: "{elevation.raised}"
+```
+
+Once a registry is declared, the closed-world rules engage:
+
+* **`unbound-component`** (error) — flags definitions and prose
+  `{components.X}` references whose name isn't in the registry.
+* **`missing-required-property`** (error) — a registry entry's
+  `requiredProperties` must each be set by the matching definition
+  (composed properties count).
+* **`registry-without-definition`** (warning) — a registry entry has no
+  matching definition.
+* **`composes-cycle`** (error) — cycles in the `composes:` graph.
+* **`naming-convention`** (warning) — registry names follow
+  `noun-modifier` ordering with a closed modifier vocabulary
+  (primary/secondary/tertiary/danger/ghost/outline/subtle/bare/elevated/
+  hover/focus/active/disabled).
+
+**Authoring discipline.** Adding a registry entry is a deliberate,
+reviewable act. Definitions can be added or edited freely; only the
+registry edit signals "this system now supports a new component". When
+in doubt, prefer composing existing components (Card with an Image
+inside) over inventing a new one — the registry should grow slowly.
+
+**Variant vs new component.** If two components differ only in color or
+size, they're variants — express the difference via a hover/focus/etc.
+state on a single registry entry, not a separate name. If they differ in
+structure (slots, behavior, role), they're new components and warrant
+their own entry.
+
+**Anti-patterns.** `card-with-image`, `button-but-rounded`, `header-v2`
+— all signals that variants or composition are missing. The naming and
+composition rules above will flag the symptom; the prose explains the
+cure.
+
 ### Interactive States
 
 States express transient responses to user input. They live under a

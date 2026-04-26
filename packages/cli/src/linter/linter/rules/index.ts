@@ -37,6 +37,11 @@ import { pairContrastRule } from './pair-contrast.js';
 import { mixedPairForegroundRule } from './mixed-pair-foreground.js';
 import { rampAnchorNamingRule } from './ramp-anchor-naming.js';
 import { proseTokenMismatchRule } from './prose-token-mismatch.js';
+import { unboundComponentRule } from './unbound-component.js';
+import { missingRequiredPropertyRule } from './missing-required-property.js';
+import { registryWithoutDefinitionRule } from './registry-without-definition.js';
+import { composesCycleRule } from './composes-cycle.js';
+import { namingConventionRule } from './naming-convention.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -62,6 +67,11 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   disabledOpacityOnlyRule,
   unknownStateRule,
   proseTokenMismatchRule,
+  unboundComponentRule,
+  missingRequiredPropertyRule,
+  registryWithoutDefinitionRule,
+  composesCycleRule,
+  namingConventionRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -100,4 +110,9 @@ export { pairContrast } from './pair-contrast.js';
 export { mixedPairForeground } from './mixed-pair-foreground.js';
 export { rampAnchorNaming } from './ramp-anchor-naming.js';
 export { proseTokenMismatch } from './prose-token-mismatch.js';
+export { unboundComponent } from './unbound-component.js';
+export { missingRequiredProperty } from './missing-required-property.js';
+export { registryWithoutDefinition } from './registry-without-definition.js';
+export { composesCycle } from './composes-cycle.js';
+export { namingConvention } from './naming-convention.js';
 export type { LintRule } from './types.js';

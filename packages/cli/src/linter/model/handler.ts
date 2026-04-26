@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef } from '../parser/spec.js';
+import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawRegistryEntry } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -26,11 +26,13 @@ import type {
   RampDef,
   PairDef,
   ColorIndexEntry,
+  RegistryEntry,
 } from './spec.js';
 
 import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
 import { COMPONENT_SUB_TOKEN_VALIDATORS } from '../component-validators.js';
 import { generateRampSteps, DEFAULT_RAMP_STEPS } from './color-ramp.js';
+import { KIND_DEFAULTS } from '../spec-config.js';
 
 const MAX_REFERENCE_DEPTH = 10;
 
@@ -215,10 +217,20 @@ export class ModelHandler implements ModelSpec {
         }
       }
 
-      // ── Phase 3: Build components ──────────────────────────────────
+      // ── Phase 3a: Resolve registry ─────────────────────────────────
+      const componentRegistry = input.componentRegistry
+        ? buildRegistry(input.componentRegistry)
+        : undefined;
+
+      // ── Phase 3b: Build components ─────────────────────────────────
       const components = new Map<string, ComponentDef>();
-      if (input.components) {
-        for (const [compName, props] of Object.entries(input.components)) {
+      // Pre-merge composed properties: for each definition, walk its registry
+      // entry's `composes` chain and merge those definitions' raw properties
+      // before resolving overrides. Cycles are short-circuited; the
+      // `composes-cycle` rule reports them.
+      const mergedRaw = mergeComposedDefinitions(input.components ?? {}, componentRegistry);
+      if (mergedRaw) {
+        for (const [compName, props] of Object.entries(mergedRaw)) {
           const properties = new Map<string, ResolvedValue>();
           const states = new Map<string, Map<string, ResolvedValue>>();
           const resolvedStates = new Map<string, Map<string, ResolvedValue>>();
@@ -317,6 +329,7 @@ export class ModelHandler implements ModelSpec {
           spacing,
           elevation,
           components,
+          componentRegistry,
           colorRamps,
           colorPairs,
           symbolTable,
@@ -350,6 +363,69 @@ export class ModelHandler implements ModelSpec {
       };
     }
   }
+}
+
+// ── Component registry & composition ───────────────────────────────
+
+/**
+ * Build the resolved registry map from raw entries. Defaults `interactive`
+ * from the kind when not explicitly set; missing kinds leave `interactive`
+ * `false`. Duplicate names take the last definition (linter rules can flag
+ * this as a separate concern).
+ */
+function buildRegistry(rawEntries: RawRegistryEntry[]): Map<string, RegistryEntry> {
+  const out = new Map<string, RegistryEntry>();
+  for (const raw of rawEntries) {
+    const interactive = raw.interactive
+      ?? (raw.kind ? KIND_DEFAULTS[raw.kind]?.interactive ?? false : false);
+    const entry: RegistryEntry = {
+      name: raw.name,
+      interactive,
+      requiredProperties: raw.requiredProperties ?? [],
+    };
+    if (raw.kind !== undefined) entry.kind = raw.kind;
+    if (raw.composes !== undefined) entry.composes = raw.composes;
+    out.set(raw.name, entry);
+  }
+  return out;
+}
+
+/**
+ * Pre-merge `composes` chains into a flat raw definitions map, in declaration
+ * order: composed properties are written first, then the definition's own
+ * properties override. Cycles are detected via a visited set and short-
+ * circuited (the chain stops at the cycle point); the linter's
+ * `composes-cycle` rule reports the cycle separately.
+ */
+function mergeComposedDefinitions(
+  rawDefs: Record<string, Record<string, string>>,
+  registry: Map<string, RegistryEntry> | undefined,
+): Record<string, Record<string, string>> {
+  if (!registry) return rawDefs;
+  const out: Record<string, Record<string, string>> = {};
+  for (const [name, props] of Object.entries(rawDefs)) {
+    out[name] = resolveComposedProps(name, rawDefs, registry, new Set());
+    // Ensure props are preserved even if registry has no entry
+    if (!registry.has(name)) {
+      out[name] = props;
+    }
+  }
+  return out;
+}
+
+function resolveComposedProps(
+  name: string,
+  rawDefs: Record<string, Record<string, string>>,
+  registry: Map<string, RegistryEntry>,
+  visited: Set<string>,
+): Record<string, string> {
+  if (visited.has(name)) return {};
+  visited.add(name);
+  const entry = registry.get(name);
+  const ownProps = rawDefs[name] ?? {};
+  if (!entry?.composes) return { ...ownProps };
+  const composed = resolveComposedProps(entry.composes, rawDefs, registry, visited);
+  return { ...composed, ...ownProps };
 }
 
 // ── Object-shaped color expansion (ramps and pairs) ────────────────

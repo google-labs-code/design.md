@@ -18,6 +18,8 @@ import type {
   ParserInput,
   ParserResult,
   ParsedDesignSystem,
+  RawRegistryEntry,
+  RawComponentValue,
   SourceLocation,
   DocumentSection,
   SuppressionDirective,
@@ -216,6 +218,7 @@ export class ParserHandler implements ParserSpec {
    * Map a raw parsed object to the ParsedDesignSystem interface.
    */
   private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: DocumentSection[]): ParsedDesignSystem {
+    const { components, componentRegistry } = normalizeComponents(raw['components']);
     return {
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
@@ -224,7 +227,8 @@ export class ParserHandler implements ParserSpec {
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
       elevation: raw['elevation'] as Record<string, string> | undefined,
-      components: raw['components'] as ParsedDesignSystem['components'],
+      components,
+      componentRegistry,
       sourceMap,
       sections,
       documentSections,
@@ -325,4 +329,62 @@ function parseSuppressionDirectives(contentLines: string[]): SuppressionDirectiv
   }
 
   return directives;
+}
+
+/**
+ * Normalize the `components:` block into definitions + optional registry.
+ *
+ * Two accepted shapes:
+ *   1. Flat (back-compat, open-world):
+ *        components:
+ *          button-primary: { backgroundColor: ... }
+ *   2. Registry + definitions (closed-world):
+ *        components:
+ *          registry:
+ *            - name: button-primary
+ *              kind: button
+ *          definitions:
+ *            button-primary: { backgroundColor: ... }
+ *
+ * Shape detection: presence of a top-level `registry` key (whose value is an
+ * array) selects the closed-world form. Anything else falls through to the
+ * flat form.
+ */
+function normalizeComponents(raw: unknown): {
+  components: Record<string, Record<string, RawComponentValue>> | undefined;
+  componentRegistry: RawRegistryEntry[] | undefined;
+} {
+  if (!raw || typeof raw !== 'object') {
+    return { components: undefined, componentRegistry: undefined };
+  }
+  const obj = raw as Record<string, unknown>;
+  const hasRegistry = Array.isArray(obj['registry']);
+  if (!hasRegistry) {
+    return {
+      components: obj as Record<string, Record<string, RawComponentValue>>,
+      componentRegistry: undefined,
+    };
+  }
+  const registry = (obj['registry'] as unknown[]).filter(
+    (e): e is Record<string, unknown> => !!e && typeof e === 'object'
+  ).map((e): RawRegistryEntry => {
+    const entry: RawRegistryEntry = {
+      name: typeof e['name'] === 'string' ? e['name'] : '',
+    };
+    if (typeof e['kind'] === 'string') entry.kind = e['kind'];
+    if (typeof e['interactive'] === 'boolean') entry.interactive = e['interactive'];
+    if (Array.isArray(e['requiredProperties'])) {
+      entry.requiredProperties = (e['requiredProperties'] as unknown[]).filter(
+        (x): x is string => typeof x === 'string'
+      );
+    }
+    if (typeof e['composes'] === 'string') entry.composes = e['composes'];
+    return entry;
+  }).filter(e => e.name.length > 0);
+
+  const definitions = obj['definitions'] && typeof obj['definitions'] === 'object'
+    ? (obj['definitions'] as Record<string, Record<string, RawComponentValue>>)
+    : {};
+
+  return { components: definitions, componentRegistry: registry };
 }

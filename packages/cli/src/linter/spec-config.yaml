@@ -140,6 +140,48 @@ color_roles:
   - tertiary
   - neutral
 
+# Component kinds drive default behaviors (e.g., interactivity, required states).
+# Adding a new kind = add it here; rules and exporters read this list.
+component_kinds:
+  - name: button
+    interactive: true
+  - name: input
+    interactive: true
+  - name: navigation
+    interactive: true
+  - name: container
+    interactive: false
+  - name: display
+    interactive: false
+  - name: overlay
+    interactive: false
+
+# Modifiers permitted in `noun-modifier` component names. The `naming-convention`
+# rule treats anything else after the first hyphen as a candidate violation.
+component_modifiers:
+  # Style modifiers
+  - primary
+  - secondary
+  - tertiary
+  - danger
+  - ghost
+  - outline
+  - subtle
+  - bare
+  - elevated
+  # Interaction states
+  - hover
+  - focus
+  - active
+  - disabled
+  # Input types — `input-text`, `input-number`, etc. form a closed set
+  # mirroring HTML input types.
+  - text
+  - number
+  - email
+  - password
+  - search
+
 # Color value shapes
 # ──────────────────
 # In addition to a flat hex (`primary: "#1A1C1E"`), `colors` accepts two

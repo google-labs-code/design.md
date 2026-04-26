@@ -250,4 +250,55 @@ Some markdown text with no YAML blocks.
       }
     });
   });
+
+  describe('component registry shape', () => {
+    it('parses flat components (back-compat) and leaves componentRegistry undefined', () => {
+      const input = `---
+components:
+  button-primary:
+    backgroundColor: "#000000"
+---`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.components?.['button-primary']?.['backgroundColor']).toBe('#000000');
+        expect(result.data.componentRegistry).toBeUndefined();
+      }
+    });
+
+    it('parses registry + definitions split shape', () => {
+      const input = `---
+components:
+  registry:
+    - name: button-primary
+      kind: button
+      requiredProperties: [backgroundColor, padding]
+    - name: card-elevated
+      kind: container
+      composes: card
+    - name: card
+      kind: container
+  definitions:
+    button-primary:
+      backgroundColor: "#000000"
+      padding: "12px"
+    card:
+      backgroundColor: "#ffffff"
+    card-elevated:
+      backgroundColor: "#eeeeee"
+---`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.componentRegistry?.length).toBe(3);
+        const btn = result.data.componentRegistry?.find(e => e.name === 'button-primary');
+        expect(btn?.kind).toBe('button');
+        expect(btn?.requiredProperties).toEqual(['backgroundColor', 'padding']);
+        const elevated = result.data.componentRegistry?.find(e => e.name === 'card-elevated');
+        expect(elevated?.composes).toBe('card');
+        // Definitions are still surfaced via `components`.
+        expect(result.data.components?.['button-primary']?.['backgroundColor']).toBe('#000000');
+      }
+    });
+  });
 });

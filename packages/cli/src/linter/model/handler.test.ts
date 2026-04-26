@@ -506,4 +506,73 @@ describe('ModelHandler', () => {
       expect(typeof elevation === 'object' && elevation !== null && 'type' in elevation && elevation.type === 'shadow').toBe(true);
     });
   });
+
+  describe('component registry', () => {
+    it('omits componentRegistry when not declared (open-world back-compat)', () => {
+      const result = handler.execute(makeParsed({
+        components: { card: { backgroundColor: '#000' } },
+      }));
+      expect(result.designSystem.componentRegistry).toBeUndefined();
+    });
+
+    it('builds the registry map with kind-derived interactivity', () => {
+      const result = handler.execute(makeParsed({
+        componentRegistry: [
+          { name: 'button-primary', kind: 'button' },
+          { name: 'card', kind: 'container' },
+        ],
+        components: {
+          'button-primary': { backgroundColor: '#000' },
+          card: { backgroundColor: '#fff' },
+        },
+      }));
+      const registry = result.designSystem.componentRegistry!;
+      expect(registry.get('button-primary')!.interactive).toBe(true);
+      expect(registry.get('card')!.interactive).toBe(false);
+    });
+
+    it('lets explicit interactive override the kind default', () => {
+      const result = handler.execute(makeParsed({
+        componentRegistry: [
+          { name: 'card', kind: 'container', interactive: true },
+        ],
+        components: { card: { backgroundColor: '#000' } },
+      }));
+      expect(result.designSystem.componentRegistry!.get('card')!.interactive).toBe(true);
+    });
+
+    it('pre-merges composed properties before child overrides', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        componentRegistry: [
+          { name: 'card', kind: 'container' },
+          { name: 'card-elevated', kind: 'container', composes: 'card' },
+        ],
+        components: {
+          card: { backgroundColor: '{colors.primary}', padding: '12px' },
+          'card-elevated': { padding: '24px' },
+        },
+      }));
+      const elevated = result.designSystem.components.get('card-elevated')!;
+      const bg = elevated.properties.get('backgroundColor');
+      // Inherited from card.
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+      // Own override wins.
+      const padding = elevated.properties.get('padding');
+      expect(typeof padding === 'object' && padding !== null && 'value' in padding ? padding.value : null).toBe(24);
+    });
+
+    it('short-circuits composes cycles without crashing', () => {
+      const result = handler.execute(makeParsed({
+        componentRegistry: [
+          { name: 'a', kind: 'container', composes: 'b' },
+          { name: 'b', kind: 'container', composes: 'a' },
+        ],
+        components: { a: { padding: '12px' }, b: { padding: '8px' } },
+      }));
+      // Build succeeded; the linter rule reports the cycle.
+      expect(result.designSystem.components.has('a')).toBe(true);
+      expect(result.designSystem.components.has('b')).toBe(true);
+    });
+  });
 });
