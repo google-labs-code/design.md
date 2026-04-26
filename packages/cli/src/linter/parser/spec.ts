@@ -78,6 +78,12 @@ export interface ParsedDesignSystem {
   typography?: Record<string, Record<string, string | number>> | undefined;
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
+  /**
+   * Semantic elevation tokens (resting / raised / overlay / modal). Values
+   * are CSS shadow strings; component `shadow` props reference them via
+   * `{elevation.<name>}`.
+   */
+  elevation?: Record<string, string> | undefined;
   components?: Record<string, Record<string, string>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */

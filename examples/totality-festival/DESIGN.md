@@ -109,20 +109,20 @@ components:
   button-primary-hover:
     backgroundColor: "{colors.primary-fixed}"
   button-secondary:
-    backgroundColor: transparent
+    backgroundColor: "#00000000"
     textColor: "{colors.secondary}"
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: 12px
     height: 48px
   button-secondary-hover:
-    backgroundColor: rgba(0, 227, 253, 0.1)
+    backgroundColor: "#00e3fd1a"
   card-glass-level-2:
-    backgroundColor: rgba(52, 52, 58, 0.2)
+    backgroundColor: "#34343a33"
     rounded: "{rounded.xl}"
     padding: "{spacing.gutter}"
   card-glass-interactive-hover:
-    backgroundColor: rgba(56, 57, 63, 0.4)
+    backgroundColor: "#38393f66"
   input-field:
     backgroundColor: "{colors.surface-container-lowest}"
     textColor: "{colors.on-surface}"

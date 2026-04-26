@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue } from './spec.js';
-import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography } from '../model/spec.js';
+import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedShadow, ResolvedTypography } from '../model/spec.js';
 
 const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.json';
 
@@ -43,7 +43,31 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     const typographyGroup = this.mapTypography(state);
     if (typographyGroup) file['typography'] = typographyGroup;
 
+    const elevationGroup = this.mapElevation(state);
+    if (elevationGroup) file['elevation'] = elevationGroup;
+
     return { success: true, data: file as Record<string, unknown> };
+  }
+
+  private mapElevation(state: DesignSystemState): DtcgGroup | null {
+    if (state.elevation.size === 0) return null;
+    const group: DtcgGroup = { $type: 'shadow' };
+    for (const [name, shadow] of state.elevation) {
+      group[name] = {
+        $value: this.shadowToValue(shadow),
+      } as DtcgToken;
+    }
+    return group;
+  }
+
+  /**
+   * Emit the raw CSS shadow string. Round-tripping the full DTCG composite
+   * shadow grammar (offset / blur / spread / color objects) is intentionally
+   * deferred — the raw string preserves all author intent and works with
+   * downstream consumers that pass shadows through verbatim.
+   */
+  private shadowToValue(shadow: ResolvedShadow): string {
+    return shadow.raw;
   }
 
   private mapColors(state: DesignSystemState): DtcgGroup | null {

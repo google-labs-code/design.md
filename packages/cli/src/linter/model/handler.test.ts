@@ -356,4 +356,96 @@ describe('ModelHandler', () => {
       }
     });
   });
+
+  // ── Issue #2: typed component sub-token validation ───────────────
+  describe('typed component sub-token validation', () => {
+    it('emits error for opacity > 1', () => {
+      const result = handler.execute(makeParsed({
+        components: { card: { opacity: '2' } },
+      }));
+      const errs = result.findings.filter(f => f.severity === 'error');
+      expect(errs.length).toBe(1);
+      expect(errs[0]!.path).toBe('components.card.opacity');
+    });
+
+    it('emits error for malformed border shorthand', () => {
+      const result = handler.execute(makeParsed({
+        components: { card: { border: '1px squiggly #000' } },
+      }));
+      const errs = result.findings.filter(f => f.severity === 'error');
+      expect(errs.length).toBe(1);
+      expect(errs[0]!.path).toBe('components.card.border');
+    });
+
+    it('emits error for shadow without a color', () => {
+      const result = handler.execute(makeParsed({
+        components: { card: { shadow: '0 4px 8px' } },
+      }));
+      const errs = result.findings.filter(f => f.severity === 'error');
+      expect(errs.length).toBe(1);
+    });
+
+    it('emits error for transition with non-time duration', () => {
+      const result = handler.execute(makeParsed({
+        components: { card: { transition: 'opacity 200px ease-out' } },
+      }));
+      const errs = result.findings.filter(f => f.severity === 'error');
+      expect(errs.length).toBe(1);
+    });
+
+    it('accepts iconSize: auto', () => {
+      const result = handler.execute(makeParsed({
+        components: { card: { iconSize: 'auto' } },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
+    });
+
+    it('accepts padding shorthand (12px 16px)', () => {
+      const result = handler.execute(makeParsed({
+        components: { card: { padding: '12px 16px' } },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
+    });
+
+    it('skips validation for token references', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        components: { card: { borderColor: '{colors.primary}' } },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
+    });
+  });
+
+  describe('elevation token group', () => {
+    it('parses elevation entries into the state', () => {
+      const result = handler.execute(makeParsed({
+        elevation: {
+          raised: '0 4px 8px rgba(0,0,0,0.08)',
+          modal: '0 24px 48px rgba(0,0,0,0.16)',
+        },
+      }));
+      expect(result.designSystem.elevation.size).toBe(2);
+      const raised = result.designSystem.elevation.get('raised');
+      expect(raised?.type).toBe('shadow');
+      expect(raised?.raw).toBe('0 4px 8px rgba(0,0,0,0.08)');
+    });
+
+    it('resolves component shadow via {elevation.*} reference', () => {
+      const result = handler.execute(makeParsed({
+        elevation: { raised: '0 4px 8px rgba(0,0,0,0.08)' },
+        components: { card: { shadow: '{elevation.raised}' } },
+      }));
+      const shadow = result.designSystem.components.get('card')?.properties.get('shadow');
+      expect(typeof shadow === 'object' && shadow !== null && 'type' in shadow && shadow.type === 'shadow').toBe(true);
+    });
+
+    it('resolves bare elevation: raised against the elevation map', () => {
+      const result = handler.execute(makeParsed({
+        elevation: { raised: '0 4px 8px rgba(0,0,0,0.08)' },
+        components: { card: { elevation: 'raised' } },
+      }));
+      const elevation = result.designSystem.components.get('card')?.properties.get('elevation');
+      expect(typeof elevation === 'object' && elevation !== null && 'type' in elevation && elevation.type === 'shadow').toBe(true);
+    });
+  });
 });

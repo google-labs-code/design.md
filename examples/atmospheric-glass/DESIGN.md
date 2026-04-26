@@ -95,38 +95,52 @@ spacing:
   card-gap: 16px
   section-margin: 40px
   glass-padding: 20px
+elevation:
+  resting: "0 1px 2px rgba(0,0,0,0.20)"
+  raised: "0 8px 24px rgba(0,0,0,0.25)"
+  overlay: "0 12px 32px rgba(0,0,0,0.40)"
+  modal: "0 24px 48px rgba(0,0,0,0.50)"
 components:
   glass-card-standard:
-    backgroundColor: rgba(255, 255, 255, 0.1)
+    backgroundColor: "#ffffff1a"
     textColor: "{colors.primary}"
     rounded: "{rounded.lg}"
     padding: "{spacing.glass-padding}"
+    gap: "{spacing.card-gap}"
+    shadow: "{elevation.raised}"
   glass-card-elevated:
-    backgroundColor: rgba(255, 255, 255, 0.2)
+    backgroundColor: "#ffffff33"
     textColor: "{colors.primary}"
     rounded: "{rounded.xl}"
     padding: "{spacing.glass-padding}"
+    gap: "{spacing.card-gap}"
+    shadow: "{elevation.overlay}"
   button-primary:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
     typography: "{typography.label-sm}"
     rounded: "{rounded.xl}"
     height: 48px
-    padding: 0 24px
+    padding: 0px 24px
+    transition: "opacity 150ms ease-out"
   button-primary-hover:
     backgroundColor: "{colors.primary-fixed-dim}"
   button-ghost:
-    backgroundColor: rgba(255, 255, 255, 0.05)
+    backgroundColor: "#ffffff0d"
     textColor: "{colors.primary}"
     typography: "{typography.label-sm}"
     rounded: "{rounded.xl}"
+    border: "1px solid #ffffff33"
+    transition: "opacity 150ms ease-out"
   input-field:
-    backgroundColor: rgba(255, 255, 255, 0.1)
+    backgroundColor: "#ffffff1a"
     textColor: "{colors.primary}"
     typography: "{typography.body-md}"
     rounded: "{rounded.xl}"
     padding: 20px
     height: 48px
+    border: "1px solid #ffffff33"
+    iconSize: auto
   weather-display-large:
     textColor: "{colors.primary}"
     typography: "{typography.display-lg}"
@@ -134,11 +148,12 @@ components:
     textColor: "{colors.on-surface-variant}"
     typography: "{typography.label-sm}"
   list-item-interactive:
-    backgroundColor: transparent
+    backgroundColor: "#ffffff00"
     rounded: "{rounded.md}"
     padding: 12px
+    transition: "opacity 100ms ease-in"
   list-item-interactive-hover:
-    backgroundColor: rgba(255, 255, 255, 0.1)
+    backgroundColor: "#ffffff1a"
 ---
 
 ## Brand & Style
@@ -178,10 +193,11 @@ Depth in this design system is not achieved through darkness, but through the ph
 
 - **The Glass Stack:**
   - **Level 1 (Base):** Dynamic background gradient with a slight grain texture.
-  - **Level 2 (Standard Card):** `backdrop-filter: blur(20px)`, `background: rgba(255, 255, 255, 0.1)`.
-  - **Level 3 (Elevated/Modals):** `backdrop-filter: blur(40px)`, `background: rgba(255, 255, 255, 0.2)`.
-- **Edge Definition:** Every glass surface must have a 1px solid border at `rgba(255, 255, 255, 0.2)`. A secondary inner "shine" border (top and left only) can be used to simulate a light source.
-- **Shadows:** Use extremely soft, spread-out shadows (`box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1)`) to separate the glass layers from the background without making the UI feel "heavy."
+  - **Level 2 (Standard Card):** `backdrop-filter: blur(20px)`, `background: #ffffff1a`, `shadow: {elevation.raised}`.
+  - **Level 3 (Elevated/Modals):** `backdrop-filter: blur(40px)`, `background: #ffffff33`, `shadow: {elevation.overlay}`.
+- **Edge Definition:** Glass surfaces use a single `border: 1px solid #ffffff33` to simulate light refraction on the edges. **Pick one** separator per surface — a card uses either its border *or* an elevation shadow, never both stacked on top of a tinted background.
+- **Elevation tokens:** The semantic `resting` / `raised` / `overlay` / `modal` levels map physical depth to z-index intent. Components reference them via `shadow: "{elevation.raised}"`; literal `box-shadow` values are flagged by the linter as a nudge toward semantic elevation.
+- **Opacity discipline:** Translucent surfaces are encoded as 8-digit hex colors (e.g., `#ffffff1a` for 10% white). Components never combine `opacity` with a translucent `backgroundColor` — that would stack alpha and break the WCAG contrast budget.
 
 ## Shapes
 
@@ -203,7 +219,9 @@ Buttons use the `rounded-xl` setting to maintain a soft, organic feel. Primary b
 
 ### Inputs & Interaction
 
-Interactive list items and text inputs use subtle hover states and light blurs rather than solid color changes, preserving the "crystalline" transparency of the UI.
+Interactive list items and text inputs use subtle hover states and light blurs rather than solid color changes, preserving the "crystalline" transparency of the UI. The `input-field` component uses `iconSize: auto` so leading icons follow the body-md text size; only override that when the icon is the primary affordance.
+
+State changes use `transition: opacity 150ms ease-out` — opacity and transform are the only properties we animate. Width, height, padding, and margin are off-limits because animating them forces a re-layout on every frame.
 
 ### Typography Application
 

@@ -188,6 +188,28 @@ Depth is achieved through **Tonal Layers** rather than heavy shadows. The
 background uses a soft off-white or very light green, while primary content sits on pure white cards.
 ```
 
+### Design Tokens
+
+The `elevation` section defines semantic shadow tokens. Elevation is a
+*meaning* (resting, raised, overlay, modal) rather than a decoration —
+each level should map to a specific z-index intent (resting=0, raised=10,
+overlay=100, modal=1000).
+
+It is a map\<string, ShadowValue\>.
+
+```yaml
+elevation:
+  resting: "0 1px 2px rgba(0,0,0,0.06)"
+  raised:  "0 4px 8px rgba(0,0,0,0.08)"
+  overlay: "0 12px 24px rgba(0,0,0,0.12)"
+  modal:   "0 24px 48px rgba(0,0,0,0.16)"
+```
+
+Components reference elevation via `shadow: "{elevation.raised}"` or the
+shorthand `elevation: raised`. Linter rule `elevation-without-semantics`
+nudges authors toward references when literal shadow values are used in
+components.
+
 ## Shapes
 
 This section describes how visual elements are shaped.
@@ -246,6 +268,34 @@ Each component has a set of properties that are themselves design tokens:
 
 {componentSubTokenList()}
 
+### Authoring Rules
+
+The Components section is also the place where the design system explains
+*how* its visual properties combine. The linter checks the structural
+shape; the prose carries the rationale. Cover at least:
+
+- **Separation hierarchy** — when to use border vs shadow vs background
+  contrast for visual separation. Pick **one** strategy per surface;
+  combining all three reads as visual noise (`triple-separation` rule).
+- **Elevation semantics** — elevation is a meaning, not a decoration.
+  Map every shadow to a semantic level (resting, raised, overlay,
+  modal). Reach for `{elevation.*}` references rather than literal
+  shadows (`elevation-without-semantics` rule).
+- **Opacity discipline** — opacity expresses *state* (disabled, loading).
+  Tint with color tokens, never with opacity. Never stack opacity layers
+  on top of an already-translucent backgroundColor (`opacity-stacking`
+  rule).
+- **Transitions** — animate `transform` and `opacity`. Animating
+  `width`, `height`, `padding`, or `margin` triggers layout on every
+  frame and is flagged by `animating-layout-property`. Always honor
+  `prefers-reduced-motion`.
+- **Icon sizing** — `iconSize: auto` follows the nearest text size and is
+  the right default. Override only when the icon is the primary
+  affordance for the component.
+- **Border usage** — borders communicate input affordances and dividers.
+  Borders should not be the primary visual identity of a surface —
+  reach for color or elevation first.
+
 ## Do's and Don'ts
 
 This section provides practical guidelines and common pitfalls. These act as guardrails when creating designs.
@@ -275,5 +325,6 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
-| Unknown component property | Accept with warning | `borderColor` |
+| Unknown component property | Accept with warning | `myCustomProp` |
+| Typed component property with malformed value | Reject with error | `opacity: 2` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |

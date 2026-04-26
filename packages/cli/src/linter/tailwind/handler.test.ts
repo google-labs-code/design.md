@@ -113,6 +113,22 @@ describe('TailwindEmitterHandler', () => {
     });
   });
 
+  // ── Issue #2: elevation → boxShadow ──────────────────────────────
+  describe('elevation mapping', () => {
+    it('maps elevation tokens to theme.extend.boxShadow', () => {
+      const state = buildState({
+        elevation: {
+          resting: '0 1px 2px rgba(0,0,0,0.06)',
+          raised: '0 4px 8px rgba(0,0,0,0.08)',
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.theme.extend.boxShadow?.['resting']).toBe('0 1px 2px rgba(0,0,0,0.06)');
+      expect(result.data.theme.extend.boxShadow?.['raised']).toBe('0 4px 8px rgba(0,0,0,0.08)');
+    });
+  });
+
   // ── Ramps and pairs ───────────────────────────────────────────────
   describe('ramps and pairs', () => {
     it('emits ramps as nested objects with DEFAULT and step keys', () => {

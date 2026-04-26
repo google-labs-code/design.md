@@ -96,7 +96,33 @@ export interface ResolvedTypography {
   fontVariation?: string | undefined;
 }
 
-export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string;
+/**
+ * Semantic elevation token — a CSS shadow string (e.g., "0 4px 8px rgba(0,0,0,0.08)").
+ * Components reference elevation via `shadow: "{elevation.raised}"` or `elevation: raised`.
+ */
+export interface ResolvedShadow {
+  type: 'shadow';
+  /** The raw CSS shadow string. */
+  raw: string;
+}
+
+/** Resolved CSS border shorthand `<width> <style> <color>`. */
+export interface ResolvedBorder {
+  type: 'border';
+  width: ResolvedDimension;
+  style: string;
+  color: ResolvedColor;
+  /** The original raw shorthand string, preserved for exporters. */
+  raw: string;
+}
+
+export type ResolvedValue =
+  | ResolvedColor
+  | ResolvedDimension
+  | ResolvedTypography
+  | ResolvedShadow
+  | ResolvedBorder
+  | string;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
@@ -116,6 +142,11 @@ export interface DesignSystemState {
   typography: Map<string, ResolvedTypography>;
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
+  /**
+   * Semantic elevation tokens. Keys are typically `resting`, `raised`,
+   * `overlay`, `modal`. Values carry the raw CSS shadow string.
+   */
+  elevation: Map<string, ResolvedShadow>;
   components: Map<string, ComponentDef>;
   /** Ramp definitions, keyed by ramp name. */
   colorRamps: Map<string, RampDef>;

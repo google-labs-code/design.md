@@ -38,7 +38,7 @@ describe('brokenRef', () => {
   it('emits warning (not error) for unknown component sub-tokens', () => {
     const state = buildState({
       colors: { primary: '#ff0000' },
-      components: { button: { borderColor: '#ff0000' } },
+      components: { button: { mysteryProp: '#ff0000' } },
     });
     const findings = brokenRef(state);
     const subTokenDiag = findings.find(d => d.message.includes('not a recognized'));

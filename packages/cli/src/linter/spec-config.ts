@@ -51,6 +51,7 @@ const ConfigSchema = z.object({
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
+    elevation: z.record(z.string(), z.string()).optional(),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
     components: z.record(z.string(), z.record(z.string(), z.string())),
   }),

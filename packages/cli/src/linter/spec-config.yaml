@@ -70,12 +70,37 @@ component_sub_tokens:
     type: Dimension
   - name: padding
     type: Dimension
+    description: "Accepts a single Dimension (`12px`) or a CSS shorthand of two-to-four Dimensions (`12px 16px`)."
   - name: size
     type: Dimension
   - name: height
     type: Dimension
   - name: width
     type: Dimension
+  - name: border
+    type: BorderShorthand
+    description: "CSS shorthand `<width> <style> <color>` (e.g., `1px solid {colors.outline}`) or a Color/Dimension token reference."
+  - name: borderColor
+    type: Color
+  - name: borderWidth
+    type: Dimension
+  - name: shadow
+    type: ShadowValue
+    description: "CSS shorthand `<offsetX> <offsetY> <blur> [<spread>] <color>` or a reference to an `{elevation.*}` token."
+  - name: elevation
+    type: ElevationLevel
+    description: "Reference to an `{elevation.*}` token (semantic: resting, raised, overlay, modal)."
+  - name: gap
+    type: Dimension
+  - name: iconSize
+    type: "Dimension | \"auto\""
+    description: "`auto` (the default) follows the nearest text size. Otherwise a Dimension or `{typography.*}` reference."
+  - name: opacity
+    type: Number
+    description: "A unitless number between 0 and 1. Use for state (disabled, loading), not for tinting."
+  - name: transition
+    type: TransitionShorthand
+    description: "CSS shorthand `<property> <duration> <easing>`. Until motion tokens land, literal values are accepted with a warning."
 
 color_roles:
   - primary
@@ -141,6 +166,11 @@ examples:
     secondary: "#6C7278"
     tertiary: "#B8422E"
     neutral: "#F7F5F2"
+  elevation:
+    resting: "0 1px 2px rgba(0,0,0,0.06)"
+    raised: "0 4px 8px rgba(0,0,0,0.08)"
+    overlay: "0 12px 24px rgba(0,0,0,0.12)"
+    modal: "0 24px 48px rgba(0,0,0,0.16)"
   typography:
     h1:
       fontFamily: Public Sans

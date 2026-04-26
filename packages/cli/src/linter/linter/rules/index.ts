@@ -23,6 +23,10 @@ import { tokenSummaryRule } from './token-summary.js';
 import { missingSectionsRule } from './missing-sections.js';
 import { sectionOrderRule } from './section-order.js';
 import { missingTypographyRule } from './missing-typography.js';
+import { opacityStackingRule } from './opacity-stacking.js';
+import { animatingLayoutPropertyRule } from './animating-layout-property.js';
+import { elevationWithoutSemanticsRule } from './elevation-without-semantics.js';
+import { tripleSeparationRule } from './triple-separation.js';
 import { pairContrastRule } from './pair-contrast.js';
 import { mixedPairForegroundRule } from './mixed-pair-foreground.js';
 import { rampAnchorNamingRule } from './ramp-anchor-naming.js';
@@ -40,6 +44,10 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   missingSectionsRule,
   missingTypographyRule,
   sectionOrderRule,
+  opacityStackingRule,
+  animatingLayoutPropertyRule,
+  elevationWithoutSemanticsRule,
+  tripleSeparationRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -64,6 +72,10 @@ export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
 export { missingTypography } from './missing-typography.js';
 export { sectionOrder } from './section-order.js';
+export { opacityStacking } from './opacity-stacking.js';
+export { animatingLayoutProperty } from './animating-layout-property.js';
+export { elevationWithoutSemantics } from './elevation-without-semantics.js';
+export { tripleSeparation } from './triple-separation.js';
 export { pairContrast } from './pair-contrast.js';
 export { mixedPairForeground } from './mixed-pair-foreground.js';
 export { rampAnchorNaming } from './ramp-anchor-naming.js';

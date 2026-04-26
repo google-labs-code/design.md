@@ -24,6 +24,7 @@ function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
     typography: new Map(),
     rounded: new Map(),
     spacing: new Map(),
+    elevation: new Map(),
     components: new Map(),
     colorRamps: new Map(),
     colorPairs: new Map(),
@@ -38,6 +39,10 @@ function makeColor(hex: string, r: number, g: number, b: number): ResolvedColor 
 
 function makeDim(value: number, unit: string): ResolvedDimension {
   return { type: 'dimension', value, unit };
+}
+
+function makeShadow(raw: string) {
+  return { type: 'shadow' as const, raw };
 }
 
 describe('DtcgEmitterHandler', () => {
@@ -172,6 +177,25 @@ describe('DtcgEmitterHandler', () => {
     expect(value['fontWeight']).toBe(700);
     expect(value['lineHeight']).toBe(1.2);
     expect(value['letterSpacing']).toEqual({ value: 0.5, unit: 'px' });
+  });
+
+  test('elevation → DTCG shadow group with raw shadow strings', () => {
+    const state = emptyState({
+      elevation: new Map([
+        ['raised', makeShadow('0 4px 8px rgba(0,0,0,0.08)')],
+        ['modal', makeShadow('0 24px 48px rgba(0,0,0,0.16)')],
+      ]),
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const elevationGroup = result.data['elevation'] as Record<string, unknown>;
+    expect(elevationGroup['$type']).toBe('shadow');
+
+    const raised = elevationGroup['raised'] as Record<string, unknown>;
+    expect(raised['$value']).toBe('0 4px 8px rgba(0,0,0,0.08)');
   });
 
   test('typography with missing fields omits them from $value', () => {

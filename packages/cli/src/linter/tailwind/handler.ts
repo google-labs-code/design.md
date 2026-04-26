@@ -31,10 +31,19 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
             fontSize: this.mapFontSizes(state),
             borderRadius: this.mapDimensions(state.rounded),
             spacing: this.mapDimensions(state.spacing),
+            boxShadow: this.mapElevation(state),
           },
         },
       }
     };
+  }
+
+  private mapElevation(state: DesignSystemState): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [name, shadow] of state.elevation) {
+      result[name] = shadow.raw;
+    }
+    return result;
   }
 
   private mapColors(state: DesignSystemState): Record<string, string | Record<string, string>> {

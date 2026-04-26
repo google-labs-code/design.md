@@ -108,6 +108,11 @@ spacing:
   xl: 64px
   gutter: 16px
   margin: 24px
+elevation:
+  resting: "0 1px 2px rgba(133,83,0,0.06)"
+  raised: "0 4px 12px rgba(133,83,0,0.10)"
+  overlay: "0 12px 24px rgba(133,83,0,0.14)"
+  modal: "0 24px 48px rgba(133,83,0,0.18)"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -115,6 +120,7 @@ components:
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
+    transition: "opacity 150ms ease-out"
   button-primary-hover:
     backgroundColor: "{colors.primary-container}"
     textColor: "{colors.on-primary-container}"
@@ -124,6 +130,7 @@ components:
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
+    transition: "opacity 150ms ease-out"
   button-secondary-hover:
     backgroundColor: "{colors.secondary-container}"
     textColor: "{colors.on-secondary-container}"
@@ -131,21 +138,27 @@ components:
     backgroundColor: "{colors.surface-container-lowest}"
     rounded: "{rounded.xl}"
     padding: "{spacing.md}"
+    gap: "{spacing.sm}"
+    shadow: "{elevation.raised}"
   card-walk-stat:
     backgroundColor: "{colors.secondary-container}"
     textColor: "{colors.on-secondary-container}"
     rounded: "{rounded.md}"
     padding: "{spacing.sm}"
+    shadow: "{elevation.resting}"
   input-field:
     backgroundColor: "{colors.surface-container-low}"
     textColor: "{colors.on-surface}"
     typography: "{typography.body-md}"
     rounded: "{rounded.DEFAULT}"
     padding: "{spacing.sm}"
+    border: "1px solid {colors.outline-variant}"
+    iconSize: auto
   list-item-walker:
-    backgroundColor: transparent
+    backgroundColor: "#00000000"
     padding: "{spacing.sm}"
     rounded: "{rounded.md}"
+    transition: "opacity 100ms ease-in"
   list-item-walker-hover:
     backgroundColor: "{colors.surface-container-high}"
   badge-status:
@@ -192,8 +205,9 @@ The layout follows a **Fixed Grid** model for mobile-first consistency, utilizin
 This design system uses **Ambient Shadows** and **Tonal Layers** to define the interface's verticality.
 
 - **Surfaces:** Main backgrounds use the lightest neutral tint. Interactive cards sit one level above on a pure white surface.
-- **Shadows:** Shadows are highly diffused and soft (Blur: 20px-40px, Opacity: 4-8%) with a subtle hint of the primary orange or secondary blue mixed into the shadow color to prevent a "dirty" gray look.
-- **Interactions:** Elements should subtly lift on hover or tap, increasing shadow spread to provide tactile feedback.
+- **Shadows:** Shadows are highly diffused and soft (Blur: 20px-40px, Opacity: 4-8%) with a subtle hint of the primary orange mixed into the shadow color to prevent a "dirty" gray look.
+- **Elevation tokens:** The four semantic levels are defined in the `elevation:` block — `resting` for content cards, `raised` for the hero `card-profile`, `overlay` for transient surfaces, `modal` for the highest-z dialogs. Reference them from components via `shadow: "{elevation.raised}"` rather than hand-rolling shadow values.
+- **Interactions:** Hover lifts elements one elevation level by transitioning to the next-higher token. Animate `opacity` and `transform`; never animate `width`, `height`, `padding`, or `margin`.
 
 ## Shapes
 
@@ -212,7 +226,7 @@ Buttons use `rounded-lg` (12px) to feel substantial and friendly, while form fie
 
 ### Cards & Elevation
 
-The `card-profile` is the hero container, utilizing `rounded-xl` and a tinted ambient shadow to create a "lifted" appearance against the `surface` background. Use `card-walk-stat` for high-contrast data visualization within the blue secondary palette.
+The `card-profile` is the hero container, utilizing `rounded-xl` and `shadow: {elevation.raised}` to create a "lifted" appearance against the `surface` background. `card-walk-stat` sits at `{elevation.resting}` and relies on its blue secondary backgroundColor for separation — pick **one** strategy per surface (`triple-separation` keeps us honest). The `input-field` is the only component that combines a `border` with a tonal background; it intentionally has no shadow.
 
 ### Lists & Navigation
 
