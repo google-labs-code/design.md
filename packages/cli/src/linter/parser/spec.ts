@@ -89,7 +89,47 @@ export interface ParsedDesignSystem {
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;
   /** Full content of each section, including heading and body. */
-  documentSections?: Array<{ heading: string; content: string }> | undefined;
+  documentSections?: DocumentSection[] | undefined;
+}
+
+/**
+ * A suppression directive parsed from `<!-- design.md ... -->` HTML comments.
+ * `rule` is the rule name, or `*` for all rules. Line numbers are document-wide
+ * and 1-based; both `fromLine` and `toLine` are inclusive.
+ */
+export interface SuppressionDirective {
+  rule: string;
+  fromLine: number;
+  toLine: number;
+}
+
+/** A line range, 1-based, inclusive on both ends. */
+export interface LineRange {
+  startLine: number;
+  endLine: number;
+}
+
+/** A document section partitioned by H2 heading. */
+export interface DocumentSection {
+  /** The heading text, or '' for the prelude before the first H2. */
+  heading: string;
+  /** The full content of the section, including its heading line. */
+  content: string;
+  /** 1-based line number of the section's first line in the original document. */
+  startLine: number;
+  /** 1-based line number of the section's last line in the original document. */
+  endLine: number;
+  /**
+   * Suppression directives parsed from HTML comments inside the section.
+   * Line numbers are absolute (document-wide), 1-based, inclusive.
+   */
+  suppressions: SuppressionDirective[];
+  /**
+   * Fenced code block ranges within the section. Used by prose-aware rules
+   * to skip content that is intentionally illustrative rather than authored
+   * narrative. Line numbers are absolute (document-wide), 1-based, inclusive.
+   */
+  codeBlockRanges: LineRange[];
 }
 
 // ── RESULT ─────────────────────────────────────────────────────────

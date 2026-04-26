@@ -413,3 +413,43 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown component property | Accept with warning | `myCustomProp` |
 | Typed component property with malformed value | Reject with error | `opacity: 2` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |
+
+# Linting
+
+The active linting rules are listed in the rules table emitted by `design.md spec --rules`.
+
+### Why `prose-token-mismatch`
+
+A DESIGN.md typically describes its palette in two places: the YAML tokens
+under `colors:`, and the prose under `## Colors` (e.g.
+*"Boston Clay (#B8422E) is the sole driver for interaction"*). When a
+designer recolors a token, the prose can silently fall out of sync. The
+existing `broken-ref` rule validates `{colors.tertiary}`-style references
+but cannot see hex literals embedded in sentences.
+
+`prose-token-mismatch` scans markdown prose for hex literals and verifies
+that each one resolves to a defined token's value. When an inline anchor
+is present — a backticked token key (`` `tertiary` ``, `` `colors.tertiary` ``)
+or a ramp anchor's `humanName` — the rule additionally checks that the hex
+matches *that specific token's* current value, catching renames and
+recolors as well as deletions.
+
+### Suppression Directives
+
+Linter findings can be suppressed inline with HTML comment directives.
+This is useful when prose intentionally cites a historical, external, or
+OS-default color that should not match a token.
+
+```markdown
+<!-- design.md disable-next-line prose-token-mismatch -->
+The legacy logo used Boston Red (#C8102E).
+
+<!-- design.md disable prose-token-mismatch -->
+External examples (#FF6700) appear throughout this section.
+<!-- design.md enable prose-token-mismatch -->
+
+<!-- design.md disable-file prose-token-mismatch -->
+```
+
+Use `*` as the rule name to suppress every rule. Multiple rules may be
+listed, separated by commas (e.g. `disable-next-line rule-a, rule-b`).

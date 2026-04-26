@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { ParserHandler } from './parser/handler.js';
-import type { ParsedDesignSystem } from './parser/spec.js';
+import type { ParsedDesignSystem, DocumentSection } from './parser/spec.js';
 import { ModelHandler } from './model/handler.js';
 import { runLinter } from './linter/runner.js';
 import { TailwindEmitterHandler } from './tailwind/handler.js';
@@ -39,7 +39,7 @@ export interface LintReport {
   /** Markdown heading names found in the document. */
   sections: string[];
   /** The partitioned document sections. */
-  documentSections: Array<{ heading: string; content: string }>;
+  documentSections: DocumentSection[];
 }
 
 /**
@@ -114,13 +114,24 @@ export function lint(content: string, options?: LintOptions): LintReport {
  * Extract document sections from raw markdown content by finding H2 headings.
  * Used as a fallback when the parser cannot extract YAML.
  */
-function extractSectionsFromContent(content: string): Array<{ heading: string; content: string }> {
+function extractSectionsFromContent(content: string): DocumentSection[] {
   const lines = content.split('\n');
-  const sections: Array<{ heading: string; content: string }> = [];
+  const sections: DocumentSection[] = [];
   const headingPattern = /^## (.+)$/;
 
   let currentStart = 0;
   let currentHeading = '';
+
+  const pushSection = (heading: string, startIdx: number, endIdx: number) => {
+    sections.push({
+      heading,
+      content: lines.slice(startIdx, endIdx).join('\n'),
+      startLine: startIdx + 1,
+      endLine: endIdx,
+      suppressions: [],
+      codeBlockRanges: [],
+    });
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -130,10 +141,7 @@ function extractSectionsFromContent(content: string): Array<{ heading: string; c
     if (match) {
       // Push previous section
       if (i > 0) {
-        sections.push({
-          heading: currentHeading,
-          content: lines.slice(currentStart, i).join('\n'),
-        });
+        pushSection(currentHeading, currentStart, i);
       }
       currentHeading = match[1] ?? '';
       currentStart = i;
@@ -141,10 +149,7 @@ function extractSectionsFromContent(content: string): Array<{ heading: string; c
   }
 
   // Push final section
-  sections.push({
-    heading: currentHeading,
-    content: lines.slice(currentStart).join('\n'),
-  });
+  pushSection(currentHeading, currentStart, lines.length);
 
   return sections;
 }

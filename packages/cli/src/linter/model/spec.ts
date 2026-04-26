@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { z } from 'zod';
-import type { ParsedDesignSystem } from '../parser/spec.js';
+import type { ParsedDesignSystem, DocumentSection } from '../parser/spec.js';
 import {
   STANDARD_UNITS as _STANDARD_UNITS,
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
@@ -156,6 +156,24 @@ export interface DesignSystemState {
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
   sections?: string[] | undefined;
+  /** Partitioned markdown body, used by prose-aware rules. */
+  documentSections?: DocumentSection[] | undefined;
+  /**
+   * Reverse index from a normalized hex (lowercased, expanded to #rrggbb or
+   * #rrggbbaa) to every token whose value resolved to that hex. Used by the
+   * `prose-token-mismatch` rule to verify hex literals in prose against
+   * declared token values.
+   */
+  colorIndex: Map<string, ColorIndexEntry[]>;
+}
+
+export interface ColorIndexEntry {
+  /** The token's symbol-table path, e.g. "colors.primary" or "colors.brand.500". */
+  path: string;
+  /** The token key relative to `colors.`, e.g. "primary" or "brand.500". */
+  tokenKey: string;
+  /** Optional human-readable name (e.g., "Boston Clay") attached to ramp anchors. */
+  humanName?: string;
 }
 
 export interface ComponentDef {

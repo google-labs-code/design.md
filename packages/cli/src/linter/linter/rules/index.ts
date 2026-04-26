@@ -30,6 +30,7 @@ import { tripleSeparationRule } from './triple-separation.js';
 import { pairContrastRule } from './pair-contrast.js';
 import { mixedPairForegroundRule } from './mixed-pair-foreground.js';
 import { rampAnchorNamingRule } from './ramp-anchor-naming.js';
+import { proseTokenMismatchRule } from './prose-token-mismatch.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -48,6 +49,7 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   animatingLayoutPropertyRule,
   elevationWithoutSemanticsRule,
   tripleSeparationRule,
+  proseTokenMismatchRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -79,4 +81,5 @@ export { tripleSeparation } from './triple-separation.js';
 export { pairContrast } from './pair-contrast.js';
 export { mixedPairForeground } from './mixed-pair-foreground.js';
 export { rampAnchorNaming } from './ramp-anchor-naming.js';
+export { proseTokenMismatch } from './prose-token-mismatch.js';
 export type { LintRule } from './types.js';

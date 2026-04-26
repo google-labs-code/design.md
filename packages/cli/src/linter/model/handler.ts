@@ -25,6 +25,7 @@ import type {
   Finding,
   RampDef,
   PairDef,
+  ColorIndexEntry,
 } from './spec.js';
 
 import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
@@ -271,6 +272,8 @@ export class ModelHandler implements ModelSpec {
         }
       }
 
+      const colorIndex = buildColorIndex(colors);
+
       return {
         designSystem: {
           name: input.name,
@@ -285,6 +288,8 @@ export class ModelHandler implements ModelSpec {
           colorPairs,
           symbolTable,
           sections: input.sections,
+          documentSections: input.documentSections,
+          colorIndex,
         },
         findings,
       };
@@ -300,6 +305,7 @@ export class ModelHandler implements ModelSpec {
           colorRamps: new Map(),
           colorPairs: new Map(),
           symbolTable: new Map(),
+          colorIndex: new Map(),
         },
         findings: [
           {
@@ -469,6 +475,32 @@ function expandPair(name: string, raw: RawPairDef, ctx: ExpansionContext): void 
 }
 
 const WCAG_AA_BODY = 4.5;
+
+/**
+ * Build the reverse hex → tokens index used by the `prose-token-mismatch` rule.
+ * Keys are normalized hex literals (lowercased, expanded to 6/8 digits).
+ * Each entry records every token whose value resolved to that hex; ramp
+ * anchors propagate their `humanName` so prose anchors can match by display
+ * name (e.g., "Boston Clay") in addition to the systematic key.
+ */
+function buildColorIndex(colors: Map<string, ResolvedColor>): Map<string, ColorIndexEntry[]> {
+  const index = new Map<string, ColorIndexEntry[]>();
+  for (const [tokenKey, color] of colors) {
+    const hex = color.hex.toLowerCase();
+    const entry: ColorIndexEntry = {
+      path: `colors.${tokenKey}`,
+      tokenKey,
+    };
+    if (color.humanName) entry.humanName = color.humanName;
+    const list = index.get(hex);
+    if (list) {
+      list.push(entry);
+    } else {
+      index.set(hex, [entry]);
+    }
+  }
+  return index;
+}
 
 // ── Pure utility functions ─────────────────────────────────────────
 

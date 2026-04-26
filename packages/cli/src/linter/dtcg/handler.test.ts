@@ -29,6 +29,7 @@ function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
     colorRamps: new Map(),
     colorPairs: new Map(),
     symbolTable: new Map(),
+    colorIndex: new Map(),
     ...overrides,
   };
 }
