@@ -129,6 +129,39 @@ easing_keywords:
   - step-start
   - step-end
 
+# Allowed values for `breakpoints.philosophy`.
+breakpoint_philosophies:
+  - mobile-first
+  - desktop-first
+
+# Conventional breakpoint key order (sm → 2xl). Informational — authors may
+# add extra keys, but `breakpoint-monotonicity` reads this order to validate
+# value progression.
+breakpoint_keys:
+  - sm
+  - md
+  - lg
+  - xl
+  - "2xl"
+
+# Well-known template region names. Informational — authors may declare
+# additional regions. Used by `template-region-purity` to flag conflicting
+# semantics across templates (e.g., `header` reused with different roles).
+well_known_regions:
+  - header
+  - footer
+  - topbar
+  - statusbar
+  - sidebar
+  - sidebar-nav
+  - hero
+  - sections
+  - cta
+  - main
+  - content
+  - aside
+  - breadcrumb
+
 typography_properties:
   - name: fontFamily
     type: string
@@ -460,3 +493,45 @@ examples:
       dashboard: Home
     reservedNames:
       - DesignMD
+  breakpoints:
+    philosophy: mobile-first
+    values:
+      sm: 640px
+      md: 768px
+      lg: 1024px
+      xl: 1280px
+      "2xl": 1536px
+  grid:
+    columns: 12
+    gutter: "{spacing.md}"
+    margin:
+      sm: "{spacing.md}"
+      lg: "{spacing.xl}"
+    maxWidth: 1280px
+    bleedExceptions:
+      - hero
+      - gallery
+      - modal-overlay
+  layoutRules:
+    contentMaxWidth: 720px
+    stackSpacing: "{spacing.lg}"
+    formFieldWidth: 480px
+  templates:
+    marketing:
+      regions: [header, hero, sections, cta, footer]
+      requiredRegions: [header, footer]
+      maxWidth: 1280px
+    app-shell:
+      regions: [topbar, sidebar, main, statusbar]
+      requiredRegions: [topbar, main]
+      sidebarWidth: 280px
+    settings:
+      regions: [topbar, sidebar-nav, content]
+      requiredRegions: [topbar, content]
+  pages:
+    "/":
+      template: marketing
+    "/app":
+      template: app-shell
+    "/settings/*":
+      template: settings

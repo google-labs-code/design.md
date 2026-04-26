@@ -1332,5 +1332,171 @@
         }
       }
     }
+  },
+  "breakpoints": {
+    "$type": "dimension",
+    "sm": {
+      "$value": {
+        "value": 640,
+        "unit": "px"
+      }
+    },
+    "md": {
+      "$value": {
+        "value": 768,
+        "unit": "px"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 1024,
+        "unit": "px"
+      }
+    },
+    "xl": {
+      "$value": {
+        "value": 1280,
+        "unit": "px"
+      }
+    },
+    "2xl": {
+      "$value": {
+        "value": 1536,
+        "unit": "px"
+      }
+    }
+  },
+  "$extensions": {
+    "design.md": {
+      "voice": {
+        "axes": {
+          "formality": 2,
+          "warmth": 5,
+          "authority": 3,
+          "playfulness": 4
+        },
+        "person": "second",
+        "tense": "present-active",
+        "oxfordComma": true,
+        "contractions": "permitted"
+      },
+      "copy": {
+        "casing": {
+          "button": "sentence-case",
+          "nav": "title-case"
+        },
+        "buttonLabelMaxWords": 3,
+        "errorPattern": "{what-happened}. {how-to-fix}.",
+        "emptyStateTone": "encouraging",
+        "bannedTerms": [
+          "seamless",
+          "leverage",
+          "revolutionary"
+        ],
+        "approvedTerms": {
+          "user": "pet parent"
+        }
+      },
+      "breakpoints": {
+        "philosophy": "mobile-first"
+      },
+      "grid": {
+        "columns": 12,
+        "gutter": {
+          "value": 16,
+          "unit": "px"
+        },
+        "maxWidth": {
+          "value": 1280,
+          "unit": "px"
+        },
+        "margin": {
+          "sm": {
+            "value": 24,
+            "unit": "px"
+          },
+          "lg": {
+            "value": 24,
+            "unit": "px"
+          }
+        },
+        "bleedExceptions": [
+          "hero",
+          "gallery",
+          "modal-overlay"
+        ]
+      },
+      "layoutRules": {
+        "contentMaxWidth": {
+          "value": 720,
+          "unit": "px"
+        },
+        "stackSpacing": {
+          "value": 40,
+          "unit": "px"
+        },
+        "formFieldWidth": {
+          "value": 480,
+          "unit": "px"
+        }
+      },
+      "templates": {
+        "marketing": {
+          "regions": [
+            "header",
+            "hero",
+            "sections",
+            "cta",
+            "footer"
+          ],
+          "requiredRegions": [
+            "header",
+            "footer"
+          ],
+          "maxWidth": {
+            "value": 1280,
+            "unit": "px"
+          }
+        },
+        "app-shell": {
+          "regions": [
+            "topbar",
+            "sidebar",
+            "main",
+            "statusbar"
+          ],
+          "requiredRegions": [
+            "topbar",
+            "main"
+          ],
+          "sidebarWidth": {
+            "value": 280,
+            "unit": "px"
+          }
+        },
+        "settings": {
+          "regions": [
+            "topbar",
+            "sidebar-nav",
+            "content"
+          ],
+          "requiredRegions": [
+            "topbar",
+            "content"
+          ]
+        }
+      },
+      "pages": {
+        "/": {
+          "template": "marketing"
+        },
+        "/app": {
+          "template": "app-shell"
+        },
+        "/settings/*": {
+          "template": "settings"
+        }
+      }
+    }
   }
 }

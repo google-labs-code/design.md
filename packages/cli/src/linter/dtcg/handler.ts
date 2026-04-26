@@ -57,13 +57,97 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     const componentGroup = this.mapComponents(state);
     if (componentGroup) file['component'] = componentGroup;
 
+    const breakpointGroup = this.mapBreakpoints(state);
+    if (breakpointGroup) file['breakpoints'] = breakpointGroup;
+
+    const layoutExtension = this.mapLayoutExtension(state);
     const voiceCopyExtension = this.mapVoiceCopyExtension(state);
-    if (voiceCopyExtension) {
+    if (voiceCopyExtension || layoutExtension) {
       const existing = file.$extensions ?? {};
-      file.$extensions = { ...existing, [DESIGN_MD_EXTENSION_KEY]: voiceCopyExtension };
+      const merged: Record<string, unknown> = {
+        ...(existing[DESIGN_MD_EXTENSION_KEY] as Record<string, unknown> | undefined ?? {}),
+        ...(voiceCopyExtension ?? {}),
+        ...(layoutExtension ?? {}),
+      };
+      file.$extensions = { ...existing, [DESIGN_MD_EXTENSION_KEY]: merged };
     }
 
     return { success: true, data: file as Record<string, unknown> };
+  }
+
+  /**
+   * Emit `breakpoints.values` as a sibling DTCG `dimension` group so consumers
+   * can address `{breakpoints.md}`. Philosophy and the absence/presence of
+   * the block live under `$extensions['design.md'].breakpoints` (see
+   * `mapLayoutExtension`).
+   */
+  private mapBreakpoints(state: DesignSystemState): DtcgGroup | null {
+    if (!state.breakpoints || state.breakpoints.values.size === 0) return null;
+    const group: DtcgGroup = { $type: 'dimension' };
+    for (const [name, dim] of state.breakpoints.values) {
+      group[name] = {
+        $value: this.dimToValue(dim),
+      } as DtcgToken;
+    }
+    return group;
+  }
+
+  /**
+   * Layout primitives that have no DTCG-native types — grid, layoutRules,
+   * templates, pages, plus the breakpoint philosophy — are surfaced under
+   * `$extensions['design.md']` as opaque structured data.
+   */
+  private mapLayoutExtension(state: DesignSystemState): Record<string, unknown> | null {
+    const out: Record<string, unknown> = {};
+    if (state.breakpoints) {
+      out['breakpoints'] = { philosophy: state.breakpoints.philosophy };
+    }
+    if (state.grid) {
+      const grid: Record<string, unknown> = { columns: state.grid.columns };
+      if (state.grid.gutter) grid['gutter'] = this.dimToValue(state.grid.gutter);
+      if (state.grid.maxWidth) grid['maxWidth'] = this.dimToValue(state.grid.maxWidth);
+      if (state.grid.margin.size > 0) {
+        const margin: Record<string, unknown> = {};
+        for (const [k, v] of state.grid.margin) margin[k] = this.dimToValue(v);
+        grid['margin'] = margin;
+      }
+      if (state.grid.bleedExceptions.length > 0) {
+        grid['bleedExceptions'] = [...state.grid.bleedExceptions];
+      }
+      out['grid'] = grid;
+    }
+    if (state.layoutRules) {
+      const rules: Record<string, unknown> = {};
+      if (state.layoutRules.contentMaxWidth) rules['contentMaxWidth'] = this.dimToValue(state.layoutRules.contentMaxWidth);
+      if (state.layoutRules.stackSpacing) rules['stackSpacing'] = this.dimToValue(state.layoutRules.stackSpacing);
+      if (state.layoutRules.formFieldWidth) rules['formFieldWidth'] = this.dimToValue(state.layoutRules.formFieldWidth);
+      if (Object.keys(rules).length > 0) out['layoutRules'] = rules;
+    }
+    if (state.templates && state.templates.size > 0) {
+      const tpls: Record<string, unknown> = {};
+      for (const [name, tpl] of state.templates) {
+        const t: Record<string, unknown> = {
+          regions: [...tpl.regions],
+          requiredRegions: [...tpl.requiredRegions],
+        };
+        if (tpl.maxWidth) t['maxWidth'] = this.dimToValue(tpl.maxWidth);
+        if (tpl.sidebarWidth) t['sidebarWidth'] = this.dimToValue(tpl.sidebarWidth);
+        if (tpl.container) t['container'] = tpl.container;
+        for (const [k, v] of tpl.extras) t[k] = v;
+        tpls[name] = t;
+      }
+      out['templates'] = tpls;
+    }
+    if (state.pages && state.pages.size > 0) {
+      const pages: Record<string, unknown> = {};
+      for (const [pattern, page] of state.pages) {
+        const p: Record<string, unknown> = { template: page.template };
+        if (page.regions) p['regions'] = [...page.regions];
+        pages[pattern] = p;
+      }
+      out['pages'] = pages;
+    }
+    return Object.keys(out).length > 0 ? out : null;
   }
 
   /**

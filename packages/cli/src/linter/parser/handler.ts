@@ -241,6 +241,11 @@ export class ParserHandler implements ParserSpec {
         ? (raw['copy'] as ParsedDesignSystem['copy'])
         : undefined,
       themes: raw['themes'] as ParsedDesignSystem['themes'],
+      breakpoints: raw['breakpoints'] as ParsedDesignSystem['breakpoints'],
+      grid: raw['grid'] as ParsedDesignSystem['grid'],
+      layoutRules: raw['layoutRules'] as ParsedDesignSystem['layoutRules'],
+      templates: raw['templates'] as ParsedDesignSystem['templates'],
+      pages: raw['pages'] as ParsedDesignSystem['pages'],
       sourceMap,
       sections,
       documentSections,

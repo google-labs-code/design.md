@@ -95,6 +95,63 @@ export interface RawIconographyDef {
 }
 
 /**
+ * Raw `breakpoints:` block (mirrors the YAML schema). `philosophy` is one of
+ * `mobile-first` | `desktop-first`; `values` maps a breakpoint key (sm, md,
+ * lg, xl, 2xl, ...) to a Dimension string.
+ */
+export interface RawBreakpointsDef {
+  philosophy?: string;
+  values?: Record<string, string>;
+}
+
+/**
+ * Raw `grid:` block. `gutter` and `margin` accept token references; `maxWidth`
+ * is a Dimension string. `bleedExceptions` is an allow-list of region names
+ * that may break out of the grid (full-bleed hero, modal overlay).
+ */
+export interface RawGridDef {
+  columns?: number;
+  gutter?: string;
+  margin?: Record<string, string>;
+  maxWidth?: string;
+  bleedExceptions?: string[];
+}
+
+/**
+ * Raw `layoutRules:` block — the readable-measure / vertical-rhythm /
+ * form-field-width primitives. Values are Dimension strings (or token refs).
+ */
+export interface RawLayoutRulesDef {
+  contentMaxWidth?: string;
+  stackSpacing?: string;
+  formFieldWidth?: string;
+}
+
+/**
+ * Raw page-template definition. `regions` is the ordered list of region
+ * names a template instance may declare; `requiredRegions` is the subset
+ * that *must* be present. Additional template-level properties (`maxWidth`,
+ * `sidebarWidth`, `container`) are passed through verbatim — exporters
+ * read them, the linter does not.
+ */
+export interface RawTemplateDef {
+  regions?: string[];
+  requiredRegions?: string[];
+  maxWidth?: string;
+  sidebarWidth?: string;
+  container?: string;
+  /** Author-defined extras (passed through to exporters). */
+  [key: string]: unknown;
+}
+
+/**
+ * Raw `pages:` entry — a route pattern → template assignment.
+ */
+export interface RawPageDef {
+  template: string;
+}
+
+/**
  * A theme block — overrides only. Anything not overridden is inherited from
  * `inheritsFrom` (default: the implicit `light` base = the root token tree).
  * Resolution is a deep-merge of theme-over-base, scoped per token category.
@@ -211,6 +268,19 @@ export interface ParsedDesignSystem {
    * tolerated). Values are deep-merged onto the base during model build.
    */
   themes?: Record<string, RawThemeDef> | undefined;
+  /**
+   * Responsive breakpoint declarations. Optional; absent = the system declares
+   * no breakpoints (and rules that need them no-op).
+   */
+  breakpoints?: RawBreakpointsDef | undefined;
+  /** Layout grid (columns + gutter + margin + maxWidth). Optional. */
+  grid?: RawGridDef | undefined;
+  /** Top-level layout primitives (readable measure, stack spacing, form width). */
+  layoutRules?: RawLayoutRulesDef | undefined;
+  /** Page-template registry. Keys are template names. */
+  templates?: Record<string, RawTemplateDef> | undefined;
+  /** Optional page → template assignment. Keys are route patterns. */
+  pages?: Record<string, RawPageDef> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

@@ -17,7 +17,9 @@ import type {
   TailwindEmitterResult,
   TailwindEmitterOptions,
   TailwindComponentRule,
+  TailwindThemeExtend,
   TailwindThemes,
+  TailwindContainer,
 } from './spec.js';
 import type { ComponentDef, DesignSystemState, RampDef, ResolvedColor, ResolvedDimension, ResolvedValue, ThemeView } from '../model/spec.js';
 import { BASE_THEME_NAME } from '../spec-config.js';
@@ -57,23 +59,35 @@ const PROPERTY_TO_CSS: Record<string, string | string[]> = {
  */
 export class TailwindEmitterHandler implements TailwindEmitterSpec {
   execute(state: DesignSystemState, options?: TailwindEmitterOptions): TailwindEmitterResult {
+    const extend: TailwindThemeExtend = {
+      colors: this.mapColors(state.colors, state.colorRamps),
+      fontFamily: this.mapFontFamilies(state),
+      fontSize: this.mapFontSizes(state),
+      borderRadius: this.mapDimensions(state.rounded),
+      spacing: this.mapDimensions(state.spacing),
+      boxShadow: this.mapElevation(state),
+      transitionDuration: this.mapDurations(state),
+      transitionTimingFunction: this.mapEasings(state),
+    };
+
+    const screens = this.mapScreens(state);
+    if (screens) extend.screens = screens;
+    const maxWidth = this.mapMaxWidth(state);
+    if (maxWidth) extend.maxWidth = maxWidth;
+
     const result: TailwindEmitterResult = {
       success: true,
       data: {
         theme: {
-          extend: {
-            colors: this.mapColors(state.colors, state.colorRamps),
-            fontFamily: this.mapFontFamilies(state),
-            fontSize: this.mapFontSizes(state),
-            borderRadius: this.mapDimensions(state.rounded),
-            spacing: this.mapDimensions(state.spacing),
-            boxShadow: this.mapElevation(state),
-            transitionDuration: this.mapDurations(state),
-            transitionTimingFunction: this.mapEasings(state),
-          },
+          extend,
         },
       }
     };
+
+    const container = this.mapContainer(state);
+    if (container) {
+      result.data.theme.container = container;
+    }
 
     if (options?.components && state.components.size > 0) {
       result.data.plugin = this.mapComponents(state);
@@ -85,6 +99,58 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
     }
 
     return result;
+  }
+
+  /**
+   * Map `breakpoints.values` → Tailwind `theme.extend.screens`. Tailwind
+   * expects min-width strings keyed by breakpoint name. Returns undefined
+   * when no breakpoints are declared.
+   */
+  private mapScreens(state: DesignSystemState): Record<string, string> | undefined {
+    if (!state.breakpoints || state.breakpoints.values.size === 0) return undefined;
+    const out: Record<string, string> = {};
+    for (const [key, dim] of state.breakpoints.values) {
+      out[key] = `${dim.value}${dim.unit}`;
+    }
+    return out;
+  }
+
+  /**
+   * Map `grid.maxWidth` and `layoutRules.contentMaxWidth` → Tailwind
+   * `theme.extend.maxWidth`. Emitted as named entries `container` (grid
+   * width) and `prose` (readable measure) so authors can use
+   * `max-w-container` / `max-w-prose` classes directly.
+   */
+  private mapMaxWidth(state: DesignSystemState): Record<string, string> | undefined {
+    const out: Record<string, string> = {};
+    if (state.grid?.maxWidth) {
+      out['container'] = `${state.grid.maxWidth.value}${state.grid.maxWidth.unit}`;
+    }
+    if (state.layoutRules?.contentMaxWidth) {
+      const cmw = state.layoutRules.contentMaxWidth;
+      out['prose'] = `${cmw.value}${cmw.unit}`;
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+  }
+
+  /**
+   * Map `grid.margin` → Tailwind `theme.container.padding`. The container
+   * plugin wraps its children with horizontal padding that increases at
+   * higher breakpoints; we emit a DEFAULT plus per-breakpoint overrides.
+   */
+  private mapContainer(state: DesignSystemState): TailwindContainer | undefined {
+    const margin = state.grid?.margin;
+    if (!margin || margin.size === 0) return undefined;
+    const padding: Record<string, string> = {};
+    for (const [key, dim] of margin) {
+      const dest = key === 'sm' ? 'DEFAULT' : key;
+      padding[dest] = `${dim.value}${dim.unit}`;
+    }
+    if (!('DEFAULT' in padding)) {
+      const first = Object.values(padding)[0];
+      if (first) padding['DEFAULT'] = first;
+    }
+    return { center: true, padding };
   }
 
   /**

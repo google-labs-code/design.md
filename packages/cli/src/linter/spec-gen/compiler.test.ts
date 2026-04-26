@@ -79,6 +79,10 @@ describe('compileMdx', () => {
       copyExample: () => renderers.copyExample(cfg),
       voiceAxesTable: () => renderers.voiceAxesTable(cfg),
       casingTable: () => renderers.casingTable(cfg),
+      breakpointsExample: () => renderers.breakpointsExample(cfg),
+      gridExample: () => renderers.gridExample(cfg),
+      layoutRulesExample: () => renderers.layoutRulesExample(cfg),
+      templatesExample: () => renderers.templatesExample(cfg),
     };
 
     const result = await compileMdx(source, scope);

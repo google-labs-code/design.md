@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef, RawRegistryEntry, RawComponentValue, RawThemeDef, RawVoice, RawCopy } from '../parser/spec.js';
+import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef, RawRegistryEntry, RawComponentValue, RawThemeDef, RawVoice, RawCopy, RawBreakpointsDef, RawGridDef, RawLayoutRulesDef, RawTemplateDef, RawPageDef } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -36,6 +36,11 @@ import type {
   BannedRegex,
   ThemeView,
   ThemeContrastTarget,
+  BreakpointsState,
+  GridState,
+  LayoutRulesState,
+  TemplateDef,
+  PageDef,
 } from './spec.js';
 import { DEFAULT_CONTRAST_TARGET } from './spec.js';
 
@@ -50,7 +55,7 @@ import {
 } from './spec.js';
 import { COMPONENT_SUB_TOKEN_VALIDATORS } from '../component-validators.js';
 import { generateRampSteps, DEFAULT_RAMP_STEPS } from './color-ramp.js';
-import { ICON_LIBRARIES, KIND_DEFAULTS, BASE_THEME_NAME, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES } from '../spec-config.js';
+import { ICON_LIBRARIES, KIND_DEFAULTS, BASE_THEME_NAME, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES, BREAKPOINT_PHILOSOPHIES } from '../spec-config.js';
 
 const MAX_REFERENCE_DEPTH = 10;
 
@@ -185,6 +190,23 @@ export class ModelHandler implements ModelSpec {
       if (input.iconography) {
         iconography = parseIconography(input.iconography, symbolTable, findings);
       }
+
+      // Layout: breakpoints, grid, layoutRules, templates, pages.
+      const breakpoints = input.breakpoints
+        ? parseBreakpoints(input.breakpoints, symbolTable, findings)
+        : undefined;
+      const grid = input.grid
+        ? parseGrid(input.grid, symbolTable, findings)
+        : undefined;
+      const layoutRules = input.layoutRules
+        ? parseLayoutRules(input.layoutRules, symbolTable, findings)
+        : undefined;
+      const templates = input.templates
+        ? parseTemplates(input.templates, symbolTable, findings)
+        : undefined;
+      const pages = input.pages
+        ? parsePages(input.pages, findings)
+        : undefined;
 
       // ── Phase 2: Resolve chained color references ──────────────────
       // Iterate color entries that are still raw references and resolve them
@@ -446,6 +468,11 @@ export class ModelHandler implements ModelSpec {
           colorIndex,
           voice,
           copy,
+          breakpoints,
+          grid,
+          layoutRules,
+          templates,
+          pages,
         },
         findings,
       };
@@ -1724,4 +1751,225 @@ function parseTypographyProps(
   }
 
   return result;
+}
+
+// ── Layout parsing (breakpoints, grid, layoutRules, templates, pages) ───
+
+/**
+ * Resolve a Dimension that may be a literal (`1280px`) or a token reference
+ * (`{spacing.md}`). Returns `undefined` when the input is malformed; emits an
+ * error finding in that case so authors see the failure.
+ */
+function resolveDimensionish(
+  raw: string | undefined,
+  path: string,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): ResolvedDimension | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== 'string') return undefined;
+  if (isTokenReference(raw)) {
+    const refPath = raw.slice(1, -1);
+    const resolved = resolveReference(symbolTable, refPath, new Set());
+    if (resolved && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'dimension') {
+      return resolved as ResolvedDimension;
+    }
+    findings.push({
+      severity: 'error',
+      path,
+      message: `'${raw}' does not resolve to a dimension token.`,
+    });
+    return undefined;
+  }
+  if (!isParseableDimension(raw)) {
+    findings.push({
+      severity: 'error',
+      path,
+      message: `'${raw}' is not a valid dimension.`,
+    });
+    return undefined;
+  }
+  return parseDimensionAsDim(raw);
+}
+
+/**
+ * Parse the `breakpoints:` block. Validates the philosophy enum and parses
+ * each value as a Dimension. The order of `values` is preserved (Map
+ * iteration follows insertion order).
+ */
+function parseBreakpoints(
+  raw: RawBreakpointsDef,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): BreakpointsState {
+  const values = new Map<string, ResolvedDimension>();
+  const philosophy = raw.philosophy ?? 'mobile-first';
+  if (!(BREAKPOINT_PHILOSOPHIES as readonly string[]).includes(philosophy)) {
+    findings.push({
+      severity: 'error',
+      path: 'breakpoints.philosophy',
+      message: `breakpoints.philosophy must be one of: ${BREAKPOINT_PHILOSOPHIES.join(', ')} (got '${philosophy}').`,
+    });
+  }
+  if (raw.values) {
+    for (const [key, value] of Object.entries(raw.values)) {
+      const dim = resolveDimensionish(value, `breakpoints.values.${key}`, symbolTable, findings);
+      if (dim) {
+        values.set(key, dim);
+        symbolTable.set(`breakpoints.${key}`, dim);
+      }
+    }
+  }
+  return { philosophy, values };
+}
+
+function parseGrid(
+  raw: RawGridDef,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): GridState {
+  const margin = new Map<string, ResolvedDimension>();
+  let columns = 12;
+  if (typeof raw.columns === 'number' && Number.isInteger(raw.columns) && raw.columns > 0) {
+    columns = raw.columns;
+  } else if (raw.columns !== undefined) {
+    findings.push({
+      severity: 'error',
+      path: 'grid.columns',
+      message: `grid.columns must be a positive integer (got ${JSON.stringify(raw.columns)}).`,
+    });
+  }
+  const gutter = resolveDimensionish(raw.gutter, 'grid.gutter', symbolTable, findings);
+  const maxWidth = resolveDimensionish(raw.maxWidth, 'grid.maxWidth', symbolTable, findings);
+  if (raw.margin) {
+    for (const [key, value] of Object.entries(raw.margin)) {
+      const dim = resolveDimensionish(value, `grid.margin.${key}`, symbolTable, findings);
+      if (dim) margin.set(key, dim);
+    }
+  }
+  const bleedExceptions = Array.isArray(raw.bleedExceptions)
+    ? raw.bleedExceptions.filter((s): s is string => typeof s === 'string')
+    : [];
+  const state: GridState = { columns, margin, bleedExceptions };
+  if (gutter) {
+    state.gutter = gutter;
+    symbolTable.set('grid.gutter', gutter);
+  }
+  if (maxWidth) {
+    state.maxWidth = maxWidth;
+    symbolTable.set('grid.maxWidth', maxWidth);
+  }
+  symbolTable.set('grid.columns', String(columns));
+  return state;
+}
+
+function parseLayoutRules(
+  raw: RawLayoutRulesDef,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): LayoutRulesState {
+  const out: LayoutRulesState = {};
+  const cmw = resolveDimensionish(raw.contentMaxWidth, 'layoutRules.contentMaxWidth', symbolTable, findings);
+  if (cmw) {
+    out.contentMaxWidth = cmw;
+    symbolTable.set('layoutRules.contentMaxWidth', cmw);
+  }
+  const ss = resolveDimensionish(raw.stackSpacing, 'layoutRules.stackSpacing', symbolTable, findings);
+  if (ss) {
+    out.stackSpacing = ss;
+    symbolTable.set('layoutRules.stackSpacing', ss);
+  }
+  const ffw = resolveDimensionish(raw.formFieldWidth, 'layoutRules.formFieldWidth', symbolTable, findings);
+  if (ffw) {
+    out.formFieldWidth = ffw;
+    symbolTable.set('layoutRules.formFieldWidth', ffw);
+  }
+  return out;
+}
+
+/**
+ * Parse the `templates:` registry. Each template's `requiredRegions` must be
+ * a subset of `regions`; violations are flagged with an error finding.
+ * Author-defined extras (`maxWidth`, `sidebarWidth`, `container`, ...) are
+ * preserved in `extras` so exporters can pass them through.
+ */
+function parseTemplates(
+  raw: Record<string, RawTemplateDef>,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): Map<string, TemplateDef> {
+  const out = new Map<string, TemplateDef>();
+  for (const [name, tpl] of Object.entries(raw)) {
+    if (!tpl || typeof tpl !== 'object' || Array.isArray(tpl)) continue;
+    const regions = Array.isArray(tpl.regions)
+      ? tpl.regions.filter((s): s is string => typeof s === 'string')
+      : [];
+    const requiredRegions = Array.isArray(tpl.requiredRegions)
+      ? tpl.requiredRegions.filter((s): s is string => typeof s === 'string')
+      : [];
+    const regionSet = new Set(regions);
+    for (const r of requiredRegions) {
+      if (!regionSet.has(r)) {
+        findings.push({
+          severity: 'error',
+          path: `templates.${name}.requiredRegions`,
+          message: `Required region '${r}' is not declared in templates.${name}.regions.`,
+        });
+      }
+    }
+    const def: TemplateDef = {
+      name,
+      regions,
+      requiredRegions,
+      extras: new Map<string, unknown>(),
+    };
+    const maxWidth = resolveDimensionish(
+      typeof tpl.maxWidth === 'string' ? tpl.maxWidth : undefined,
+      `templates.${name}.maxWidth`,
+      symbolTable,
+      findings,
+    );
+    if (maxWidth) def.maxWidth = maxWidth;
+    const sidebarWidth = resolveDimensionish(
+      typeof tpl.sidebarWidth === 'string' ? tpl.sidebarWidth : undefined,
+      `templates.${name}.sidebarWidth`,
+      symbolTable,
+      findings,
+    );
+    if (sidebarWidth) def.sidebarWidth = sidebarWidth;
+    if (typeof tpl.container === 'string') def.container = tpl.container;
+    for (const [k, v] of Object.entries(tpl)) {
+      if (k === 'regions' || k === 'requiredRegions' || k === 'maxWidth' || k === 'sidebarWidth' || k === 'container') continue;
+      def.extras.set(k, v);
+    }
+    out.set(name, def);
+    symbolTable.set(`templates.${name}.regions`, regions.join(','));
+  }
+  return out;
+}
+
+function parsePages(
+  raw: Record<string, RawPageDef>,
+  findings: Finding[],
+): Map<string, PageDef> {
+  const out = new Map<string, PageDef>();
+  for (const [pattern, entry] of Object.entries(raw)) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    const tpl = (entry as RawPageDef).template;
+    if (typeof tpl !== 'string' || tpl.length === 0) {
+      findings.push({
+        severity: 'error',
+        path: `pages.${pattern}.template`,
+        message: `pages.${pattern}.template is required and must be a string.`,
+      });
+      continue;
+    }
+    const page: PageDef = { pattern, template: tpl };
+    const regionsRaw = (entry as Record<string, unknown>)['regions'];
+    if (Array.isArray(regionsRaw)) {
+      page.regions = regionsRaw.filter((s): s is string => typeof s === 'string');
+    }
+    out.set(pattern, page);
+  }
+  return out;
 }

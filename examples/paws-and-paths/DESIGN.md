@@ -320,6 +320,48 @@ themes:
       body: 4.5
       large: 3
       ui: 3
+breakpoints:
+  philosophy: mobile-first
+  values:
+    sm: 640px
+    md: 768px
+    lg: 1024px
+    xl: 1280px
+    "2xl": 1536px
+grid:
+  columns: 12
+  gutter: "{spacing.gutter}"
+  margin:
+    sm: "{spacing.md}"
+    lg: "{spacing.margin}"
+  maxWidth: 1280px
+  bleedExceptions:
+    - hero
+    - gallery
+    - modal-overlay
+layoutRules:
+  contentMaxWidth: 720px
+  stackSpacing: "{spacing.lg}"
+  formFieldWidth: 480px
+templates:
+  marketing:
+    regions: [header, hero, sections, cta, footer]
+    requiredRegions: [header, footer]
+    maxWidth: 1280px
+  app-shell:
+    regions: [topbar, sidebar, main, statusbar]
+    requiredRegions: [topbar, main]
+    sidebarWidth: 280px
+  settings:
+    regions: [topbar, sidebar-nav, content]
+    requiredRegions: [topbar, content]
+pages:
+  "/":
+    template: marketing
+  "/app":
+    template: app-shell
+  "/settings/*":
+    template: settings
 ---
 
 ## Brand & Style
@@ -372,7 +414,41 @@ Paws & Paths ships with a single base palette (the `light` mode) and a `dark` mo
 
 ## Layout & Spacing
 
-The layout follows a **Fixed Grid** model for mobile-first consistency, utilizing a 4-column system for handheld devices.
+The layout follows a **Fixed Grid** model for mobile-first consistency, utilizing a 12-column system at desktop widths and collapsing toward a single column on the smallest viewports.
+
+### Mobile-first
+
+Paws & Paths is mobile-first. Base styles target the smallest viewport (a phone in a coat pocket on a walk); breakpoints are progressive enhancements layered on top. The cascade is `sm 640px → md 768px → lg 1024px → xl 1280px → 2xl 1536px`. Authors who reach for a desktop-first cascade are out of step with the system.
+
+### Breakpoint philosophy
+
+Breakpoints are content-driven, not device-driven. `md` is "two-column layouts become viable"; `lg` is "the sidebar earns its keep"; `xl` is "the marketing hero gets full breathing room." We add a breakpoint when the layout actually breaks, never because a hypothetical tablet exists.
+
+### Responsive content strategy
+
+Narrower viewports restructure, they don't squish. The `card-walk-stat` row collapses from a 3-up grid to a stacked list below `md`; the `app-shell` sidebar slides into a drawer below `lg`; the `card-profile` walker grid drops from 4 → 2 → 1 columns across `lg → md → sm`.
+
+### Grid usage
+
+Components and layout dimensions snap to `grid.gutter` (16px) or to the declared spacing scale. The `off-grid-dimension` rule warns on widths, paddings, gaps, and margins that drift off-grid. The grid itself centers on screens above `grid.maxWidth` (1280px) — past that, we letterbox rather than stretch. Off-grid dimensions are reserved for the regions in `grid.bleedExceptions` (hero artwork, gallery thumbnails, modal overlays).
+
+### Readable measure
+
+Body prose and long-form content stay under `layoutRules.contentMaxWidth` (720px ≈ 65 characters per line at our body size). The "Paths" detail screens use this width even on `2xl`; the brand value of focus beats the visual symmetry of full-width text.
+
+### Page templates
+
+Three templates cover Paws & Paths today:
+
+- **`marketing`** — the public surfaces (`/`, `/pricing`, `/about`). Required regions: `header`, `footer`. The hero uses `bleedExceptions` to break out of the grid.
+- **`app-shell`** — the authenticated walker app (`/app/*`). Required regions: `topbar`, `main`. The 280px sidebar is fixed; the main column flexes against `grid.maxWidth`.
+- **`settings`** — secondary surfaces inside the app (`/settings/*`). Required regions: `topbar`, `content`. Inherits the app chrome but swaps the sidebar for `sidebar-nav`.
+
+Anti-pattern: the marketing template used for an in-app surface (it loses the topbar / sidebar context the user expects), or the app-shell wrapped around the public homepage (the global header/footer disappear).
+
+### Region semantics
+
+`header` is identity + global nav (marketing scope). `topbar` is contextual to the current page (app scope). `sidebar` is persistent navigation; `sidebar-nav` is a sub-navigation rail inside settings. We never use `header` and `topbar` interchangeably — each carries different expectations about scroll behavior and shrinkage.
 
 - **Whitespace:** A "generous" philosophy is applied. Never crowd elements; use `lg` and `xl` spacing for section vertical separation to maintain a high-end aesthetic.
 - **Rhythm:** Spacing is strictly based on an 8px scale.

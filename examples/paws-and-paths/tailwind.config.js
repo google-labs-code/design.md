@@ -171,6 +171,82 @@
         "standard": "cubic-bezier(0.4, 0, 0.2, 1)",
         "decelerate": "cubic-bezier(0, 0, 0.2, 1)",
         "accelerate": "cubic-bezier(0.4, 0, 1, 1)"
+      },
+      "screens": {
+        "sm": "640px",
+        "md": "768px",
+        "lg": "1024px",
+        "xl": "1280px",
+        "2xl": "1536px"
+      },
+      "maxWidth": {
+        "container": "1280px",
+        "prose": "720px"
+      }
+    },
+    "container": {
+      "center": true,
+      "padding": {
+        "DEFAULT": "24px",
+        "lg": "24px"
+      }
+    }
+  },
+  "themes": {
+    "dark": {
+      "colors": {
+        "surface": "#0f1420",
+        "surface-dim": "#0a0e18",
+        "surface-bright": "#1c2230",
+        "surface-container-lowest": "#070a12",
+        "surface-container-low": "#141a26",
+        "surface-container": "#1a2030",
+        "surface-container-high": "#212838",
+        "surface-container-highest": "#2a3142",
+        "on-surface": "#e7ecf8",
+        "on-surface-variant": "#bfbab2",
+        "inverse-surface": "#e7ecf8",
+        "inverse-on-surface": "#151c27",
+        "outline": "#9c8a76",
+        "outline-variant": "#574a3c",
+        "surface-tint": "#ffb95f",
+        "primary": "#ffb95f",
+        "on-primary": "#3d2400",
+        "primary-container": "#5b3500",
+        "on-primary-container": "#ffddb8",
+        "inverse-primary": "#855300",
+        "secondary": "#adc6ff",
+        "on-secondary": "#001a42",
+        "secondary-container": "#003a89",
+        "on-secondary-container": "#d8e2ff",
+        "tertiary": "#7fd0ff",
+        "on-tertiary": "#001e2d",
+        "tertiary-container": "#004966",
+        "on-tertiary-container": "#c5e7ff",
+        "error": "#ffb4ab",
+        "on-error": "#690005",
+        "error-container": "#93000a",
+        "on-error-container": "#ffdad6",
+        "primary-fixed": "#ffddb8",
+        "primary-fixed-dim": "#ffb95f",
+        "on-primary-fixed": "#2a1700",
+        "on-primary-fixed-variant": "#653e00",
+        "secondary-fixed": "#d8e2ff",
+        "secondary-fixed-dim": "#adc6ff",
+        "on-secondary-fixed": "#001a42",
+        "on-secondary-fixed-variant": "#004395",
+        "tertiary-fixed": "#c5e7ff",
+        "tertiary-fixed-dim": "#7fd0ff",
+        "on-tertiary-fixed": "#001e2d",
+        "on-tertiary-fixed-variant": "#004c6a",
+        "background": "#0f1420",
+        "on-background": "#e7ecf8",
+        "surface-variant": "#2a3142"
+      },
+      "contrastTarget": {
+        "body": 4.5,
+        "large": 3,
+        "ui": 3
       }
     }
   }

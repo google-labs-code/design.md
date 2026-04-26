@@ -290,9 +290,9 @@ Every prior content style guide (Mailchimp, Polaris, GOV.UK) is human-readable o
 
 Also known as "Layout & Spacing".
 
-This section describes the layout and spacing strategy.
+This section describes the layout, grid, breakpoints, and page-template strategy. Layout is a contract — without one, every screen the AI generates is improvised. With one, layout becomes a small, enforceable vocabulary.
 
-Many design systems follow a grid-based layout. Others, like Liquid Glass, use margins, safe areas, and dynamic padding.
+The block has four sub-systems: `breakpoints` (responsive thresholds), `grid` (columns + gutter + margins), `layoutRules` (readable measure, vertical rhythm, form-field width), and `templates` (page-level region registry).
 
 Example:
 
@@ -300,14 +300,103 @@ Example:
 ## Layout
 
 The layout follows a **Fluid Grid** model for mobile devices and a
-**Fixed-Max-Width Grid** for desktop (max 1200px).
+**Fixed-Max-Width Grid** for desktop (max 1280px). Breakpoints follow the
+mobile-first cascade — base styles target the smallest viewport and scale up.
 
-A strict 8px spacing scale (with a 4px half-step for micro-adjustments) is used to maintain a consistent rhythm. Components are grouped using "containment" principles, where related items are housed in cards with generous internal padding (24px) to emphasize the soft, approachable nature of the brand.
+A strict 8px spacing scale (with a 4px half-step for micro-adjustments) is used to maintain a consistent rhythm. Components and dimensions snap to the grid gutter; off-grid values are flagged by `off-grid-dimension`.
 ```
 
-### Design Tokens
+### Mobile-first or desktop-first
 
-The spacing section defines the spacing design tokens. These may include spacing units that are useful for implementing the layout model. For example, a fixed grid layout may have spacing units for column spans, gutters, and margins.
+Pick one and document it. Mobile-first means base styles target the smallest viewport and scale up; desktop-first the reverse. The choice changes how every breakpoint is read and is recorded as `breakpoints.philosophy: {BREAKPOINT_PHILOSOPHIES.join(' | ')}`. We recommend mobile-first as the industry default; desktop-first is supported but should be a deliberate choice.
+
+### Breakpoint philosophy
+
+Breakpoints are content-driven, not device-driven. Add a breakpoint when the layout actually breaks, not because tablets exist. Document the meaning of each breakpoint, not just its pixel value. The conventional ordering is `{BREAKPOINT_KEYS.join(' < ')}`; values must increase strictly across that sequence (`breakpoint-monotonicity`).
+
+```yaml
+breakpoints:
+  philosophy: mobile-first
+  values:
+    sm: 640px
+    md: 768px
+    lg: 1024px
+    xl: 1280px
+    "2xl": 1536px
+```
+
+### Grid usage
+
+Components and layout dimensions snap to the grid (column count or gutter multiple). The `off-grid-dimension` rule warns on layout dimensions (`width`, `height`, `padding`, `gap`, `margin`) that are neither a multiple of `grid.gutter` nor a declared `spacing` token.
+
+Off-grid is acceptable for documented exceptions only — full-bleed imagery, modal overlays, hero artwork. List those region names in `grid.bleedExceptions`.
+
+```yaml
+grid:
+  columns: 12
+  gutter: "{spacing.md}"
+  margin:
+    sm: "{spacing.md}"
+    lg: "{spacing.xl}"
+  maxWidth: 1280px
+  bleedExceptions: [hero, gallery, modal-overlay]
+```
+
+### Readable measure
+
+Body prose stays under `layoutRules.contentMaxWidth` (≈ 60–80 characters per line). Never let prose run the full width of the viewport on desktop. `layoutRules.stackSpacing` is the default vertical rhythm between blocks; `layoutRules.formFieldWidth` is the canonical width for text inputs.
+
+```yaml
+layoutRules:
+  contentMaxWidth: 720px
+  stackSpacing: "{spacing.lg}"
+  formFieldWidth: 480px
+```
+
+### Responsive content strategy
+
+Narrower viewports don't just shrink; they *restructure*. Multi-column becomes stacked; navigation collapses to a menu; tables become cards. Don't squish, reflow.
+
+### Page templates
+
+A template is a closed set of named regions for a class of page. Common templates: `marketing` (header / hero / sections / cta / footer), `app-shell` (topbar / sidebar / main / statusbar), `settings` (topbar / sidebar-nav / content). Each template declares `regions` (the named slots a page may use) and `requiredRegions` (the subset that must be present). Pages are assigned to templates via `pages:`.
+
+Once `templates` is declared the closed-world rules engage:
+
+* **`unknown-template`** (error) — `pages.X.template` references a name not in the registry.
+* **`missing-region`** (error) — a page assigned to template T whose declared regions miss a `requiredRegions` entry.
+* **`template-region-purity`** (warning) — region names whose conventional semantics conflict across templates (e.g., `header` is global identity, `topbar` is contextual to the current page).
+
+```yaml
+templates:
+  marketing:
+    regions: [header, hero, sections, cta, footer]
+    requiredRegions: [header, footer]
+    maxWidth: 1280px
+  app-shell:
+    regions: [topbar, sidebar, main, statusbar]
+    requiredRegions: [topbar, main]
+    sidebarWidth: 280px
+  settings:
+    regions: [topbar, sidebar-nav, content]
+    requiredRegions: [topbar, content]
+```
+
+### Region semantics
+
+Every template region has a defined role: `header` is identity + global nav; `topbar` is contextual to the current page; `sidebar` is persistent navigation, `aside` is contextual auxiliary content. Don't repurpose regions across templates — pick one vocabulary and hold it across the system.
+
+### Template decision tree
+
+* **`marketing`** — public-facing pages with a hero, sales-style sections, and a footer (landing pages, pricing, about). Identity-level navigation.
+* **`app-shell`** — authenticated product surfaces with persistent topbar + sidebar + main content. Contextual navigation.
+* **`settings`** — secondary surfaces inside the app, often with sub-navigation in a sidebar-nav. Inherits app chrome.
+
+Anti-pattern: marketing template used for in-app pages, or app-shell used for the public homepage. The `data-template` attribute (when source-side scanning is enabled) makes the assignment explicit per file.
+
+### Design Tokens — spacing
+
+The `spacing` section defines the spacing design tokens. These may include spacing units that are useful for implementing the layout model. For example, a fixed grid layout may have spacing units for column spans, gutters, and margins. The grid's `gutter:` typically references one of these tokens (`{spacing.md}`).
 
 It is a
 map\<string, Dimension | number> that maps the spacing scale identifier to a dimension value or a unitless number (e.g., column counts or ratios).

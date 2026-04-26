@@ -190,6 +190,77 @@ export function voiceAxesTable(config: SpecConfig): string {
   return lines.join('\n');
 }
 
+/** Breakpoints YAML example (philosophy + values). */
+export function breakpointsExample(config: SpecConfig): string {
+  const bp = (config.EXAMPLES as { breakpoints?: { philosophy: string; values: Record<string, string> } }).breakpoints;
+  if (!bp) return yamlBlock(['breakpoints:', '  philosophy: mobile-first', '  values: {}']);
+  const lines = ['breakpoints:', `  philosophy: ${bp.philosophy}`, '  values:'];
+  for (const [name, value] of Object.entries(bp.values)) {
+    const key = /^[a-z]+$/.test(name) ? name : `"${name}"`;
+    lines.push(`    ${key}: ${value}`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Grid YAML example (columns, gutter, margin, maxWidth). */
+export function gridExample(config: SpecConfig): string {
+  const grid = (config.EXAMPLES as {
+    grid?: {
+      columns: number;
+      gutter: string;
+      margin?: Record<string, string>;
+      maxWidth?: string;
+      bleedExceptions?: string[];
+    };
+  }).grid;
+  if (!grid) return yamlBlock(['grid: {}']);
+  const lines = ['grid:', `  columns: ${grid.columns}`, `  gutter: "${grid.gutter}"`];
+  if (grid.margin) {
+    lines.push('  margin:');
+    for (const [k, v] of Object.entries(grid.margin)) {
+      const val = v.startsWith('{') ? `"${v}"` : v;
+      lines.push(`    ${k}: ${val}`);
+    }
+  }
+  if (grid.maxWidth) lines.push(`  maxWidth: ${grid.maxWidth}`);
+  if (grid.bleedExceptions && grid.bleedExceptions.length > 0) {
+    lines.push(`  bleedExceptions: [${grid.bleedExceptions.join(', ')}]`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Layout rules YAML example (readable measure, stack spacing, form width). */
+export function layoutRulesExample(config: SpecConfig): string {
+  const rules = (config.EXAMPLES as { layoutRules?: Record<string, string> }).layoutRules;
+  if (!rules) return yamlBlock(['layoutRules: {}']);
+  const lines = ['layoutRules:'];
+  for (const [k, v] of Object.entries(rules)) {
+    const val = v.startsWith('{') ? `"${v}"` : v;
+    lines.push(`  ${k}: ${val}`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Page templates YAML example. */
+export function templatesExample(config: SpecConfig): string {
+  const templates = (config.EXAMPLES as {
+    templates?: Record<string, Record<string, unknown>>;
+  }).templates;
+  if (!templates) return yamlBlock(['templates: {}']);
+  const lines = ['templates:'];
+  for (const [name, tpl] of Object.entries(templates)) {
+    lines.push(`  ${name}:`);
+    for (const [k, v] of Object.entries(tpl)) {
+      if (Array.isArray(v)) {
+        lines.push(`    ${k}: [${v.join(', ')}]`);
+      } else {
+        lines.push(`    ${k}: ${v}`);
+      }
+    }
+  }
+  return yamlBlock(lines);
+}
+
 /** Casing values table. */
 export function casingTable(config: SpecConfig): string {
   const lines = ['| Surface | Allowed values |', '| --- | --- |'];

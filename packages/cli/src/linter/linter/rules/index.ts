@@ -53,6 +53,11 @@ import { casingMismatchRule } from './casing-mismatch.js';
 import { approvedTermViolationRule } from './approved-term-violation.js';
 import { reservedNameFormRule } from './reserved-name-form.js';
 import { errorPatternViolationRule } from './error-pattern-violation.js';
+import { breakpointMonotonicityRule } from './breakpoint-monotonicity.js';
+import { unknownTemplateRule } from './unknown-template.js';
+import { missingRegionRule } from './missing-region.js';
+import { offGridDimensionRule } from './off-grid-dimension.js';
+import { templateRegionPurityRule } from './template-region-purity.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -94,6 +99,11 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   approvedTermViolationRule,
   reservedNameFormRule,
   errorPatternViolationRule,
+  breakpointMonotonicityRule,
+  unknownTemplateRule,
+  missingRegionRule,
+  offGridDimensionRule,
+  templateRegionPurityRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -148,4 +158,9 @@ export { casingMismatch } from './casing-mismatch.js';
 export { approvedTermViolation } from './approved-term-violation.js';
 export { reservedNameForm } from './reserved-name-form.js';
 export { errorPatternViolation } from './error-pattern-violation.js';
+export { breakpointMonotonicity } from './breakpoint-monotonicity.js';
+export { unknownTemplate } from './unknown-template.js';
+export { missingRegion } from './missing-region.js';
+export { offGridDimension } from './off-grid-dimension.js';
+export { templateRegionPurity } from './template-region-purity.js';
 export type { LintRule } from './types.js';

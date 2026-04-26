@@ -105,6 +105,9 @@ const ConfigSchema = z.object({
   casing_surfaces: z.array(z.string()).min(1),
   title_case_minor_words: z.array(z.string()).min(1),
   well_known_themes: z.array(z.string()).min(1),
+  breakpoint_philosophies: z.array(z.string()).min(1),
+  breakpoint_keys: z.array(z.string()).min(1),
+  well_known_regions: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
@@ -115,6 +118,20 @@ const ConfigSchema = z.object({
     components: z.record(z.string(), z.record(z.string(), ComponentExampleValueSchema)),
     voice: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
     copy: z.record(z.string(), z.unknown()).optional(),
+    breakpoints: z.object({
+      philosophy: z.string(),
+      values: z.record(z.string(), z.string()),
+    }).optional(),
+    grid: z.object({
+      columns: z.number(),
+      gutter: z.string(),
+      margin: z.record(z.string(), z.string()).optional(),
+      maxWidth: z.string().optional(),
+      bleedExceptions: z.array(z.string()).optional(),
+    }).optional(),
+    layoutRules: z.record(z.string(), z.string()).optional(),
+    templates: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+    pages: z.record(z.string(), z.object({ template: z.string() })).optional(),
   }),
 });
 
@@ -225,6 +242,24 @@ export type IconLibrary = (typeof ICON_LIBRARIES)[number];
 /** CSS easing keywords accepted alongside `cubic-bezier(...)` literals. */
 export const EASING_KEYWORDS = config.easing_keywords;
 
+/** Allowed values for `breakpoints.philosophy`. */
+export const BREAKPOINT_PHILOSOPHIES: readonly string[] = config.breakpoint_philosophies;
+export type BreakpointPhilosophy = (typeof BREAKPOINT_PHILOSOPHIES)[number];
+
+/**
+ * Conventional breakpoint key order (sm → 2xl). Authors may declare additional
+ * keys; `breakpoint-monotonicity` validates that values increase across this
+ * canonical sequence, ignoring any extra (unknown) keys.
+ */
+export const BREAKPOINT_KEYS: readonly string[] = config.breakpoint_keys;
+
+/**
+ * Well-known template region names. Informational; authors may declare any
+ * region name. Used by `template-region-purity` to flag regions whose
+ * conventional semantics differ when reused across templates.
+ */
+export const WELL_KNOWN_REGIONS: readonly string[] = config.well_known_regions;
+
 /** Component kinds (button, container, etc.) and their default interactivity. */
 export const COMPONENT_KINDS: readonly ComponentKindDef[] = config.component_kinds;
 
@@ -317,6 +352,9 @@ export interface SpecConfig {
   VOICE_PERSON: typeof VOICE_PERSON;
   CASING_VALUES: typeof CASING_VALUES;
   CASING_SURFACES: typeof CASING_SURFACES;
+  BREAKPOINT_PHILOSOPHIES: typeof BREAKPOINT_PHILOSOPHIES;
+  BREAKPOINT_KEYS: typeof BREAKPOINT_KEYS;
+  WELL_KNOWN_REGIONS: typeof WELL_KNOWN_REGIONS;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
   EXAMPLES: typeof EXAMPLES;
 }
@@ -338,6 +376,9 @@ export const SPEC_CONFIG: SpecConfig = {
   VOICE_PERSON,
   CASING_VALUES,
   CASING_SURFACES,
+  BREAKPOINT_PHILOSOPHIES,
+  BREAKPOINT_KEYS,
+  WELL_KNOWN_REGIONS,
   RECOMMENDED_TOKENS,
   EXAMPLES,
 };

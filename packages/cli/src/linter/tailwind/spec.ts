@@ -32,7 +32,30 @@ export const TailwindThemeExtendSchema = z.object({
   transitionDuration: z.record(z.string()).optional(),
   /** Map of motion easing token name → CSS easing string (keyword or cubic-bezier). */
   transitionTimingFunction: z.record(z.string()).optional(),
+  /** Tailwind `theme.screens` — breakpoint key → min-width (e.g., '768px'). */
+  screens: z.record(z.string()).optional(),
+  /**
+   * Tailwind `theme.maxWidth` — names like `container` (grid maxWidth) and
+   * `prose` (layoutRules.contentMaxWidth) are emitted when declared.
+   */
+  maxWidth: z.record(z.string()).optional(),
 });
+
+/**
+ * Tailwind `theme.container` configuration. Emitted when a grid is declared
+ * with margin entries; maps to Tailwind's container plugin.
+ */
+export const TailwindContainerSchema = z.object({
+  center: z.boolean().optional(),
+  padding: z.union([
+    z.string(),
+    z.object({
+      DEFAULT: z.string().optional(),
+    }).catchall(z.string()),
+  ]).optional(),
+});
+
+export type TailwindContainer = z.infer<typeof TailwindContainerSchema>;
 
 export type TailwindThemeExtend = z.infer<typeof TailwindThemeExtendSchema>;
 
@@ -75,7 +98,9 @@ export const TailwindEmitterResultSchema = z.discriminatedUnion('success', [
     success: z.literal(true),
     data: z.object({
       theme: z.object({
-        extend: TailwindThemeExtendSchema
+        extend: TailwindThemeExtendSchema,
+        /** Top-level `theme.container` config (outside `extend`). */
+        container: TailwindContainerSchema.optional(),
       }),
       plugin: z.record(z.unknown()).optional(),
       /**

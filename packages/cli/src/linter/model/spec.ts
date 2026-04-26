@@ -273,6 +273,68 @@ export interface ThemeView {
   contrastTarget: ThemeContrastTarget;
 }
 
+// ── RESPONSIVE / LAYOUT ────────────────────────────────────────────
+
+/**
+ * Resolved breakpoints block. `philosophy` records whether the system is
+ * mobile-first (base styles target the smallest viewport, larger breakpoints
+ * are progressive enhancements) or desktop-first (the inverse). `values`
+ * maps a breakpoint key (sm, md, lg, xl, 2xl, ...) to a resolved Dimension.
+ */
+export interface BreakpointsState {
+  philosophy: string;
+  values: Map<string, ResolvedDimension>;
+}
+
+/**
+ * Resolved grid block. `gutter` and the per-key `margin` entries are
+ * Dimensions resolved through the spacing token table. `bleedExceptions` is
+ * the (informational) allow-list of region names that may break out of the
+ * grid (full-bleed hero, modal overlay).
+ */
+export interface GridState {
+  columns: number;
+  gutter?: ResolvedDimension;
+  margin: Map<string, ResolvedDimension>;
+  maxWidth?: ResolvedDimension;
+  bleedExceptions: string[];
+}
+
+/**
+ * Resolved layout-rule primitives. `contentMaxWidth` enforces a readable
+ * measure (~60–80 char) for body prose; `stackSpacing` is the default
+ * vertical rhythm; `formFieldWidth` is the canonical form-field width.
+ */
+export interface LayoutRulesState {
+  contentMaxWidth?: ResolvedDimension;
+  stackSpacing?: ResolvedDimension;
+  formFieldWidth?: ResolvedDimension;
+}
+
+/**
+ * Resolved page-template definition. `regions` lists the named regions a
+ * template instance may declare; `requiredRegions` is the subset that must
+ * be present. `extra` carries additional, exporter-readable properties
+ * (`maxWidth`, `sidebarWidth`, `container`).
+ */
+export interface TemplateDef {
+  name: string;
+  regions: string[];
+  requiredRegions: string[];
+  maxWidth?: ResolvedDimension;
+  sidebarWidth?: ResolvedDimension;
+  container?: string;
+  extras: Map<string, unknown>;
+}
+
+/** Resolved page → template assignment. */
+export interface PageDef {
+  pattern: string;
+  template: string;
+  /** Optional explicit region declarations (consumed by `missing-region`). */
+  regions?: string[];
+}
+
 // ── STATE ──────────────────────────────────────────────────────────
 export interface DesignSystemState {
   name?: string | undefined;
@@ -344,6 +406,19 @@ export interface DesignSystemState {
   voice?: Voice | undefined;
   /** Content rules — banned/approved terms, casing, error pattern, etc. Optional. */
   copy?: Copy | undefined;
+  /** Responsive breakpoints. Optional. Absent = no responsive contract. */
+  breakpoints?: BreakpointsState | undefined;
+  /** Grid system (columns, gutter, margin, maxWidth). Optional. */
+  grid?: GridState | undefined;
+  /** Layout-rule primitives (readable measure, stack spacing, form width). */
+  layoutRules?: LayoutRulesState | undefined;
+  /**
+   * Page-template registry. Keys are template names. Absent = open-world
+   * (no `unknown-template` enforcement).
+   */
+  templates?: Map<string, TemplateDef> | undefined;
+  /** Page → template assignments. Keys are route patterns. */
+  pages?: Map<string, PageDef> | undefined;
 }
 
 export interface ColorIndexEntry {
