@@ -198,6 +198,28 @@ components:
     typography: "{typography.label-sm}"
     rounded: "{rounded.full}"
     padding: "{spacing.xs}"
+voice:
+  formality: 2
+  warmth: 5
+  authority: 3
+  playfulness: 4
+  person: second
+  tense: present-active
+  oxfordComma: true
+  contractions: permitted
+copy:
+  casing:
+    button: sentence-case
+    nav: title-case
+  buttonLabelMaxWords: 3
+  errorPattern: "{what-happened}. {how-to-fix}."
+  emptyStateTone: encouraging
+  bannedTerms:
+    - seamless
+    - leverage
+    - revolutionary
+  approvedTerms:
+    user: pet parent
 ---
 
 ## Brand & Style
@@ -223,12 +245,27 @@ This design system utilizes **Plus Jakarta Sans** for its friendly, rounded term
 - **Body:** Generous line heights are applied to the body text to maintain the "premium and clean" feel.
 - **Labels:** Used for buttons and small metadata, utilizing a medium or semi-bold weight to remain distinct even at small scales.
 
+## Voice
+
+The product talks to busy pet parents the way a friendly groomer would: warm, on a first-name basis, never preachy. The voice is casual (`formality: 2`) and very warm (`warmth: 5`); contractions are welcome and the page is allowed to crack a smile.
+
+- **Person:** Second-person — "Book your dog's next walk".
+- **Tense:** Present-active. Action verbs first; promises second.
+- **Contractions:** Permitted ("we'll", "you're"). Removing them stiffens the voice.
+<!-- design.md disable-next-line banned-term-in-prose -->
+- **Banned terms:** `seamless`, `leverage`, `revolutionary`. They feel corporate and they always read like marketing copy.
+<!-- design.md disable-next-line approved-term-violation -->
+- **Approved terms:** Say `pet parent`, not `user`. The brand insists.
+
+Button labels stay short (≤ 3 words) and use sentence-case to feel conversational. Error messages follow `{what-happened}. {how-to-fix}.` so people see the problem first, the next step second. Empty states project encouragement, not blame ("Add your first pup" beats "No pets found").
+
 ## Layout & Spacing
 
 The layout follows a **Fixed Grid** model for mobile-first consistency, utilizing a 4-column system for handheld devices.
 
 - **Whitespace:** A "generous" philosophy is applied. Never crowd elements; use `lg` and `xl` spacing for section vertical separation to maintain a high-end aesthetic.
 - **Rhythm:** Spacing is strictly based on an 8px scale.
+<!-- design.md disable-next-line approved-term-violation -->
 - **Containers:** Content should be centered with a maximum width on larger screens, ensuring the "Paths" (user journeys) feel focused and intentional.
 
 ## Elevation & Depth

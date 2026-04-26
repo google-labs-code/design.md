@@ -29,6 +29,10 @@ sections:
       - Brand & Style
   - canonical: Colors
   - canonical: Typography
+  - canonical: Voice
+    aliases:
+      - Tone
+      - Voice & Tone
   - canonical: Layout
     aliases:
       - Layout & Spacing
@@ -38,6 +42,54 @@ sections:
   - canonical: Shapes
   - canonical: Components
   - canonical: "Do's and Don'ts"
+
+# Voice axes — integer 1–5 dials capturing brand voice characteristics.
+# Adding a new axis = one entry here. The model validates the integer range.
+voice_axes:
+  - formality
+  - warmth
+  - authority
+  - playfulness
+
+# Grammatical person allowed in `voice.person`.
+voice_persons:
+  - first
+  - second
+  - third
+
+# Casing conventions allowed in `copy.casing.<surface>`.
+casing_values:
+  - sentence-case
+  - title-case
+  - UPPERCASE
+  - lowercase
+
+# Surfaces that the casing-mismatch rule recognizes when scanning component
+# labels. The component's `kind` (per registry) drives which surface applies.
+casing_surfaces:
+  - button
+  - nav
+  - section-heading
+
+# Default title-case minor words. Lowercased in title-case unless they are
+# the first word. Authors override via `copy.titleCase.exceptions`.
+title_case_minor_words:
+  - a
+  - an
+  - and
+  - as
+  - at
+  - but
+  - by
+  - for
+  - from
+  - in
+  - of
+  - on
+  - or
+  - the
+  - to
+  - with
 
 typography_properties:
   - name: fontFamily
@@ -110,6 +162,18 @@ component_sub_tokens:
   - name: cursor
     type: string
     description: "CSS cursor keyword. Pair `cursor: not-allowed` with disabled-state contrast changes."
+  - name: label
+    type: string
+    description: "Visible button / nav text content. The voice + copy linter rules read this property."
+  - name: placeholder
+    type: string
+    description: "Input placeholder text. Subject to the same content rules as `label`."
+  - name: title
+    type: string
+    description: "Tooltip / accessible name. Subject to the same content rules as `label`."
+  - name: aria-label
+    type: string
+    description: "Accessible name. Subject to the same content rules as `label`."
 
 # Interactive component states. The vocabulary is opinionated but not closed
 # (unknown states warn rather than error).
@@ -281,3 +345,37 @@ examples:
           backgroundColor: "{colors.surface-variant}"
           textColor: "{colors.on-surface-variant}"
           cursor: "not-allowed"
+  voice:
+    formality: 3
+    warmth: 4
+    authority: 3
+    playfulness: 2
+    person: second
+    tense: present-active
+    oxfordComma: true
+    contractions: permitted
+  copy:
+    casing:
+      button: sentence-case
+      nav: title-case
+      section-heading: sentence-case
+    buttonLabelMaxWords: 3
+    errorPattern: "{what-happened}. {how-to-fix}."
+    emptyStateTone: encouraging
+    bannedTerms:
+      - seamless
+      - unlock
+      - leverage
+      - delight
+      - revolutionary
+      - effortless
+      - one-stop shop
+      - synergy
+    bannedRegex:
+      - "(?i)\\bgame[- ]?changer\\b"
+      - "(?i)\\bnext[- ]?gen\\b"
+    approvedTerms:
+      user: customer
+      dashboard: Home
+    reservedNames:
+      - DesignMD

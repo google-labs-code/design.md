@@ -77,12 +77,19 @@ const ConfigSchema = z.object({
   color_roles: z.array(z.string()).min(1),
   component_kinds: z.array(ComponentKindSchema).min(1),
   component_modifiers: z.array(z.string()).min(1),
+  voice_axes: z.array(z.string()).min(1),
+  voice_persons: z.array(z.string()).min(1),
+  casing_values: z.array(z.string()).min(1),
+  casing_surfaces: z.array(z.string()).min(1),
+  title_case_minor_words: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
     elevation: z.record(z.string(), z.string()).optional(),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
     components: z.record(z.string(), z.record(z.string(), ComponentExampleValueSchema)),
+    voice: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+    copy: z.record(z.string(), z.unknown()).optional(),
   }),
 });
 
@@ -200,6 +207,23 @@ export const KIND_DEFAULTS: Record<string, { interactive: boolean }> = Object.fr
 /** Closed set of permitted name modifiers (the `-modifier` suffix in `noun-modifier`). */
 export const COMPONENT_MODIFIERS: readonly string[] = config.component_modifiers;
 
+/** Voice axis names. Each axis is a 1–5 integer dial. */
+export const VOICE_AXES: readonly string[] = config.voice_axes;
+
+/** Allowed values for `voice.person`. */
+export const VOICE_PERSON: readonly string[] = config.voice_persons;
+export type VoicePerson = (typeof VOICE_PERSON)[number];
+
+/** Allowed values for `copy.casing.<surface>`. */
+export const CASING_VALUES: readonly string[] = config.casing_values;
+export type CasingValue = (typeof CASING_VALUES)[number];
+
+/** Component-kind surfaces the casing-mismatch rule scans. */
+export const CASING_SURFACES: readonly string[] = config.casing_surfaces;
+
+/** Default minor words that stay lowercase in title-case. */
+export const TITLE_CASE_MINOR_WORDS: readonly string[] = config.title_case_minor_words;
+
 /** Non-normative recommended token names, organized by category. */
 export const RECOMMENDED_TOKENS = config.recommended_tokens;
 
@@ -245,6 +269,10 @@ export interface SpecConfig {
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
   COMPONENT_KINDS: typeof COMPONENT_KINDS;
   COMPONENT_MODIFIERS: typeof COMPONENT_MODIFIERS;
+  VOICE_AXES: typeof VOICE_AXES;
+  VOICE_PERSON: typeof VOICE_PERSON;
+  CASING_VALUES: typeof CASING_VALUES;
+  CASING_SURFACES: typeof CASING_SURFACES;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
   EXAMPLES: typeof EXAMPLES;
 }
@@ -260,6 +288,10 @@ export const SPEC_CONFIG: SpecConfig = {
   CORE_COLOR_ROLES,
   COMPONENT_KINDS,
   COMPONENT_MODIFIERS,
+  VOICE_AXES,
+  VOICE_PERSON,
+  CASING_VALUES,
+  CASING_SURFACES,
   RECOMMENDED_TOKENS,
   EXAMPLES,
 };

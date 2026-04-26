@@ -50,7 +50,44 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     const componentGroup = this.mapComponents(state);
     if (componentGroup) file['component'] = componentGroup;
 
+    const voiceCopyExtension = this.mapVoiceCopyExtension(state);
+    if (voiceCopyExtension) {
+      const existing = file.$extensions ?? {};
+      file.$extensions = { ...existing, [DESIGN_MD_EXTENSION_KEY]: voiceCopyExtension };
+    }
+
     return { success: true, data: file as Record<string, unknown> };
+  }
+
+  /**
+   * Voice + copy aren't DTCG-native. Emit them under
+   * `$extensions['design.md']` as opaque structured data so downstream tools
+   * can consume without losing fidelity.
+   */
+  private mapVoiceCopyExtension(state: DesignSystemState): Record<string, unknown> | null {
+    const out: Record<string, unknown> = {};
+    if (state.voice) {
+      const voice: Record<string, unknown> = {};
+      if (state.voice.axes.size > 0) voice['axes'] = Object.fromEntries(state.voice.axes);
+      if (state.voice.person !== undefined) voice['person'] = state.voice.person;
+      if (state.voice.tense !== undefined) voice['tense'] = state.voice.tense;
+      if (state.voice.oxfordComma !== undefined) voice['oxfordComma'] = state.voice.oxfordComma;
+      if (state.voice.contractions !== undefined) voice['contractions'] = state.voice.contractions;
+      if (Object.keys(voice).length > 0) out['voice'] = voice;
+    }
+    if (state.copy) {
+      const copy: Record<string, unknown> = {};
+      if (state.copy.casing.size > 0) copy['casing'] = Object.fromEntries(state.copy.casing);
+      if (state.copy.buttonLabelMaxWords !== undefined) copy['buttonLabelMaxWords'] = state.copy.buttonLabelMaxWords;
+      if (state.copy.errorPattern !== undefined) copy['errorPattern'] = state.copy.errorPattern;
+      if (state.copy.emptyStateTone !== undefined) copy['emptyStateTone'] = state.copy.emptyStateTone;
+      if (state.copy.bannedTerms.length > 0) copy['bannedTerms'] = [...state.copy.bannedTerms];
+      if (state.copy.bannedRegex.length > 0) copy['bannedRegex'] = state.copy.bannedRegex.map(b => b.source);
+      if (state.copy.approvedTerms.size > 0) copy['approvedTerms'] = Object.fromEntries(state.copy.approvedTerms);
+      if (state.copy.reservedNames.length > 0) copy['reservedNames'] = [...state.copy.reservedNames];
+      if (Object.keys(copy).length > 0) out['copy'] = copy;
+    }
+    return Object.keys(out).length > 0 ? out : null;
   }
 
   private mapElevation(state: DesignSystemState): DtcgGroup | null {

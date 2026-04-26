@@ -91,12 +91,33 @@ describe('sectionOrder', () => {
 
   it('should handle mixed aliases and canonical names', () => {
     const state = {
-      sections: ['Brand & Style', 'Colors', 'Typography', 'Layout & Spacing', 'Elevation & Depth', 'Shapes', 'Components'],
+      sections: ['Brand & Style', 'Colors', 'Typography', 'Voice', 'Layout & Spacing', 'Elevation & Depth', 'Shapes', 'Components'],
     } as unknown as DesignSystemState;
 
     const findings = sectionOrder(state);
 
     expect(findings.length).toBe(0);
+  });
+
+  it('should place Voice between Typography and Layout', () => {
+    const state = {
+      sections: ['Typography', 'Voice', 'Layout'],
+    } as unknown as DesignSystemState;
+
+    expect(sectionOrder(state).length).toBe(0);
+  });
+
+  it('should warn when Voice appears before Typography', () => {
+    const state = {
+      sections: ['Voice', 'Typography'],
+    } as unknown as DesignSystemState;
+
+    expect(sectionOrder(state).length).toBe(1);
+  });
+
+  it('should resolve "Tone" and "Voice & Tone" as "Voice"', () => {
+    expect(resolveAlias('Tone')).toBe('Voice');
+    expect(resolveAlias('Voice & Tone')).toBe('Voice');
   });
 });
 

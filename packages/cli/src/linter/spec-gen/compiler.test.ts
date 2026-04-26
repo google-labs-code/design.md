@@ -73,6 +73,10 @@ describe('compileMdx', () => {
       sectionOrderList: () => renderers.sectionOrderList(cfg),
       componentSubTokenList: () => renderers.componentSubTokenList(cfg),
       recommendedTokens: () => renderers.recommendedTokens(cfg),
+      voiceExample: () => renderers.voiceExample(cfg),
+      copyExample: () => renderers.copyExample(cfg),
+      voiceAxesTable: () => renderers.voiceAxesTable(cfg),
+      casingTable: () => renderers.casingTable(cfg),
     };
 
     const result = await compileMdx(source, scope);

@@ -146,6 +146,55 @@ export interface RegistryEntry {
   composes?: string;
 }
 
+// ── VOICE + COPY ───────────────────────────────────────────────────
+
+/**
+ * Resolved voice block. Axes are validated to integers 1–5; out-of-range
+ * values produce an error finding and the axis is omitted.
+ */
+export interface Voice {
+  /** Numeric voice dials (formality, warmth, authority, playfulness). */
+  axes: Map<string, number>;
+  /** Grammatical person — first | second | third. */
+  person?: string;
+  /** Tense / voice descriptor, e.g. "present-active". Free-form. */
+  tense?: string;
+  /** Whether prose uses the Oxford comma. Recorded as a brand fact, not enforced. */
+  oxfordComma?: boolean;
+  /** "permitted" | "avoided" | "forbidden". Free-form for v1. */
+  contractions?: string;
+}
+
+/** A precompiled banned-regex entry. */
+export interface BannedRegex {
+  /** Original source string for use in messages. */
+  source: string;
+  /** Compiled regex (global, line-oriented). */
+  pattern: RegExp;
+}
+
+/**
+ * Resolved copy block. Validated against the casing/title-case enums.
+ * Banned regexes are pre-compiled once during model build so each lint pass
+ * is allocation-free.
+ */
+export interface Copy {
+  /** Per-surface casing convention (button, nav, section-heading, ...). */
+  casing: Map<string, string>;
+  buttonLabelMaxWords?: number;
+  errorPattern?: string;
+  emptyStateTone?: string;
+  bannedTerms: string[];
+  bannedRegex: BannedRegex[];
+  /** canonical → required form. Whole-word match against canonical. */
+  approvedTerms: Map<string, string>;
+  /** Product / feature names that must never be lowercased / hyphenated. */
+  reservedNames: string[];
+  /** Optional title-case overrides (extra minor words / proper nouns). */
+  titleCaseExceptions?: string[];
+  knownProperNouns?: string[];
+}
+
 // ── STATE ──────────────────────────────────────────────────────────
 export interface DesignSystemState {
   name?: string | undefined;
@@ -188,6 +237,10 @@ export interface DesignSystemState {
    * declared token values.
    */
   colorIndex: Map<string, ColorIndexEntry[]>;
+  /** Voice dials and grammatical defaults. Optional. */
+  voice?: Voice | undefined;
+  /** Content rules — banned/approved terms, casing, error pattern, etc. Optional. */
+  copy?: Copy | undefined;
 }
 
 export interface ColorIndexEntry {

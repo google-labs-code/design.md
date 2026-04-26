@@ -128,3 +128,35 @@ export function recommendedTokens(config: SpecConfig): string {
     })
     .join('\n\n');
 }
+
+/** Voice block YAML example. */
+export function voiceExample(config: SpecConfig): string {
+  const voice = (config.EXAMPLES as { voice?: Record<string, unknown> }).voice;
+  if (!voice) return yamlBlock(['voice:', '  formality: 3', '  warmth: 4', '  person: second']);
+  return yamlBlock(['voice:', ...yamlObject(voice)]);
+}
+
+/** Copy block YAML example. */
+export function copyExample(config: SpecConfig): string {
+  const copy = (config.EXAMPLES as { copy?: Record<string, unknown> }).copy;
+  if (!copy) return yamlBlock(['copy:', '  bannedTerms: []']);
+  return yamlBlock(['copy:', ...yamlObject(copy)]);
+}
+
+/** Voice axes table (axis name + 1-5 dial). */
+export function voiceAxesTable(config: SpecConfig): string {
+  const lines = ['| Axis | Range | Meaning |', '| --- | --- | --- |'];
+  for (const axis of config.VOICE_AXES) {
+    lines.push(`| \`${axis}\` | 1–5 | The voice's ${axis} dial. 1 = low, 5 = high. |`);
+  }
+  return lines.join('\n');
+}
+
+/** Casing values table. */
+export function casingTable(config: SpecConfig): string {
+  const lines = ['| Surface | Allowed values |', '| --- | --- |'];
+  for (const surface of config.CASING_SURFACES) {
+    lines.push(`| \`${surface}\` | ${config.CASING_VALUES.map(v => `\`${v}\``).join(', ')} |`);
+  }
+  return lines.join('\n');
+}
