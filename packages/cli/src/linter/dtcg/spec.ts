@@ -38,9 +38,15 @@ export interface DtcgTypographyValue {
 
 // ── DTCG Token & Group Structures ─────────────────────────────────
 
+/**
+ * Cubic bezier value: a four-tuple of control points `[x1, y1, x2, y2]`.
+ * Used for DTCG `cubicBezier` easing tokens.
+ */
+export type DtcgCubicBezierValue = [number, number, number, number];
+
 export interface DtcgToken {
   $type?: string;
-  $value: DtcgColorValue | DtcgDimensionValue | DtcgTypographyValue | string | number;
+  $value: DtcgColorValue | DtcgDimensionValue | DtcgTypographyValue | DtcgCubicBezierValue | string | number;
   $description?: string;
   /**
    * DTCG vendor extensions. We use `design.md` as the namespace for ramp

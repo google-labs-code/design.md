@@ -182,4 +182,30 @@ describe('TailwindEmitterHandler', () => {
       expect(colors['on-primary-container']).toBeDefined();
     });
   });
+
+  describe('motion mapping', () => {
+    it('emits motion durations and easings as transition tokens', () => {
+      const state = buildState({
+        motion: {
+          duration: { fast: '150ms', medium: '0.25s' },
+          easing: { standard: 'cubic-bezier(0.4, 0, 0.2, 1)', linear: 'linear' },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const ext = result.data.theme.extend;
+      expect(ext.transitionDuration?.['fast']).toBe('150ms');
+      expect(ext.transitionDuration?.['medium']).toBe('0.25s');
+      expect(ext.transitionTimingFunction?.['standard']).toBe('cubic-bezier(0.4, 0, 0.2, 1)');
+      expect(ext.transitionTimingFunction?.['linear']).toBe('linear');
+    });
+
+    it('omits transition keys when motion is undeclared', () => {
+      const state = buildState({});
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.theme.extend.transitionDuration).toEqual({});
+      expect(result.data.theme.extend.transitionTimingFunction).toEqual({});
+    });
+  });
 });

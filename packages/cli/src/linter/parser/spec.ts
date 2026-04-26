@@ -70,6 +70,30 @@ export interface RawPairDef {
 
 export type RawColorValue = string | RawRampDef | RawPairDef;
 
+/**
+ * Raw motion block (mirrors the YAML schema). Durations and easings live in
+ * separate sub-maps; `reducedMotion` declares the fallback applied under
+ * `prefers-reduced-motion`.
+ */
+export interface RawMotionDef {
+  duration?: Record<string, string>;
+  easing?: Record<string, string>;
+  reducedMotion?: { duration?: string; easing?: string };
+}
+
+/**
+ * Raw iconography block (mirrors the YAML schema). One library/style per
+ * system; `sizes` is the icon-size scale referenced by `iconSize:` on
+ * components.
+ */
+export interface RawIconographyDef {
+  library?: { name: string; version?: string; style?: string };
+  strokeWeight?: string;
+  sizes?: Record<string, string>;
+  defaultSize?: string;
+  colorBinding?: string;
+}
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   name?: string | undefined;
@@ -84,6 +108,18 @@ export interface ParsedDesignSystem {
    * `{elevation.<name>}`.
    */
   elevation?: Record<string, string> | undefined;
+  /**
+   * Motion primitives — durations, easings, and the reduced-motion fallback.
+   * Components reference them via `{motion.duration.*}` / `{motion.easing.*}`
+   * inside `transition:` shorthands.
+   */
+  motion?: RawMotionDef | undefined;
+  /**
+   * Iconography — library reference, size scale, stroke weight, color
+   * binding. Components reference sizes via `{iconography.sizes.*}` on
+   * `iconSize:`.
+   */
+  iconography?: RawIconographyDef | undefined;
   components?: Record<string, Record<string, string>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */

@@ -25,6 +25,7 @@ describe('LintRule type', () => {
       rounded: new Map(),
       spacing: new Map(),
       elevation: new Map(),
+      motion: { duration: new Map(), easing: new Map() },
       components: new Map(),
       colorRamps: new Map(),
       colorPairs: new Map(),
@@ -44,7 +45,7 @@ describe('LintRule type', () => {
   });
 
   it('has all rules in DEFAULT_RULE_DESCRIPTORS', () => {
-    expect(DEFAULT_RULE_DESCRIPTORS.length).toBe(16);
+    expect(DEFAULT_RULE_DESCRIPTORS.length).toBe(19);
     DEFAULT_RULE_DESCRIPTORS.forEach((rule: RuleDescriptor) => {
       expect(rule.name).toBeTruthy();
       expect(rule.severity).toBeTruthy();

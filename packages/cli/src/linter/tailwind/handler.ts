@@ -32,10 +32,28 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
             borderRadius: this.mapDimensions(state.rounded),
             spacing: this.mapDimensions(state.spacing),
             boxShadow: this.mapElevation(state),
+            transitionDuration: this.mapDurations(state),
+            transitionTimingFunction: this.mapEasings(state),
           },
         },
       }
     };
+  }
+
+  private mapDurations(state: DesignSystemState): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [name, dur] of state.motion.duration) {
+      result[name] = `${dur.value}${dur.unit}`;
+    }
+    return result;
+  }
+
+  private mapEasings(state: DesignSystemState): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [name, easing] of state.motion.easing) {
+      result[name] = easing.raw;
+    }
+    return result;
   }
 
   private mapElevation(state: DesignSystemState): Record<string, string> {

@@ -93,4 +93,41 @@ describe('Fixture Test', () => {
     expect(colors['surface-info']).toBe('#e0f2fe');
     expect(colors['primary-container']).toBeDefined();
   });
+
+  it('processes MOTION_AND_ICONS.md end-to-end', () => {
+    const path = join(import.meta.dir, 'fixtures', 'MOTION_AND_ICONS.md');
+    const content = readFileSync(path, 'utf-8');
+    const result = lint(content);
+
+    // No errors expected — motion + iconography parse cleanly and every
+    // declared token is referenced by at least one component.
+    const errors = result.findings.filter(d => d.severity === 'error');
+    expect(errors).toEqual([]);
+    expect(result.findings.some(d => d.path?.startsWith('motion.'))).toBe(false);
+    expect(result.findings.some(d => d.path?.startsWith('iconography.'))).toBe(false);
+
+    // Motion model is populated.
+    const ds = result.designSystem;
+    expect(ds.motion.duration.get('fast')?.value).toBe(150);
+    expect(ds.motion.duration.get('fast')?.unit).toBe('ms');
+    const std = ds.motion.easing.get('standard');
+    expect(std?.controlPoints).toEqual([0.4, 0, 0.2, 1]);
+    expect(ds.motion.reducedMotion?.duration).toBe('instant');
+
+    // Iconography model is populated.
+    expect(ds.iconography?.library.name).toBe('lucide');
+    expect(ds.iconography?.library.style).toBe('outlined');
+    expect(ds.iconography?.sizes.get('md')?.value).toBe(20);
+    expect(ds.iconography?.strokeWeight?.value).toBe(1.5);
+
+    // Tailwind exporter surfaces motion as transitionDuration / timingFunction.
+    if (!result.tailwindConfig.success) throw new Error('Tailwind emit failed');
+    const ext = result.tailwindConfig.data.theme.extend;
+    expect(ext.transitionDuration?.['fast']).toBe('150ms');
+    expect(ext.transitionTimingFunction?.['standard']).toBe('cubic-bezier(0.4, 0, 0.2, 1)');
+
+    // Component transitions resolve embedded motion refs to literal values.
+    const button = ds.components.get('button-primary')!;
+    expect(button.properties.get('transition')).toBe('opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)');
+  });
 });

@@ -86,6 +86,44 @@ export function componentsExample(config: SpecConfig): string {
   return yamlBlock(lines);
 }
 
+/** Motion YAML example (durations, easings, reduced-motion fallback). */
+export function motionExample(config: SpecConfig): string {
+  const motion = config.EXAMPLES.motion;
+  if (!motion) return yamlBlock(['motion: {}']);
+  const lines = ['motion:', '  duration:'];
+  for (const [name, value] of Object.entries(motion.duration)) {
+    lines.push(`    ${name}: ${value}`);
+  }
+  lines.push('  easing:');
+  for (const [name, value] of Object.entries(motion.easing)) {
+    lines.push(`    ${name}: "${value}"`);
+  }
+  if (motion.reducedMotion) {
+    lines.push('  reducedMotion:');
+    lines.push(`    duration: ${motion.reducedMotion.duration}`);
+    lines.push(`    easing: ${motion.reducedMotion.easing}`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Iconography YAML example (library, size scale, color binding). */
+export function iconographyExample(config: SpecConfig): string {
+  const ico = config.EXAMPLES.iconography;
+  if (!ico) return yamlBlock(['iconography: {}']);
+  const lines = ['iconography:', '  library:'];
+  lines.push(`    name: ${ico.library.name}`);
+  if (ico.library.version) lines.push(`    version: "${ico.library.version}"`);
+  lines.push(`    style: ${ico.library.style}`);
+  if (ico.strokeWeight) lines.push(`  strokeWeight: ${ico.strokeWeight}`);
+  lines.push('  sizes:');
+  for (const [name, value] of Object.entries(ico.sizes)) {
+    lines.push(`    ${name}: ${value}`);
+  }
+  lines.push(`  defaultSize: ${ico.defaultSize}`);
+  lines.push(`  colorBinding: ${ico.colorBinding}`);
+  return yamlBlock(lines);
+}
+
 /** Typography property list (for the schema section). */
 export function typographyPropertyList(config: SpecConfig): string {
   return config.TYPOGRAPHY_PROPERTIES.map((p: TypographyPropertyDef) =>

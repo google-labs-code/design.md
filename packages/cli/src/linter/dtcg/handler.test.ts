@@ -25,6 +25,7 @@ function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
     rounded: new Map(),
     spacing: new Map(),
     elevation: new Map(),
+    motion: { duration: new Map(), easing: new Map() },
     components: new Map(),
     colorRamps: new Map(),
     colorPairs: new Map(),
@@ -272,6 +273,78 @@ describe('DtcgEmitterHandler', () => {
       const onContainer = pairGroup['onContainer'] as Record<string, unknown>;
       const onContainerExt = onContainer['$extensions'] as Record<string, Record<string, unknown>>;
       expect(onContainerExt['design.md']?.['role']).toBe('on-container');
+    });
+  });
+
+  describe('motion emission', () => {
+    const handler = new DtcgEmitterHandler();
+    const buildFromYaml = (parsed: ParsedDesignSystem) =>
+      new ModelHandler().execute(parsed).designSystem;
+
+    test('emits durations as DTCG `duration` tokens and easings as `cubicBezier`', () => {
+      const state = buildFromYaml({
+        sourceMap: new Map(),
+        motion: {
+          duration: { fast: '150ms', slow: '0.4s' },
+          easing: {
+            standard: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            linear: 'linear',
+          },
+          reducedMotion: { duration: 'fast', easing: 'standard' },
+        },
+      });
+      const result = handler.execute(state);
+      if (!result.success) throw new Error('expected success');
+      const motion = result.data['motion'] as Record<string, unknown>;
+      expect(motion).toBeDefined();
+      const durGroup = motion['duration'] as Record<string, unknown>;
+      expect(durGroup['$type']).toBe('duration');
+      const fast = durGroup['fast'] as Record<string, unknown>;
+      expect(fast['$value']).toEqual({ value: 150, unit: 'ms' });
+      const slow = durGroup['slow'] as Record<string, unknown>;
+      expect(slow['$value']).toEqual({ value: 0.4, unit: 's' });
+
+      const easeGroup = motion['easing'] as Record<string, unknown>;
+      expect(easeGroup['$type']).toBe('cubicBezier');
+      const std = easeGroup['standard'] as Record<string, unknown>;
+      expect(std['$value']).toEqual([0.4, 0, 0.2, 1]);
+      const linear = easeGroup['linear'] as Record<string, unknown>;
+      expect(linear['$value']).toBe('linear');
+
+      const ext = motion['$extensions'] as Record<string, Record<string, unknown>>;
+      const reduced = ext['design.md']?.['reducedMotion'] as Record<string, string>;
+      expect(reduced['duration']).toBe('{motion.duration.fast}');
+      expect(reduced['easing']).toBe('{motion.easing.standard}');
+    });
+  });
+
+  describe('iconography emission', () => {
+    const handler = new DtcgEmitterHandler();
+    const buildFromYaml = (parsed: ParsedDesignSystem) =>
+      new ModelHandler().execute(parsed).designSystem;
+
+    test('emits sizes as a dimension group + iconography under design.md extension', () => {
+      const state = buildFromYaml({
+        sourceMap: new Map(),
+        iconography: {
+          library: { name: 'lucide', version: '0.451.0', style: 'outlined' },
+          strokeWeight: '1.5px',
+          sizes: { sm: '16px', md: '20px' },
+          defaultSize: 'md',
+          colorBinding: 'currentColor',
+        },
+      });
+      const result = handler.execute(state);
+      if (!result.success) throw new Error('expected success');
+      const ico = result.data['iconography'] as Record<string, unknown>;
+      const sizes = ico['sizes'] as Record<string, unknown>;
+      expect(sizes['$type']).toBe('dimension');
+      expect((sizes['md'] as Record<string, unknown>)['$value']).toEqual({ value: 20, unit: 'px' });
+      const ext = ico['$extensions'] as Record<string, Record<string, unknown>>;
+      const meta = ext['design.md']?.['iconography'] as Record<string, unknown>;
+      expect((meta['library'] as Record<string, unknown>)['name']).toBe('lucide');
+      expect(meta['defaultSize']).toBe('md');
+      expect(meta['colorBinding']).toBe('currentColor');
     });
   });
 });

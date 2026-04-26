@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef } from '../parser/spec.js';
+import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -20,17 +20,30 @@ import type {
   ResolvedDimension,
   ResolvedTypography,
   ResolvedShadow,
+  ResolvedDuration,
+  ResolvedEasing,
   ResolvedValue,
   ComponentDef,
   Finding,
   RampDef,
   PairDef,
   ColorIndexEntry,
+  MotionState,
+  IconographyState,
 } from './spec.js';
 
-import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
+import {
+  isValidColor,
+  isParseableDimension,
+  isTokenReference,
+  parseDimensionParts,
+  parseDurationParts,
+  isValidEasing,
+  parseCubicBezier,
+} from './spec.js';
 import { COMPONENT_SUB_TOKEN_VALIDATORS } from '../component-validators.js';
 import { generateRampSteps, DEFAULT_RAMP_STEPS } from './color-ramp.js';
+import { ICON_LIBRARIES } from '../spec-config.js';
 
 const MAX_REFERENCE_DEPTH = 10;
 
@@ -52,6 +65,11 @@ export class ModelHandler implements ModelSpec {
       const elevation = new Map<string, ResolvedShadow>();
       const colorRamps = new Map<string, RampDef>();
       const colorPairs = new Map<string, PairDef>();
+      const motion: MotionState = {
+        duration: new Map<string, ResolvedDuration>(),
+        easing: new Map<string, ResolvedEasing>(),
+      };
+      let iconography: IconographyState | undefined;
 
       // ── Phase 1: Resolve primitive tokens ──────────────────────────
       // Colors
@@ -147,6 +165,20 @@ export class ModelHandler implements ModelSpec {
         }
       }
 
+      // Motion — duration tokens (ms / s) and CSS easings, plus the
+      // optional reduced-motion fallback. Each duration / easing is
+      // independently addressable from the symbol table at
+      // `motion.duration.<name>` / `motion.easing.<name>`.
+      if (input.motion) {
+        parseMotion(input.motion, motion, symbolTable, findings);
+      }
+
+      // Iconography — single library, an icon-size scale, optional
+      // stroke weight, default size, and color-binding rule.
+      if (input.iconography) {
+        iconography = parseIconography(input.iconography, symbolTable, findings);
+      }
+
       // ── Phase 2: Resolve chained color references ──────────────────
       // Iterate color entries that are still raw references and resolve them
       if (input.colors) {
@@ -221,8 +253,14 @@ export class ModelHandler implements ModelSpec {
         for (const [compName, props] of Object.entries(input.components)) {
           const properties = new Map<string, ResolvedValue>();
           const unresolvedRefs: string[] = [];
+          const referencedTokens: string[] = [];
 
           for (const [propName, rawValue] of Object.entries(props)) {
+            if (typeof rawValue === 'string') {
+              for (const m of rawValue.matchAll(/\{([a-zA-Z0-9._-]+)\}/g)) {
+                referencedTokens.push(m[1]!);
+              }
+            }
             // Validate the raw author input against the typed schema.
             // Token references and resolution failures are not validated
             // here — those are handled by the broken-ref rule.
@@ -263,12 +301,20 @@ export class ModelHandler implements ModelSpec {
               properties.set(propName, parseColor(rawValue));
             } else if (isParseableDimension(rawValue)) {
               properties.set(propName, parseDimension(rawValue));
+            } else if (typeof rawValue === 'string' && EMBEDDED_REF_RE.test(rawValue)) {
+              // Shorthand strings (transitions, borders, shadows) may embed
+              // `{path}` references. Resolve them inline so the property
+              // surfaces the substituted value to exporters and rules.
+              EMBEDDED_REF_RE.lastIndex = 0;
+              const { value, unresolved } = resolveEmbeddedRefs(rawValue, symbolTable);
+              for (const ref of unresolved) unresolvedRefs.push(ref);
+              properties.set(propName, value);
             } else {
               properties.set(propName, rawValue);
             }
           }
 
-          components.set(compName, { properties, unresolvedRefs });
+          components.set(compName, { properties, unresolvedRefs, referencedTokens });
         }
       }
 
@@ -283,6 +329,8 @@ export class ModelHandler implements ModelSpec {
           rounded,
           spacing,
           elevation,
+          motion,
+          iconography,
           components,
           colorRamps,
           colorPairs,
@@ -301,6 +349,7 @@ export class ModelHandler implements ModelSpec {
           rounded: new Map(),
           spacing: new Map(),
           elevation: new Map(),
+          motion: { duration: new Map(), easing: new Map() },
           components: new Map(),
           colorRamps: new Map(),
           colorPairs: new Map(),
@@ -672,4 +721,218 @@ export function contrastRatio(a: ResolvedColor, b: ResolvedColor): number {
   const L1 = Math.max(a.luminance, b.luminance);
   const L2 = Math.min(a.luminance, b.luminance);
   return (L1 + 0.05) / (L2 + 0.05);
+}
+
+// ── Motion parsing ────────────────────────────────────────────────
+
+/**
+ * Populate the motion sub-state from raw input. Validates each duration
+ * (must be in ms or s) and each easing (CSS keyword, `cubic-bezier(...)`,
+ * or `steps(...)`). Emits `error`-level findings for malformed values.
+ *
+ * `reducedMotion` is recorded by name; consumers resolve it against the
+ * `duration` / `easing` maps so the canonical token surface stays visible.
+ */
+function parseMotion(
+  raw: RawMotionDef,
+  motion: MotionState,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): void {
+  if (raw.duration) {
+    for (const [name, value] of Object.entries(raw.duration)) {
+      if (typeof value !== 'string') continue;
+      const parts = parseDurationParts(value);
+      if (!parts) {
+        findings.push({
+          severity: 'error',
+          path: `motion.duration.${name}`,
+          message: `'${value}' is not a valid duration. Expected a value in ms or s (e.g., 150ms, 0.4s).`,
+        });
+        continue;
+      }
+      const dur: ResolvedDuration = { type: 'duration', value: parts.value, unit: parts.unit };
+      motion.duration.set(name, dur);
+      symbolTable.set(`motion.duration.${name}`, dur);
+    }
+  }
+
+  if (raw.easing) {
+    for (const [name, value] of Object.entries(raw.easing)) {
+      if (typeof value !== 'string') continue;
+      if (!isValidEasing(value)) {
+        findings.push({
+          severity: 'error',
+          path: `motion.easing.${name}`,
+          message: `'${value}' is not a valid easing. Expected a CSS keyword (linear, ease-in, ...), 'cubic-bezier(x1, y1, x2, y2)', or 'steps(...)'.`,
+        });
+        continue;
+      }
+      const easing: ResolvedEasing = { type: 'easing', raw: value.trim() };
+      const points = parseCubicBezier(value);
+      if (points) easing.controlPoints = points;
+      motion.easing.set(name, easing);
+      symbolTable.set(`motion.easing.${name}`, easing);
+    }
+  }
+
+  if (raw.reducedMotion) {
+    const rm = raw.reducedMotion;
+    const duration = typeof rm.duration === 'string' ? rm.duration.trim() : 'instant';
+    const easing = typeof rm.easing === 'string' ? rm.easing.trim() : 'standard';
+    motion.reducedMotion = { duration, easing };
+    if (raw.duration && !(duration in raw.duration)) {
+      findings.push({
+        severity: 'warning',
+        path: 'motion.reducedMotion.duration',
+        message: `Reduced-motion duration '${duration}' is not declared in motion.duration.`,
+      });
+    }
+    if (raw.easing && !(easing in raw.easing)) {
+      findings.push({
+        severity: 'warning',
+        path: 'motion.reducedMotion.easing',
+        message: `Reduced-motion easing '${easing}' is not declared in motion.easing.`,
+      });
+    }
+  }
+}
+
+// ── Iconography parsing ───────────────────────────────────────────
+
+/**
+ * Build the resolved iconography state from raw input. Validates the
+ * library name against the closed enum (`lucide`, `material-symbols`,
+ * `heroicons`, `phosphor`, `custom-svg`) and parses each size into a
+ * `ResolvedDimension`. Returns `undefined` only when the library is
+ * missing or unrecognized — in either case an error finding is emitted.
+ */
+function parseIconography(
+  raw: RawIconographyDef,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): IconographyState | undefined {
+  if (!raw.library || typeof raw.library.name !== 'string') {
+    findings.push({
+      severity: 'error',
+      path: 'iconography.library',
+      message: `iconography.library.name is required (one of: ${ICON_LIBRARIES.join(', ')}).`,
+    });
+    return undefined;
+  }
+  const libName = raw.library.name.trim();
+  if (!(ICON_LIBRARIES as readonly string[]).includes(libName)) {
+    findings.push({
+      severity: 'warning',
+      path: 'iconography.library.name',
+      message: `'${libName}' is not a known icon library. Recognized: ${ICON_LIBRARIES.join(', ')}. Use 'custom-svg' for in-house sets.`,
+    });
+  }
+  const style = (raw.library.style ?? 'outlined').trim();
+  if (style !== 'outlined' && style !== 'filled') {
+    findings.push({
+      severity: 'error',
+      path: 'iconography.library.style',
+      message: `iconography.library.style must be 'outlined' or 'filled' (got '${style}').`,
+    });
+  }
+
+  const sizes = new Map<string, ResolvedDimension>();
+  if (raw.sizes) {
+    for (const [name, value] of Object.entries(raw.sizes)) {
+      if (typeof value !== 'string') continue;
+      if (!isParseableDimension(value)) {
+        findings.push({
+          severity: 'error',
+          path: `iconography.sizes.${name}`,
+          message: `'${value}' is not a valid icon size. Expected a dimension (e.g., 16px).`,
+        });
+        continue;
+      }
+      const parts = parseDimensionParts(value)!;
+      const dim: ResolvedDimension = { type: 'dimension', value: parts.value, unit: parts.unit };
+      sizes.set(name, dim);
+      symbolTable.set(`iconography.sizes.${name}`, dim);
+    }
+  }
+
+  let strokeWeight: ResolvedDimension | undefined;
+  if (typeof raw.strokeWeight === 'string') {
+    if (isParseableDimension(raw.strokeWeight)) {
+      const parts = parseDimensionParts(raw.strokeWeight)!;
+      strokeWeight = { type: 'dimension', value: parts.value, unit: parts.unit };
+      symbolTable.set('iconography.strokeWeight', strokeWeight);
+    } else {
+      findings.push({
+        severity: 'error',
+        path: 'iconography.strokeWeight',
+        message: `'${raw.strokeWeight}' is not a valid stroke weight. Expected a dimension (e.g., 1.5px).`,
+      });
+    }
+  }
+
+  const defaultSize = (raw.defaultSize ?? 'md').trim();
+  if (sizes.size > 0 && !sizes.has(defaultSize)) {
+    findings.push({
+      severity: 'warning',
+      path: 'iconography.defaultSize',
+      message: `defaultSize '${defaultSize}' is not declared in iconography.sizes.`,
+    });
+  }
+
+  const colorBinding = (raw.colorBinding ?? 'currentColor').trim();
+
+  const state: IconographyState = {
+    library: {
+      name: libName,
+      style: (style === 'filled' ? 'filled' : 'outlined'),
+    },
+    sizes,
+    defaultSize,
+    colorBinding,
+  };
+  if (raw.library.version) state.library.version = raw.library.version;
+  if (strokeWeight) state.strokeWeight = strokeWeight;
+  return state;
+}
+
+// ── Embedded reference resolution (component transition shorthands) ──
+
+const EMBEDDED_REF_RE = /\{[a-zA-Z0-9._-]+\}/g;
+
+/**
+ * Replace embedded `{path}` references in a string with the resolved
+ * value's serialized form. Only motion duration / easing tokens are
+ * stringified inline today — other types fall through unchanged so the
+ * `broken-ref` rule can flag the unresolved reference visibly.
+ */
+export function resolveEmbeddedRefs(
+  raw: string,
+  symbolTable: Map<string, ResolvedValue>,
+): { value: string; unresolved: string[] } {
+  const unresolved: string[] = [];
+  const replaced = raw.replace(EMBEDDED_REF_RE, (match) => {
+    const path = match.slice(1, -1);
+    const resolved = symbolTable.get(path);
+    if (resolved === undefined) {
+      unresolved.push(match);
+      return match;
+    }
+    if (typeof resolved === 'object' && resolved !== null && 'type' in resolved) {
+      if (resolved.type === 'duration') {
+        return `${resolved.value}${resolved.unit}`;
+      }
+      if (resolved.type === 'easing') {
+        return resolved.raw;
+      }
+      if (resolved.type === 'dimension') {
+        return `${resolved.value}${resolved.unit}`;
+      }
+    }
+    if (typeof resolved === 'string') {
+      return resolved;
+    }
+    return match;
+  });
+  return { value: replaced, unresolved };
 }

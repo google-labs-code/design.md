@@ -160,10 +160,13 @@ export const validateElevation: ValueValidator = (raw) => {
 };
 
 /**
- * Transition shorthand: `<property> <duration> <easing>`, e.g.
+ * Transition shorthand: `<property> <duration> [easing]`, e.g.
  *   `opacity 200ms ease-out`
- * Until motion tokens land (#5), literal values are accepted; the surrounding
- * lint rule warns on layout-thrash properties.
+ *   `transform {motion.duration.fast} {motion.easing.standard}`
+ * The duration may be a literal (`150ms`, `0.4s`) or a `{motion.duration.*}`
+ * reference; the easing is free-form (CSS keyword, `cubic-bezier(...)`, or a
+ * `{motion.easing.*}` reference). Embedded references are resolved by the
+ * model after validation.
  */
 export const validateTransition: ValueValidator = (raw) => {
   if (isRef(raw)) return ok;
@@ -172,9 +175,11 @@ export const validateTransition: ValueValidator = (raw) => {
     return fail(`'${raw}' is not a valid transition (expected '<property> <duration> [easing]').`);
   }
   const duration = parts[1]!;
-  const dimParts = parseDimensionParts(duration);
-  if (!dimParts || (dimParts.unit !== 'ms' && dimParts.unit !== 's')) {
-    return fail(`transition duration '${duration}' must be a value in ms or s.`);
+  if (!isRef(duration)) {
+    const dimParts = parseDimensionParts(duration);
+    if (!dimParts || (dimParts.unit !== 'ms' && dimParts.unit !== 's')) {
+      return fail(`transition duration '${duration}' must be a value in ms or s, or a {motion.duration.*} reference.`);
+    }
   }
   return ok;
 };

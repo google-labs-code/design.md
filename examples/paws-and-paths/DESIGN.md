@@ -113,6 +113,32 @@ elevation:
   raised: "0 4px 12px rgba(133,83,0,0.10)"
   overlay: "0 12px 24px rgba(133,83,0,0.14)"
   modal: "0 24px 48px rgba(133,83,0,0.18)"
+motion:
+  duration:
+    instant: 0ms
+    fast: 150ms
+    medium: 250ms
+    slow: 400ms
+  easing:
+    standard: "cubic-bezier(0.4, 0, 0.2, 1)"
+    decelerate: "cubic-bezier(0, 0, 0.2, 1)"
+    accelerate: "cubic-bezier(0.4, 0, 1, 1)"
+  reducedMotion:
+    duration: instant
+    easing: standard
+iconography:
+  library:
+    name: lucide
+    version: "0.451.0"
+    style: outlined
+  strokeWeight: 1.5px
+  sizes:
+    sm: 16px
+    md: 20px
+    lg: 24px
+    xl: 32px
+  defaultSize: md
+  colorBinding: currentColor
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -120,7 +146,7 @@ components:
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
-    transition: "opacity 150ms ease-out"
+    transition: "opacity {motion.duration.fast} {motion.easing.standard}"
   button-primary-hover:
     backgroundColor: "{colors.primary-container}"
     textColor: "{colors.on-primary-container}"
@@ -130,7 +156,7 @@ components:
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: "{spacing.md}"
-    transition: "opacity 150ms ease-out"
+    transition: "opacity {motion.duration.fast} {motion.easing.standard}"
   button-secondary-hover:
     backgroundColor: "{colors.secondary-container}"
     textColor: "{colors.on-secondary-container}"
@@ -140,6 +166,15 @@ components:
     padding: "{spacing.md}"
     gap: "{spacing.sm}"
     shadow: "{elevation.raised}"
+    transition: "transform {motion.duration.medium} {motion.easing.decelerate}"
+    iconSize: "{iconography.sizes.lg}"
+  modal-walker-detail:
+    backgroundColor: "{colors.surface-container-lowest}"
+    rounded: "{rounded.xl}"
+    padding: "{spacing.lg}"
+    shadow: "{elevation.modal}"
+    transition: "opacity {motion.duration.slow} {motion.easing.decelerate}"
+    iconSize: "{iconography.sizes.xl}"
   card-walk-stat:
     backgroundColor: "{colors.secondary-container}"
     textColor: "{colors.on-secondary-container}"
@@ -153,12 +188,13 @@ components:
     rounded: "{rounded.DEFAULT}"
     padding: "{spacing.sm}"
     border: "1px solid {colors.outline-variant}"
-    iconSize: auto
+    iconSize: "{iconography.sizes.md}"
   list-item-walker:
     backgroundColor: "#00000000"
     padding: "{spacing.sm}"
     rounded: "{rounded.md}"
-    transition: "opacity 100ms ease-in"
+    transition: "opacity {motion.duration.fast} {motion.easing.accelerate}"
+    iconSize: "{iconography.sizes.sm}"
   list-item-walker-hover:
     backgroundColor: "{colors.surface-container-high}"
   badge-status:
@@ -167,6 +203,7 @@ components:
     typography: "{typography.label-sm}"
     rounded: "{rounded.full}"
     padding: "{spacing.xs}"
+    iconSize: "{iconography.sizes.sm}"
 ---
 
 ## Brand & Style
@@ -200,6 +237,15 @@ The layout follows a **Fixed Grid** model for mobile-first consistency, utilizin
 - **Rhythm:** Spacing is strictly based on an 8px scale.
 - **Containers:** Content should be centered with a maximum width on larger screens, ensuring the "Paths" (user journeys) feel focused and intentional.
 
+## Motion
+
+Motion in Paws & Paths is short, calm, and purposeful — it confirms that an action took effect, never decorates.
+
+- **Duration scale:** `fast` (150ms) for hover, focus, press; `medium` (250ms) when a card lifts on selection; `slow` (400ms) reserved for full-screen transitions.
+- **Easing:** Hovers use `standard`. Cards entering the screen use `decelerate` (the lift settles in). List items leaving on dismissal use `accelerate`.
+- **Reduced motion:** Under `prefers-reduced-motion`, every motion clamps to the `instant` duration with `standard` easing — opacity changes still apply, transforms are dropped.
+- **What never animates:** `width`, `height`, `padding`, `margin`. The walker-card hover lifts via `transform: translateY(-2px)`, never via padding.
+
 ## Elevation & Depth
 
 This design system uses **Ambient Shadows** and **Tonal Layers** to define the interface's verticality.
@@ -217,6 +263,16 @@ The shape language is defined by **Rounded** corners, mirroring the soft feature
 - **Cards:** Dog profiles and walker cards use a `1.5rem` (rounded-xl) radius to create a soft, containerized look.
 - **Inputs:** Form fields use a `0.5rem` radius to maintain a professional yet modern appearance.
 - **Icons:** Icons should feature rounded caps and corners to harmonize with the UI's structural elements.
+
+## Iconography
+
+Paws & Paths commits to **Lucide** at a `1.5px` stroke weight. The rounded caps echo the soft button radii and never compete visually with the typography.
+
+- **Library and weight:** Lucide outlined; do not mix with Material Symbols or custom SVGs. The single library is the system's iconographic identity.
+- **Filled vs outlined:** Outlined is the default. The filled style is reserved for selected nav items (active tab) and favorited walkers.
+- **Sizing:** The size scale is `sm` 16px, `md` 20px, `lg` 24px, `xl` 32px. Form fields and badges use `sm`; list rows and buttons use `md`; avatar overlays and toolbar actions use `lg`.
+- **Color binding:** Icons inherit `currentColor`. The only exception is the brand mark in the splash screen.
+- **Accessibility:** Icon-only controls (e.g. dismiss buttons) always carry an `aria-label`.
 
 ## Components
 

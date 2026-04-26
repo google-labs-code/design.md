@@ -32,12 +32,36 @@ sections:
   - canonical: Layout
     aliases:
       - Layout & Spacing
+  - canonical: Motion
+    aliases:
+      - Motion & Animation
   - canonical: Elevation & Depth
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Iconography
+    aliases:
+      - Icons
   - canonical: Components
   - canonical: "Do's and Don'ts"
+
+# Closed enum of supported icon libraries. `custom-svg` is the escape hatch.
+icon_libraries:
+  - lucide
+  - material-symbols
+  - heroicons
+  - phosphor
+  - custom-svg
+
+# Closed enum of CSS easing keywords accepted alongside `cubic-bezier(...)`.
+easing_keywords:
+  - linear
+  - ease
+  - ease-in
+  - ease-out
+  - ease-in-out
+  - step-start
+  - step-end
 
 typography_properties:
   - name: fontFamily
@@ -159,6 +183,21 @@ recommended_tokens:
     - lg
     - xl
     - full
+  motion-duration:
+    - instant
+    - fast
+    - medium
+    - slow
+  motion-easing:
+    - standard
+    - decelerate
+    - accelerate
+    - emphasized
+  iconography-sizes:
+    - sm
+    - md
+    - lg
+    - xl
 
 examples:
   colors:
@@ -189,11 +228,39 @@ examples:
       fontWeight: 500
       lineHeight: 1.0
       letterSpacing: "0.1em"
+  motion:
+    duration:
+      instant: 0ms
+      fast: 150ms
+      medium: 250ms
+      slow: 400ms
+    easing:
+      standard: "cubic-bezier(0.4, 0, 0.2, 1)"
+      decelerate: "cubic-bezier(0, 0, 0.2, 1)"
+      accelerate: "cubic-bezier(0.4, 0, 1, 1)"
+      emphasized: "cubic-bezier(0.2, 0, 0, 1)"
+    reducedMotion:
+      duration: instant
+      easing: standard
+  iconography:
+    library:
+      name: lucide
+      version: "0.451.0"
+      style: outlined
+    strokeWeight: 1.5px
+    sizes:
+      sm: 16px
+      md: 20px
+      lg: 24px
+      xl: 32px
+    defaultSize: md
+    colorBinding: currentColor
   components:
     button-primary:
       backgroundColor: "{colors.primary-60}"
       textColor: "{colors.primary-20}"
       rounded: "{rounded.md}"
       padding: 12px
+      transition: "opacity {motion.duration.fast} {motion.easing.standard}"
     button-primary-hover:
       backgroundColor: "{colors.primary-70}"
