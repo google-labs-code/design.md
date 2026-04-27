@@ -53,6 +53,7 @@ import {
   isValidEasing,
   parseCubicBezier,
 } from './spec.js';
+import { parseColorString } from './color.js';
 import { COMPONENT_SUB_TOKEN_VALIDATORS } from '../component-validators.js';
 import { generateRampSteps, DEFAULT_RAMP_STEPS } from './color-ramp.js';
 import { ICON_LIBRARIES, KIND_DEFAULTS, BASE_THEME_NAME, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES, BREAKPOINT_PHILOSOPHIES } from '../spec-config.js';
@@ -99,7 +100,7 @@ export class ModelHandler implements ModelSpec {
               findings.push({
                 severity: 'error',
                 path: `colors.${name}`,
-                message: `'${raw}' is not a valid color. Expected a hex color code (e.g., #ffffff).`,
+                message: `'${raw}' is not a valid color. Expected hex (e.g., #ffffff) or a CSS color function such as oklch(), oklab(), lab(), color(display-p3 …), hsl(), or rgb().`,
               });
               // Store as-is for fallback
               symbolTable.set(`colors.${name}`, raw);
@@ -813,47 +814,15 @@ function resolveComponentValue(
 }
 
 /**
- * Parse a hex color string into a ResolvedColor with RGB + WCAG luminance.
+ * Parse a CSS color string into a ResolvedColor with sRGB channels and
+ * WCAG luminance. Supports hex, rgb/rgba, hsl/hsla, oklch, oklab, lab, and
+ * color(display-p3 …). Throws if the input is not a recognized color —
+ * call `isValidColor` first when validating user input.
  */
 export function parseColor(raw: string): ResolvedColor {
-  let hex = raw;
-
-  // Normalize #RGB to #RRGGBB
-  if (hex.length === 4) {
-    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
-  }
-  // Normalize #RGBA to #RRGGBBAA
-  if (hex.length === 5) {
-    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}${hex[4]}${hex[4]}`;
-  }
-
-  hex = hex.toLowerCase();
-
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  let a: number | undefined;
-  if (hex.length === 9) {
-    a = parseInt(hex.slice(7, 9), 16) / 255;
-  }
-
-  const luminance = computeLuminance(r, g, b);
-
-  return { type: 'color', hex, r, g, b, a, luminance };
-}
-
-/**
- * Compute WCAG 2.1 relative luminance.
- * Uses sRGB linearization.
- */
-function computeLuminance(r: number, g: number, b: number): number {
-  const linearize = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  
-  return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+  const result = parseColorString(raw);
+  if (!result) throw new Error(`Invalid color: ${raw}`);
+  return result;
 }
 
 /**

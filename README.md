@@ -122,7 +122,7 @@ components:
 
 | Type | Format | Example |
 |:-----|:-------|:--------|
-| Color | `#` + hex (sRGB) | `"#1A1C1E"` |
+| Color | hex (sRGB) or any CSS color function: `rgb()`, `hsl()`, `oklch()`, `oklab()`, `lab()`, `color(display-p3 …)` | `"#1A1C1E"`, `"oklch(70% 0.15 200)"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
 | Token Reference | `{path.to.token}` | `{colors.primary}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
@@ -157,7 +157,7 @@ components:
     backgroundColor: "{colors.tertiary-container}"
 ```
 
-Valid component properties: `backgroundColor`, `textColor`, `typography`, `rounded`, `padding`, `size`, `height`, `width`.
+Valid component properties: `backgroundColor`, `textColor`, `typography`, `rounded`, `padding`, `size`, `height`, `width`, `gap`, `border`, `outline`, `opacity`, `boxShadow`, `transition`, `backdropFilter`.
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 
@@ -195,14 +195,31 @@ Validate a DESIGN.md file for structural correctness.
 npx @google/design.md lint DESIGN.md
 npx @google/design.md lint --format json DESIGN.md
 cat DESIGN.md | npx @google/design.md lint -
+npx @google/design.md lint --fix DESIGN.md   # rewrite the file with auto-fixes applied
 ```
 
 | Option | Type | Default | Description |
 |:-------|:-----|:--------|:------------|
 | `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
 | `--format` | `json` | `json` | Output format |
+| `--fix` | boolean | `false` | Apply auto-fixes (currently: section order) and rewrite the input file |
 
 Exit code `1` if errors are found, `0` otherwise.
+
+### `fix`
+
+Apply auto-fixes to a DESIGN.md file. Today the only fix is reordering sections into the canonical order; more fixes will follow. By default the fixed content is written to stdout, leaving the input file untouched.
+
+```bash
+npx @google/design.md fix DESIGN.md > DESIGN.fixed.md
+npx @google/design.md fix --write DESIGN.md   # rewrite in place
+```
+
+| Option | Type | Default | Description |
+|:-------|:-----|:--------|:------------|
+| `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
+| `--write` | boolean | `false` | Rewrite the input file instead of streaming to stdout |
+| `--format` | `json` \| `text` | `json` | Format for the report when `--write` is used |
 
 ### `diff`
 

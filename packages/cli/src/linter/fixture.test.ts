@@ -18,6 +18,32 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 describe('Fixture Test', () => {
+  it('extended component sub-tokens and modern color formats lint cleanly', () => {
+    const path = join(import.meta.dir, 'fixtures', 'EXTENDED_COMPONENTS.md');
+    const content = readFileSync(path, 'utf-8');
+
+    const result = lint(content);
+
+    // No errors at all — every sub-token in the fixture is on the allowlist
+    // and every color format is parseable.
+    expect(result.summary.errors).toBe(0);
+
+    // Specifically: no "not a recognized component sub-token" warnings.
+    const subTokenWarnings = result.findings.filter(
+      (d: { message: string }) => d.message.includes('is not a recognized component sub-token')
+    );
+    expect(subTokenWarnings.length).toBe(0);
+
+    // Wide-gamut and oklch colors should be present in the resolved palette.
+    const surface = result.designSystem.colors.get('surface');
+    expect(surface).toBeDefined();
+    expect(surface?.format).toBe('oklch');
+    const accent = result.designSystem.colors.get('accent');
+    expect(accent?.format).toBe('p3');
+    const outline = result.designSystem.colors.get('outline');
+    expect(outline?.format).toBe('hsl');
+  });
+
   it('processes STATES.md with nested component states', () => {
     const path = join(import.meta.dir, 'fixtures', 'STATES.md');
     const content = readFileSync(path, 'utf-8');

@@ -59,7 +59,14 @@ components:
 
 The `<scale-level>` placeholder represents a named level in a sizing or spacing scale. Common level names include `xs`, `sm`, `md`, `lg`, `xl`, and `full`. Any descriptive string key is valid.
 
-**Color**: A color value must start with "#" followed by a hex color code in the SRGB color space.
+**Color**: A color value is any CSS color notation. The recommended forms are:
+
+* **Hex** (sRGB): `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
+* **`rgb()` / `rgba()`** and **`hsl()` / `hsla()`**
+* **`oklch()`**, **`oklab()`**, **`lab()`** for perceptually uniform color
+* **`color(display-p3 …)`** for wide-gamut display colors
+
+The linter computes WCAG contrast in sRGB; wide-gamut inputs are converted and clamped for that purpose, but emitters preserve the original notation when the target supports it (e.g., Tailwind v4).
 
 - `fontFamily` (string)
 - `fontSize` (Dimension)
@@ -611,26 +618,27 @@ Each component has a set of properties that are themselves design tokens:
 - textColor: \<Color\>
 - typography: \<Typography\>
 - rounded: \<Dimension\>
-- padding: \<Dimension\>
+- padding: \<Dimension\> - Accepts a single Dimension (`12px`) or a CSS shorthand of two-to-four Dimensions (`12px 16px`).
 - size: \<Dimension\>
 - height: \<Dimension\>
 - width: \<Dimension\>
-- border: \<BorderShorthand\>
+- border: \<BorderShorthand\> - CSS shorthand `<width> <style> <color>` (e.g., `1px solid {colors.outline}`) or a Color/Dimension token reference.
 - borderColor: \<Color\>
 - borderWidth: \<Dimension\>
-- shadow: \<ShadowValue\>
-- elevation: \<ElevationLevel\>
+- shadow: \<ShadowValue\> - CSS shorthand `<offsetX> <offsetY> <blur> [<spread>] <color>` or a reference to an `{elevation.*}` token.
+- elevation: \<ElevationLevel\> - Reference to an `{elevation.*}` token (semantic: resting, raised, overlay, modal).
 - gap: \<Dimension\>
-- iconSize: \<Dimension | "auto"\>
-- opacity: \<Number\>
-- transition: \<TransitionShorthand\>
-- outline: \<string\>
-- boxShadow: \<string\>
-- cursor: \<string\>
-- label: \<string\>
-- placeholder: \<string\>
-- title: \<string\>
-- aria-label: \<string\>
+- iconSize: \<Dimension | "auto"\> - `auto` (the default) follows the nearest text size. Otherwise a Dimension or `{typography.*}` reference.
+- opacity: \<Number\> - A unitless number between 0 and 1. Use for state (disabled, loading), not for tinting.
+- transition: \<TransitionShorthand\> - CSS shorthand `<property> <duration> <easing>`. Until motion tokens land, literal values are accepted with a warning.
+- outline: \<string\> - CSS outline shorthand (typically used in `focus-visible` state).
+- boxShadow: \<string\> - CSS box-shadow string. Prefer `shadow` + the `elevation.*` semantic tokens.
+- backdropFilter: \<string\> - CSS `backdrop-filter` value, e.g. `blur(8px)`.
+- cursor: \<string\> - CSS cursor keyword. Pair `cursor: not-allowed` with disabled-state contrast changes.
+- label: \<string\> - Visible button / nav text content. The voice + copy linter rules read this property.
+- placeholder: \<string\> - Input placeholder text. Subject to the same content rules as `label`.
+- title: \<string\> - Tooltip / accessible name. Subject to the same content rules as `label`.
+- aria-label: \<string\> - Accessible name. Subject to the same content rules as `label`.
 
 ### Authoring Rules
 

@@ -33,12 +33,20 @@ describe('validateColor', () => {
     expect(validateColor('#abc123').ok).toBe(true);
     expect(validateColor('#ffffff80').ok).toBe(true);
   });
+  it('accepts modern CSS color functions', () => {
+    expect(validateColor('rgb(0,0,0)').ok).toBe(true);
+    expect(validateColor('hsl(120 50% 50%)').ok).toBe(true);
+    expect(validateColor('oklch(70% 0.15 200)').ok).toBe(true);
+    expect(validateColor('lab(50 0 0)').ok).toBe(true);
+    expect(validateColor('color(display-p3 1 0 0)').ok).toBe(true);
+  });
   it('accepts token references', () => {
     expect(validateColor('{colors.primary}').ok).toBe(true);
   });
   it('rejects garbage', () => {
     expect(validateColor('red').ok).toBe(false);
-    expect(validateColor('rgb(0,0,0)').ok).toBe(false);
+    expect(validateColor('not-a-color').ok).toBe(false);
+    expect(validateColor('oklch()').ok).toBe(false);
   });
 });
 

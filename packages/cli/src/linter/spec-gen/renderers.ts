@@ -153,7 +153,10 @@ export function sectionOrderList(config: SpecConfig): string {
 /** Component sub-token property list. */
 export function componentSubTokenList(config: SpecConfig): string {
   return config.COMPONENT_SUB_TOKENS
-    .map((t: ComponentSubTokenDef) => `- ${t.name}: \\<${t.type}\\>`)
+    .map((t: ComponentSubTokenDef) => {
+      const head = `- ${t.name}: \\<${t.type}\\>`;
+      return t.description ? `${head} - ${t.description}` : head;
+    })
     .join('\n');
 }
 

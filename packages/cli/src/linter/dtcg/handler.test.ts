@@ -38,7 +38,7 @@ function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
 }
 
 function makeColor(hex: string, r: number, g: number, b: number): ResolvedColor {
-  return { type: 'color', hex, r, g, b, luminance: 0 };
+  return { type: 'color', hex, r, g, b, luminance: 0, format: 'hex', raw: hex };
 }
 
 function makeDim(value: number, unit: string): ResolvedDimension {

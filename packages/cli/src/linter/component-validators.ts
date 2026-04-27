@@ -43,11 +43,11 @@ const fail = (error: string): ValidatorResult => ({ ok: false, error });
 
 const isRef = (raw: string) => isTokenReference(raw);
 
-/** Color values: hex literal or token reference. */
+/** Color values: hex / rgb / hsl / oklch / oklab / lab / display-p3, or a token reference. */
 export const validateColor: ValueValidator = (raw) => {
   if (isRef(raw)) return ok;
   if (isValidColor(raw)) return ok;
-  return fail(`'${raw}' is not a valid color (expected a hex code or a {colors.*} reference).`);
+  return fail(`'${raw}' is not a valid color (expected hex, a CSS color function, or a {colors.*} reference).`);
 };
 
 /** Dimension values: any parseable CSS length, or a token reference. */

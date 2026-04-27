@@ -214,7 +214,10 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
   private toCssValue(value: ResolvedValue): string {
     if (typeof value === 'string') return value;
     if (typeof value === 'object' && value !== null && 'type' in value) {
-      if (value.type === 'color') return value.hex;
+      if (value.type === 'color') {
+        // Preserve oklch / lab / p3 / hsl notation for Tailwind v4; hex for legacy.
+        return value.format === 'hex' ? value.hex : value.raw;
+      }
       if (value.type === 'dimension') return `${value.value}${value.unit}`;
     }
     return String(value);
@@ -250,12 +253,18 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
   ): Record<string, string | Record<string, string>> {
     const result: Record<string, string | Record<string, string>> = {};
 
+    // Tailwind v4 accepts modern CSS color functions natively. Round-trip the
+    // original notation when present and fall back to sRGB hex for legacy hex
+    // tokens. This preserves wide-gamut intent for oklch / lab / display-p3.
+    const emit = (color: ResolvedColor): string =>
+      color.format === 'hex' ? color.hex : color.raw;
+
     // Ramps emit as nested objects: { DEFAULT: '...', '50': '...', '500': '...', ... }
     // The flat colors map carries every step plus the anchor; group them by ramp.
     for (const [rampName, ramp] of colorRamps) {
-      const group: Record<string, string> = { DEFAULT: ramp.anchor.hex };
+      const group: Record<string, string> = { DEFAULT: emit(ramp.anchor) };
       for (const [step, color] of [...ramp.steps].sort(([a], [b]) => a - b)) {
-        group[String(step)] = color.hex;
+        group[String(step)] = emit(color);
       }
       result[rampName] = group;
     }
@@ -266,7 +275,7 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
     for (const [name, color] of colors) {
       if (color.rampMember) continue;
       if (color.pairRole && name.includes('.')) continue;
-      result[name] = color.hex;
+      result[name] = emit(color);
     }
 
     return result;

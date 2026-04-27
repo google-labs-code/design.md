@@ -230,6 +230,9 @@ component_sub_tokens:
   - name: boxShadow
     type: string
     description: "CSS box-shadow string. Prefer `shadow` + the `elevation.*` semantic tokens."
+  - name: backdropFilter
+    type: string
+    description: "CSS `backdrop-filter` value, e.g. `blur(8px)`."
   - name: cursor
     type: string
     description: "CSS cursor keyword. Pair `cursor: not-allowed` with disabled-state contrast changes."

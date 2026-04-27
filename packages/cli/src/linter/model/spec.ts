@@ -19,6 +19,7 @@ import {
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
   VALID_COMPONENT_SUB_TOKENS as _VALID_COMPONENT_SUB_TOKENS,
 } from '../spec-config.js';
+import { isParseableColor } from './color.js';
 
 export const SeveritySchema = z.enum(['error', 'warning', 'info']);
 export type Severity = z.infer<typeof SeveritySchema>;
@@ -30,16 +31,26 @@ export interface Finding {
 }
 
 // ── RESOLVED VALUE TYPES ───────────────────────────────────────────
+
+/** The CSS color notation a token was authored in. */
+export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch' | 'oklab' | 'lab' | 'p3';
+
 export interface ResolvedColor {
   type: 'color';
+  /** sRGB hex approximation; for wide-gamut sources this is a clamped fallback. */
   hex: string;
+  /** sRGB channel 0..255 (clamped from any source gamut). */
   r: number;
   g: number;
   b: number;
   /** Alpha channel from 0 to 1. Optional, defaults to 1 if not present. */
   a?: number;
-  /** WCAG relative luminance */
+  /** WCAG relative luminance, computed in sRGB. */
   luminance: number;
+  /** The CSS notation of the original token. */
+  format: ColorFormat;
+  /** The original authored string, preserved for emitters that round-trip. */
+  raw: string;
   /** If this color was derived as a ramp step, its provenance. */
   rampMember?: { ramp: string; step: number };
   /** If this color is a pair member, the pair name and its role. */
@@ -544,9 +555,11 @@ const CSS_UNITS = new Set([
 /**
  * Parse a dimension string into its numeric value and unit suffix.
  * Accepts an optional leading sign and optional decimal (`.5rem` is valid).
- * Returns null for non-dimension strings (bare numbers, keywords like `auto`).
+ * Returns null for non-dimension strings (bare numbers, keywords like `auto`)
+ * or non-string inputs.
  */
-export function parseDimensionParts(raw: string): { value: number; unit: string } | null {
+export function parseDimensionParts(raw: unknown): { value: number; unit: string } | null {
+  if (typeof raw !== 'string') return null;
   const match = raw.match(/^(-?\d*\.?\d+)([a-zA-Z%]+)$/);
   if (!match) return null;
   const value = parseFloat(match[1]!);
@@ -554,16 +567,18 @@ export function parseDimensionParts(raw: string): { value: number; unit: string 
 }
 
 /**
- * Validate a hex color string. Accepts #RGB, #RGBA, #RRGGBB, and #RRGGBBAA.
+ * Validate a CSS color string. Accepts hex (`#RGB`, `#RGBA`, `#RRGGBB`,
+ * `#RRGGBBAA`), `rgb()`/`rgba()`, `hsl()`/`hsla()`, `oklch()`, `oklab()`,
+ * `lab()`, and `color(display-p3 …)`. Non-strings safely return false.
  */
-export function isValidColor(raw: string): boolean {
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(raw);
+export function isValidColor(raw: unknown): boolean {
+  return isParseableColor(raw);
 }
 
 /**
  * Validate a dimension string uses a spec-standard unit (px or rem only).
  */
-export function isStandardDimension(raw: string): boolean {
+export function isStandardDimension(raw: unknown): boolean {
   const parts = parseDimensionParts(raw);
   return parts !== null && STANDARD_UNITS.has(parts.unit);
 }
@@ -572,7 +587,7 @@ export function isStandardDimension(raw: string): boolean {
  * Check if a dimension string is parseable (any known CSS length/percentage unit).
  * Adding support for a new unit: add it to CSS_UNITS above.
  */
-export function isParseableDimension(raw: string): boolean {
+export function isParseableDimension(raw: unknown): boolean {
   const parts = parseDimensionParts(raw);
   return parts !== null && CSS_UNITS.has(parts.unit);
 }

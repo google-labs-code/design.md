@@ -19,6 +19,7 @@ import lintCommand from './commands/lint.js';
 import diffCommand from './commands/diff.js';
 import exportCommand from './commands/export.js';
 import specCommand from './commands/spec.js';
+import fixCommand from './commands/fix.js';
 
 const main = defineCommand({
   meta: {
@@ -28,6 +29,7 @@ const main = defineCommand({
   },
   subCommands: {
     lint: lintCommand,
+    fix: fixCommand,
     diff: diffCommand,
     export: exportCommand,
     spec: specCommand,

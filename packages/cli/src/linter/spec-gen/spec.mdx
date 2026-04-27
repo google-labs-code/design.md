@@ -43,7 +43,14 @@ components:
 
 The `<scale-level>` placeholder represents a named level in a sizing or spacing scale. Common level names include `xs`, `sm`, `md`, `lg`, `xl`, and `full`. Any descriptive string key is valid.
 
-**Color**: A color value must start with "#" followed by a hex color code in the SRGB color space.
+**Color**: A color value is any CSS color notation. The recommended forms are:
+
+- **Hex** (sRGB): `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
+- **`rgb()` / `rgba()`** and **`hsl()` / `hsla()`**
+- **`oklch()`**, **`oklab()`**, **`lab()`** for perceptually uniform color
+- **`color(display-p3 …)`** for wide-gamut display colors
+
+The linter computes WCAG contrast in sRGB; wide-gamut inputs are converted and clamped for that purpose, but emitters preserve the original notation when the target supports it (e.g., Tailwind v4).
 
 {typographyPropertyList()}
 

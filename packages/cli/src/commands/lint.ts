@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { writeFileSync } from 'node:fs';
 import { defineCommand } from 'citty';
-import { lint } from '../linter/index.js';
+import { lint, fixSectionOrder } from '../linter/index.js';
 import { readInput, formatOutput } from '../utils.js';
 
 export default defineCommand({
@@ -32,15 +33,48 @@ export default defineCommand({
       description: 'Output format: json or text',
       default: 'json',
     },
+    fix: {
+      type: 'boolean',
+      description: 'Apply auto-fixes (currently: section order) and write the result back to the input file.',
+    },
   },
   async run({ args }) {
     const content = await readInput(args.file);
-    const report = lint(content);
+    let workingContent = content;
+    let fixedDetails: { beforeOrder: string[]; afterOrder: string[] } | undefined;
 
-    const output = {
+    if (args.fix) {
+      if (args.file === '-') {
+        console.error(formatOutput(
+          { error: 'Cannot use --fix with stdin input. Pipe to `design.md fix -` instead.' },
+          args,
+        ));
+        process.exitCode = 2;
+        return;
+      }
+      const initial = lint(content);
+      const fixResult = fixSectionOrder({
+        content,
+        sections: initial.documentSections,
+      });
+      if (fixResult.success) {
+        workingContent = fixResult.fixedContent;
+        fixedDetails = fixResult.details;
+        if (workingContent !== content) {
+          writeFileSync(args.file, workingContent, 'utf-8');
+        }
+      }
+    }
+
+    const report = lint(workingContent);
+
+    const output: Record<string, unknown> = {
       findings: report.findings,
       summary: report.summary,
     };
+    if (fixedDetails) {
+      output['fixed'] = fixedDetails;
+    }
 
     console.log(formatOutput(output, args));
     process.exitCode = report.summary.errors > 0 ? 1 : 0;
