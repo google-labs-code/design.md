@@ -36,6 +36,11 @@ export default defineCommand({
       description: `Output format: ${FORMATS.join(', ')}`,
       required: true,
     },
+    components: {
+      type: 'boolean',
+      description: 'Include components in the export (currently only the tailwind format projects components, as a plugin block).',
+      default: false,
+    },
   },
   async run({ args }) {
     const format = args.format as string;
@@ -54,7 +59,7 @@ export default defineCommand({
 
     if (format === 'tailwind') {
       const handler = new TailwindEmitterHandler();
-      const result = handler.execute(report.designSystem);
+      const result = handler.execute(report.designSystem, { components: Boolean(args.components) });
 
       if (!result.success) {
         console.error(JSON.stringify({ error: result.error.message }));

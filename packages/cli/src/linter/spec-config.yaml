@@ -29,15 +29,138 @@ sections:
       - Brand & Style
   - canonical: Colors
   - canonical: Typography
+  - canonical: Voice
+    aliases:
+      - Tone
+      - Voice & Tone
+  - canonical: Themes
+    aliases:
+      - Modes
+      - Themes & Modes
   - canonical: Layout
     aliases:
       - Layout & Spacing
+  - canonical: Motion
+    aliases:
+      - Motion & Animation
   - canonical: Elevation & Depth
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Iconography
+    aliases:
+      - Icons
   - canonical: Components
   - canonical: "Do's and Don'ts"
+
+# Voice axes — integer 1–5 dials capturing brand voice characteristics.
+# Adding a new axis = one entry here. The model validates the integer range.
+voice_axes:
+  - formality
+  - warmth
+  - authority
+  - playfulness
+
+# Grammatical person allowed in `voice.person`.
+voice_persons:
+  - first
+  - second
+  - third
+
+# Casing conventions allowed in `copy.casing.<surface>`.
+casing_values:
+  - sentence-case
+  - title-case
+  - UPPERCASE
+  - lowercase
+
+# Surfaces that the casing-mismatch rule recognizes when scanning component
+# labels. The component's `kind` (per registry) drives which surface applies.
+casing_surfaces:
+  - button
+  - nav
+  - section-heading
+
+# Default title-case minor words. Lowercased in title-case unless they are
+# the first word. Authors override via `copy.titleCase.exceptions`.
+title_case_minor_words:
+  - a
+  - an
+  - and
+  - as
+  - at
+  - but
+  - by
+  - for
+  - from
+  - in
+  - of
+  - on
+  - or
+  - the
+  - to
+  - with
+
+# Well-known theme names. The list is informational, not closed: authors may
+# declare theme names outside this set. The implicit `light` base is always
+# present at the root token tree; named themes layer overrides on top.
+well_known_themes:
+  - light
+  - dark
+  - high-contrast
+  - comfortable
+  - compact
+
+# Closed enum of supported icon libraries. `custom-svg` is the escape hatch.
+icon_libraries:
+  - lucide
+  - material-symbols
+  - heroicons
+  - phosphor
+  - custom-svg
+
+# Closed enum of CSS easing keywords accepted alongside `cubic-bezier(...)`.
+easing_keywords:
+  - linear
+  - ease
+  - ease-in
+  - ease-out
+  - ease-in-out
+  - step-start
+  - step-end
+
+# Allowed values for `breakpoints.philosophy`.
+breakpoint_philosophies:
+  - mobile-first
+  - desktop-first
+
+# Conventional breakpoint key order (sm → 2xl). Informational — authors may
+# add extra keys, but `breakpoint-monotonicity` reads this order to validate
+# value progression.
+breakpoint_keys:
+  - sm
+  - md
+  - lg
+  - xl
+  - "2xl"
+
+# Well-known template region names. Informational — authors may declare
+# additional regions. Used by `template-region-purity` to flag conflicting
+# semantics across templates (e.g., `header` reused with different roles).
+well_known_regions:
+  - header
+  - footer
+  - topbar
+  - statusbar
+  - sidebar
+  - sidebar-nav
+  - hero
+  - sections
+  - cta
+  - main
+  - content
+  - aside
+  - breadcrumb
 
 typography_properties:
   - name: fontFamily
@@ -70,39 +193,157 @@ component_sub_tokens:
     type: Dimension
   - name: padding
     type: Dimension
+    description: "Accepts a single Dimension (`12px`) or a CSS shorthand of two-to-four Dimensions (`12px 16px`)."
   - name: size
     type: Dimension
   - name: height
     type: Dimension
   - name: width
     type: Dimension
+  - name: border
+    type: BorderShorthand
+    description: "CSS shorthand `<width> <style> <color>` (e.g., `1px solid {colors.outline}`) or a Color/Dimension token reference."
+  - name: borderColor
+    type: Color
+  - name: borderWidth
+    type: Dimension
+  - name: shadow
+    type: ShadowValue
+    description: "CSS shorthand `<offsetX> <offsetY> <blur> [<spread>] <color>` or a reference to an `{elevation.*}` token."
+  - name: elevation
+    type: ElevationLevel
+    description: "Reference to an `{elevation.*}` token (semantic: resting, raised, overlay, modal)."
   - name: gap
     type: Dimension
-    description: "Gap between child elements (CSS `gap`)."
-  - name: border
-    type: string
-    description: "CSS `border` shorthand (width style color), e.g. `1px solid {colors.neutral-30}`."
+  - name: iconSize
+    type: "Dimension | \"auto\""
+    description: "`auto` (the default) follows the nearest text size. Otherwise a Dimension or `{typography.*}` reference."
+  - name: opacity
+    type: Number
+    description: "A unitless number between 0 and 1. Use for state (disabled, loading), not for tinting."
+  - name: transition
+    type: TransitionShorthand
+    description: "CSS shorthand `<property> <duration> <easing>`. Until motion tokens land, literal values are accepted with a warning."
   - name: outline
     type: string
-    description: "CSS `outline` shorthand. Useful for focus rings."
-  - name: opacity
-    type: number
-    description: "Numeric opacity from 0 to 1."
+    description: "CSS outline shorthand (typically used in `focus-visible` state)."
   - name: boxShadow
     type: string
-    description: "CSS `box-shadow` value. Multiple shadows may be comma-separated."
-  - name: transition
-    type: string
-    description: "CSS `transition` shorthand, e.g. `background-color 150ms ease`."
+    description: "CSS box-shadow string. Prefer `shadow` + the `elevation.*` semantic tokens."
   - name: backdropFilter
     type: string
     description: "CSS `backdrop-filter` value, e.g. `blur(8px)`."
+  - name: cursor
+    type: string
+    description: "CSS cursor keyword. Pair `cursor: not-allowed` with disabled-state contrast changes."
+  - name: label
+    type: string
+    description: "Visible button / nav text content. The voice + copy linter rules read this property."
+  - name: placeholder
+    type: string
+    description: "Input placeholder text. Subject to the same content rules as `label`."
+  - name: title
+    type: string
+    description: "Tooltip / accessible name. Subject to the same content rules as `label`."
+  - name: aria-label
+    type: string
+    description: "Accessible name. Subject to the same content rules as `label`."
+
+# Interactive component states. The vocabulary is opinionated but not closed
+# (unknown states warn rather than error).
+component_states:
+  - name: hover
+    interaction: pointer-only
+    description: "Pointer hover; never the only affordance signal."
+  - name: focus-visible
+    interaction: keyboard
+    required: true
+    description: "Visible focus ring; never `outline: none` without a replacement."
+  - name: active
+    interaction: any
+    description: "Currently being pressed or otherwise actuated."
+  - name: pressed
+    interaction: any
+    description: "Toggle-style components in the on/selected position."
+  - name: disabled
+    interaction: any
+    description: "Both reduced contrast AND `cursor: not-allowed`. Never opacity-only."
+  - name: loading
+    interaction: any
+    description: "Component remains visible; indicates progress."
 
 color_roles:
   - primary
   - secondary
   - tertiary
   - neutral
+
+# Component kinds drive default behaviors (e.g., interactivity, required states).
+# Adding a new kind = add it here; rules and exporters read this list.
+component_kinds:
+  - name: button
+    interactive: true
+  - name: input
+    interactive: true
+  - name: navigation
+    interactive: true
+  - name: container
+    interactive: false
+  - name: display
+    interactive: false
+  - name: overlay
+    interactive: false
+
+# Modifiers permitted in `noun-modifier` component names. The `naming-convention`
+# rule treats anything else after the first hyphen as a candidate violation.
+component_modifiers:
+  # Style modifiers
+  - primary
+  - secondary
+  - tertiary
+  - danger
+  - ghost
+  - outline
+  - subtle
+  - bare
+  - elevated
+  # Interaction states
+  - hover
+  - focus
+  - active
+  - disabled
+  # Input types — `input-text`, `input-number`, etc. form a closed set
+  # mirroring HTML input types.
+  - text
+  - number
+  - email
+  - password
+  - search
+
+# Color value shapes
+# ──────────────────
+# In addition to a flat hex (`primary: "#1A1C1E"`), `colors` accepts two
+# object-shaped forms that the model expands into flat tokens:
+#
+#   primary:                              # ramp: derives 50/100/.../900 in OKLCH
+#     type: ramp
+#     anchor: "#1A1C1E"
+#     humanName: "Boston Clay"
+#     description: "Driver for interaction."
+#     steps: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]   # optional
+#     pairs:                              # optional inline pair derivations
+#       container: { bg: 100, fg: 800 }   # synthesizes primary-container / on-primary-container
+#
+#   surface-info:                         # pair: foreground/background bound together
+#     type: pair
+#     container:    "#E0F2FE"
+#     onContainer:  "#0C4A6E"
+#     minContrast:  4.5                   # WCAG AA body; 7 for AAA
+#
+# References resolve in dotted form (`{colors.primary.500}`,
+# `{colors.surface-info.container}`) and via flat aliases (`{colors.primary}`
+# for the anchor, `{colors.surface-info}` for the container, `{colors.on-surface-info}`
+# for the on-container, `{colors.primary-container}` for ramp-derived pairs).
 
 recommended_tokens:
   colors:
@@ -130,6 +371,21 @@ recommended_tokens:
     - lg
     - xl
     - full
+  motion-duration:
+    - instant
+    - fast
+    - medium
+    - slow
+  motion-easing:
+    - standard
+    - decelerate
+    - accelerate
+    - emphasized
+  iconography-sizes:
+    - sm
+    - md
+    - lg
+    - xl
 
 examples:
   colors:
@@ -137,6 +393,11 @@ examples:
     secondary: "#6C7278"
     tertiary: "#B8422E"
     neutral: "#F7F5F2"
+  elevation:
+    resting: "0 1px 2px rgba(0,0,0,0.06)"
+    raised: "0 4px 8px rgba(0,0,0,0.08)"
+    overlay: "0 12px 24px rgba(0,0,0,0.12)"
+    modal: "0 24px 48px rgba(0,0,0,0.16)"
   typography:
     h1:
       fontFamily: Public Sans
@@ -155,11 +416,125 @@ examples:
       fontWeight: 500
       lineHeight: 1.0
       letterSpacing: "0.1em"
+  motion:
+    duration:
+      instant: 0ms
+      fast: 150ms
+      medium: 250ms
+      slow: 400ms
+    easing:
+      standard: "cubic-bezier(0.4, 0, 0.2, 1)"
+      decelerate: "cubic-bezier(0, 0, 0.2, 1)"
+      accelerate: "cubic-bezier(0.4, 0, 1, 1)"
+      emphasized: "cubic-bezier(0.2, 0, 0, 1)"
+    reducedMotion:
+      duration: instant
+      easing: standard
+  iconography:
+    library:
+      name: lucide
+      version: "0.451.0"
+      style: outlined
+    strokeWeight: 1.5px
+    sizes:
+      sm: 16px
+      md: 20px
+      lg: 24px
+      xl: 32px
+    defaultSize: md
+    colorBinding: currentColor
   components:
     button-primary:
       backgroundColor: "{colors.primary-60}"
       textColor: "{colors.primary-20}"
       rounded: "{rounded.md}"
       padding: 12px
-    button-primary-hover:
-      backgroundColor: "{colors.primary-70}"
+      transition: "opacity {motion.duration.fast} {motion.easing.standard}"
+      interactive: true
+      states:
+        hover:
+          backgroundColor: "{colors.primary-70}"
+        focus-visible:
+          outline: "2px solid {colors.primary-40}"
+        active:
+          opacity: 0.9
+        disabled:
+          backgroundColor: "{colors.surface-variant}"
+          textColor: "{colors.on-surface-variant}"
+          cursor: "not-allowed"
+  voice:
+    formality: 3
+    warmth: 4
+    authority: 3
+    playfulness: 2
+    person: second
+    tense: present-active
+    oxfordComma: true
+    contractions: permitted
+  copy:
+    casing:
+      button: sentence-case
+      nav: title-case
+      section-heading: sentence-case
+    buttonLabelMaxWords: 3
+    errorPattern: "{what-happened}. {how-to-fix}."
+    emptyStateTone: encouraging
+    bannedTerms:
+      - seamless
+      - unlock
+      - leverage
+      - delight
+      - revolutionary
+      - effortless
+      - one-stop shop
+      - synergy
+    bannedRegex:
+      - "(?i)\\bgame[- ]?changer\\b"
+      - "(?i)\\bnext[- ]?gen\\b"
+    approvedTerms:
+      user: customer
+      dashboard: Home
+    reservedNames:
+      - DesignMD
+  breakpoints:
+    philosophy: mobile-first
+    values:
+      sm: 640px
+      md: 768px
+      lg: 1024px
+      xl: 1280px
+      "2xl": 1536px
+  grid:
+    columns: 12
+    gutter: "{spacing.md}"
+    margin:
+      sm: "{spacing.md}"
+      lg: "{spacing.xl}"
+    maxWidth: 1280px
+    bleedExceptions:
+      - hero
+      - gallery
+      - modal-overlay
+  layoutRules:
+    contentMaxWidth: 720px
+    stackSpacing: "{spacing.lg}"
+    formFieldWidth: 480px
+  templates:
+    marketing:
+      regions: [header, hero, sections, cta, footer]
+      requiredRegions: [header, footer]
+      maxWidth: 1280px
+    app-shell:
+      regions: [topbar, sidebar, main, statusbar]
+      requiredRegions: [topbar, main]
+      sidebarWidth: 280px
+    settings:
+      regions: [topbar, sidebar-nav, content]
+      requiredRegions: [topbar, content]
+  pages:
+    "/":
+      template: marketing
+    "/app":
+      template: app-shell
+    "/settings/*":
+      template: settings

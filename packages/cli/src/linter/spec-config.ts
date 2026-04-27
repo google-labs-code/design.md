@@ -38,6 +38,52 @@ const PropertyDefSchema = z.object({
   description: z.string().optional(),
 });
 
+const MotionExampleSchema = z.object({
+  duration: z.record(z.string(), z.string()),
+  easing: z.record(z.string(), z.string()),
+  reducedMotion: z.object({
+    duration: z.string(),
+    easing: z.string(),
+  }).optional(),
+});
+
+const IconographyExampleSchema = z.object({
+  library: z.object({
+    name: z.string(),
+    version: z.string().optional(),
+    style: z.string(),
+  }),
+  strokeWeight: z.string().optional(),
+  sizes: z.record(z.string(), z.string()),
+  defaultSize: z.string(),
+  colorBinding: z.string(),
+});
+
+const ComponentKindSchema = z.object({
+  name: z.string(),
+  interactive: z.boolean(),
+});
+
+const ComponentStateDefSchema = z.object({
+  name: z.string(),
+  interaction: z.enum(['pointer-only', 'keyboard', 'any']),
+  required: z.boolean().optional(),
+  description: z.string().optional(),
+});
+
+/**
+ * Component example values. Each property is a primitive (string/number/boolean)
+ * or a nested map (for `states:` and similar grouped overrides).
+ */
+const ComponentExampleValueSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.record(z.string(), ComponentExampleValueSchema),
+  ])
+);
+
 const ConfigSchema = z.object({
   version: z.string(),
   units: z.array(z.string()).min(1),
@@ -47,12 +93,45 @@ const ConfigSchema = z.object({
   })).min(1),
   typography_properties: z.array(PropertyDefSchema).min(1),
   component_sub_tokens: z.array(PropertyDefSchema).min(1),
+  component_states: z.array(ComponentStateDefSchema).min(1),
   color_roles: z.array(z.string()).min(1),
+  icon_libraries: z.array(z.string()).min(1),
+  easing_keywords: z.array(z.string()).min(1),
+  component_kinds: z.array(ComponentKindSchema).min(1),
+  component_modifiers: z.array(z.string()).min(1),
+  voice_axes: z.array(z.string()).min(1),
+  voice_persons: z.array(z.string()).min(1),
+  casing_values: z.array(z.string()).min(1),
+  casing_surfaces: z.array(z.string()).min(1),
+  title_case_minor_words: z.array(z.string()).min(1),
+  well_known_themes: z.array(z.string()).min(1),
+  breakpoint_philosophies: z.array(z.string()).min(1),
+  breakpoint_keys: z.array(z.string()).min(1),
+  well_known_regions: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
+    elevation: z.record(z.string(), z.string()).optional(),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
-    components: z.record(z.string(), z.record(z.string(), z.string())),
+    motion: MotionExampleSchema.optional(),
+    iconography: IconographyExampleSchema.optional(),
+    components: z.record(z.string(), z.record(z.string(), ComponentExampleValueSchema)),
+    voice: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+    copy: z.record(z.string(), z.unknown()).optional(),
+    breakpoints: z.object({
+      philosophy: z.string(),
+      values: z.record(z.string(), z.string()),
+    }).optional(),
+    grid: z.object({
+      columns: z.number(),
+      gutter: z.string(),
+      margin: z.record(z.string(), z.string()).optional(),
+      maxWidth: z.string().optional(),
+      bleedExceptions: z.array(z.string()).optional(),
+    }).optional(),
+    layoutRules: z.record(z.string(), z.string()).optional(),
+    templates: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+    pages: z.record(z.string(), z.object({ template: z.string() })).optional(),
   }),
 });
 
@@ -108,6 +187,24 @@ export interface ComponentSubTokenDef {
   description?: string | undefined;
 }
 
+export interface ComponentKindDef {
+  /** Kind name (e.g., 'button', 'container'). */
+  name: string;
+  /** Whether components of this kind are interactive by default. */
+  interactive: boolean;
+}
+
+export interface ComponentStateDef {
+  /** Canonical state name (e.g., 'hover', 'focus-visible'). */
+  name: string;
+  /** What kind of input triggers the state. */
+  interaction: 'pointer-only' | 'keyboard' | 'any';
+  /** True if every interactive component MUST declare this state. */
+  required?: boolean | undefined;
+  /** Extended description for the spec. */
+  description?: string | undefined;
+}
+
 // ── Constant exports ─────────────────────────────────────────────────
 // These are eagerly initialized from the lazy singleton on first import.
 // The singleton cache ensures the YAML file is read exactly once.
@@ -127,8 +224,82 @@ export const TYPOGRAPHY_PROPERTIES: readonly TypographyPropertyDef[] = config.ty
 
 export const COMPONENT_SUB_TOKENS: readonly ComponentSubTokenDef[] = config.component_sub_tokens;
 
+/** Known component states with declared semantics. */
+export const COMPONENT_STATES: readonly ComponentStateDef[] = config.component_states;
+
+/** State names that every interactive component MUST declare. */
+export const INTERACTIVE_REQUIRED_STATES: readonly string[] = config.component_states
+  .filter(s => s.required)
+  .map(s => s.name);
+
 /** Core color roles that every design system should define. */
 export const CORE_COLOR_ROLES = config.color_roles;
+
+/** Closed enum of supported icon libraries. `custom-svg` is the escape hatch. */
+export const ICON_LIBRARIES = config.icon_libraries;
+export type IconLibrary = (typeof ICON_LIBRARIES)[number];
+
+/** CSS easing keywords accepted alongside `cubic-bezier(...)` literals. */
+export const EASING_KEYWORDS = config.easing_keywords;
+
+/** Allowed values for `breakpoints.philosophy`. */
+export const BREAKPOINT_PHILOSOPHIES: readonly string[] = config.breakpoint_philosophies;
+export type BreakpointPhilosophy = (typeof BREAKPOINT_PHILOSOPHIES)[number];
+
+/**
+ * Conventional breakpoint key order (sm → 2xl). Authors may declare additional
+ * keys; `breakpoint-monotonicity` validates that values increase across this
+ * canonical sequence, ignoring any extra (unknown) keys.
+ */
+export const BREAKPOINT_KEYS: readonly string[] = config.breakpoint_keys;
+
+/**
+ * Well-known template region names. Informational; authors may declare any
+ * region name. Used by `template-region-purity` to flag regions whose
+ * conventional semantics differ when reused across templates.
+ */
+export const WELL_KNOWN_REGIONS: readonly string[] = config.well_known_regions;
+
+/** Component kinds (button, container, etc.) and their default interactivity. */
+export const COMPONENT_KINDS: readonly ComponentKindDef[] = config.component_kinds;
+
+/** Set of valid kind names. */
+export const VALID_COMPONENT_KINDS: readonly string[] = COMPONENT_KINDS.map(k => k.name);
+
+/** Per-kind defaults, indexed by name. */
+export const KIND_DEFAULTS: Record<string, { interactive: boolean }> = Object.fromEntries(
+  COMPONENT_KINDS.map(k => [k.name, { interactive: k.interactive }])
+);
+
+/** Closed set of permitted name modifiers (the `-modifier` suffix in `noun-modifier`). */
+export const COMPONENT_MODIFIERS: readonly string[] = config.component_modifiers;
+
+/** Voice axis names. Each axis is a 1–5 integer dial. */
+export const VOICE_AXES: readonly string[] = config.voice_axes;
+
+/** Allowed values for `voice.person`. */
+export const VOICE_PERSON: readonly string[] = config.voice_persons;
+export type VoicePerson = (typeof VOICE_PERSON)[number];
+
+/** Allowed values for `copy.casing.<surface>`. */
+export const CASING_VALUES: readonly string[] = config.casing_values;
+export type CasingValue = (typeof CASING_VALUES)[number];
+
+/** Component-kind surfaces the casing-mismatch rule scans. */
+export const CASING_SURFACES: readonly string[] = config.casing_surfaces;
+
+/** Default minor words that stay lowercase in title-case. */
+export const TITLE_CASE_MINOR_WORDS: readonly string[] = config.title_case_minor_words;
+
+/**
+ * Well-known theme names. Informational, not closed — authors may declare
+ * themes outside this set. The implicit `light` base is always present at
+ * the root token tree.
+ */
+export const WELL_KNOWN_THEMES: readonly string[] = config.well_known_themes;
+
+/** The implicit base theme name. The root token tree IS this theme. */
+export const BASE_THEME_NAME = 'light';
 
 /** Non-normative recommended token names, organized by category. */
 export const RECOMMENDED_TOKENS = config.recommended_tokens;
@@ -159,6 +330,9 @@ export const VALID_TYPOGRAPHY_PROPS = TYPOGRAPHY_PROPERTIES.map(p => p.name);
 /** Valid component sub-token names (for linter validation). */
 export const VALID_COMPONENT_SUB_TOKENS = COMPONENT_SUB_TOKENS.map(p => p.name);
 
+/** Valid component state names (for linter validation). */
+export const VALID_COMPONENT_STATES = COMPONENT_STATES.map(s => s.name);
+
 // ── Aggregate type ────────────────────────────────────────────────────
 
 /** All config values bundled as a single object for renderer injection. */
@@ -168,7 +342,19 @@ export interface SpecConfig {
   SECTIONS: typeof SECTIONS;
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
+  COMPONENT_STATES: typeof COMPONENT_STATES;
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
+  ICON_LIBRARIES: typeof ICON_LIBRARIES;
+  EASING_KEYWORDS: typeof EASING_KEYWORDS;
+  COMPONENT_KINDS: typeof COMPONENT_KINDS;
+  COMPONENT_MODIFIERS: typeof COMPONENT_MODIFIERS;
+  VOICE_AXES: typeof VOICE_AXES;
+  VOICE_PERSON: typeof VOICE_PERSON;
+  CASING_VALUES: typeof CASING_VALUES;
+  CASING_SURFACES: typeof CASING_SURFACES;
+  BREAKPOINT_PHILOSOPHIES: typeof BREAKPOINT_PHILOSOPHIES;
+  BREAKPOINT_KEYS: typeof BREAKPOINT_KEYS;
+  WELL_KNOWN_REGIONS: typeof WELL_KNOWN_REGIONS;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
   EXAMPLES: typeof EXAMPLES;
 }
@@ -180,7 +366,19 @@ export const SPEC_CONFIG: SpecConfig = {
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,
+  COMPONENT_STATES,
   CORE_COLOR_ROLES,
+  ICON_LIBRARIES,
+  EASING_KEYWORDS,
+  COMPONENT_KINDS,
+  COMPONENT_MODIFIERS,
+  VOICE_AXES,
+  VOICE_PERSON,
+  CASING_VALUES,
+  CASING_SURFACES,
+  BREAKPOINT_PHILOSOPHIES,
+  BREAKPOINT_KEYS,
+  WELL_KNOWN_REGIONS,
   RECOMMENDED_TOKENS,
   EXAMPLES,
 };

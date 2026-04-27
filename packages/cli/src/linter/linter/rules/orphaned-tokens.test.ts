@@ -33,4 +33,34 @@ describe('orphanedTokens', () => {
     const state = buildState({ colors: { primary: '#ff0000' } });
     expect(orphanedTokens(state)).toEqual([]);
   });
+
+  it('does not flag individual ramp steps when only the anchor is referenced', () => {
+    const state = buildState({
+      colors: { primary: { type: 'ramp', anchor: '#3b82f6', humanName: 'Sky' } },
+      components: {
+        button: { backgroundColor: '{colors.primary}' },
+      },
+    });
+    const findings = orphanedTokens(state);
+    // Steps like primary.50, primary.100, ... should not appear.
+    expect(findings.some(f => f.path?.includes('primary.'))).toBe(false);
+    // Anchor itself is referenced, so not orphaned.
+    expect(findings.some(f => f.path === 'colors.primary')).toBe(false);
+  });
+
+  it('does not flag pair members when the pair is referenced', () => {
+    const state = buildState({
+      colors: {
+        'surface-info': { type: 'pair', container: '#E0F2FE', onContainer: '#0C4A6E' },
+      },
+      components: {
+        callout: {
+          backgroundColor: '{colors.surface-info}',
+          textColor: '{colors.on-surface-info}',
+        },
+      },
+    });
+    const findings = orphanedTokens(state);
+    expect(findings.some(f => f.path?.startsWith('colors.surface-info'))).toBe(false);
+  });
 });

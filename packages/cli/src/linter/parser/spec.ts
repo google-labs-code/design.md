@@ -37,20 +37,295 @@ export interface SourceLocation {
   block: 'frontmatter' | number;
 }
 
+/**
+ * A ramp declaration: an anchor color plus a derived scale of steps.
+ * Steps are interpolated in OKLCH from the anchor toward white (lighter steps)
+ * and toward black (darker steps). The anchor occupies step 500 by default.
+ */
+export interface RawRampDef {
+  type: 'ramp';
+  anchor: string;
+  /** Optional human-readable name (e.g., "Boston Clay") used by prose validation. */
+  humanName?: string;
+  description?: string;
+  /** Reserved for future curves (apca, lightness-linear). Default: oklch. */
+  curve?: 'oklch';
+  /** Numeric steps to derive. Default: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]. */
+  steps?: number[];
+  /** Inline derivation of pair tokens (e.g., container/on-container) from steps. */
+  pairs?: Record<string, { bg: number; fg: number }>;
+}
+
+/**
+ * A pair declaration: a container color and its paired foreground.
+ * The two members satisfy a minimum contrast invariant (`minContrast`).
+ */
+export interface RawPairDef {
+  type: 'pair';
+  container: string;
+  onContainer: string;
+  /** WCAG ratio floor. Default: 4.5 (AA body text). */
+  minContrast?: number;
+}
+
+export type RawColorValue = string | RawRampDef | RawPairDef;
+
+/**
+ * Raw motion block (mirrors the YAML schema). Durations and easings live in
+ * separate sub-maps; `reducedMotion` declares the fallback applied under
+ * `prefers-reduced-motion`.
+ */
+export interface RawMotionDef {
+  duration?: Record<string, string>;
+  easing?: Record<string, string>;
+  reducedMotion?: { duration?: string; easing?: string };
+}
+
+/**
+ * Raw iconography block (mirrors the YAML schema). One library/style per
+ * system; `sizes` is the icon-size scale referenced by `iconSize:` on
+ * components.
+ */
+export interface RawIconographyDef {
+  library?: { name: string; version?: string; style?: string };
+  strokeWeight?: string;
+  sizes?: Record<string, string>;
+  defaultSize?: string;
+  colorBinding?: string;
+}
+
+/**
+ * Raw `breakpoints:` block (mirrors the YAML schema). `philosophy` is one of
+ * `mobile-first` | `desktop-first`; `values` maps a breakpoint key (sm, md,
+ * lg, xl, 2xl, ...) to a Dimension string.
+ */
+export interface RawBreakpointsDef {
+  philosophy?: string;
+  values?: Record<string, string>;
+}
+
+/**
+ * Raw `grid:` block. `gutter` and `margin` accept token references; `maxWidth`
+ * is a Dimension string. `bleedExceptions` is an allow-list of region names
+ * that may break out of the grid (full-bleed hero, modal overlay).
+ */
+export interface RawGridDef {
+  columns?: number;
+  gutter?: string;
+  margin?: Record<string, string>;
+  maxWidth?: string;
+  bleedExceptions?: string[];
+}
+
+/**
+ * Raw `layoutRules:` block — the readable-measure / vertical-rhythm /
+ * form-field-width primitives. Values are Dimension strings (or token refs).
+ */
+export interface RawLayoutRulesDef {
+  contentMaxWidth?: string;
+  stackSpacing?: string;
+  formFieldWidth?: string;
+}
+
+/**
+ * Raw page-template definition. `regions` is the ordered list of region
+ * names a template instance may declare; `requiredRegions` is the subset
+ * that *must* be present. Additional template-level properties (`maxWidth`,
+ * `sidebarWidth`, `container`) are passed through verbatim — exporters
+ * read them, the linter does not.
+ */
+export interface RawTemplateDef {
+  regions?: string[];
+  requiredRegions?: string[];
+  maxWidth?: string;
+  sidebarWidth?: string;
+  container?: string;
+  /** Author-defined extras (passed through to exporters). */
+  [key: string]: unknown;
+}
+
+/**
+ * Raw `pages:` entry — a route pattern → template assignment.
+ */
+export interface RawPageDef {
+  template: string;
+}
+
+/**
+ * A theme block — overrides only. Anything not overridden is inherited from
+ * `inheritsFrom` (default: the implicit `light` base = the root token tree).
+ * Resolution is a deep-merge of theme-over-base, scoped per token category.
+ */
+export interface RawThemeDef {
+  /** Optional parent theme name. Default is the implicit `light` base. */
+  inheritsFrom?: string;
+  description?: string;
+  colors?: Record<string, RawColorValue>;
+  typography?: Record<string, Record<string, string | number>>;
+  rounded?: Record<string, string>;
+  spacing?: Record<string, string>;
+  elevation?: Record<string, string>;
+  /**
+   * Per-theme contrast targets used by `theme-contrast-ratio`. Defaults to
+   * WCAG AA when absent (body 4.5:1, large text 3:1, non-text UI 3:1).
+   */
+  contrastTarget?: { body?: number; large?: number; ui?: number };
+}
+
+/**
+ * A registry entry — the closed-world declaration that a component name is part
+ * of the design system. Adding an entry is a deliberate, reviewable act.
+ */
+export interface RawRegistryEntry {
+  name: string;
+  /** Component kind (button, input, container, etc.). Drives default behaviors. */
+  kind?: string;
+  /** Override the kind's default interactivity. */
+  interactive?: boolean;
+  /** Properties the matching definition must set. */
+  requiredProperties?: string[];
+  /** Pre-merge another entry's definition before resolving overrides. */
+  composes?: string;
+}
+
+/**
+ * A raw component property value as it appears in YAML.
+ * Most properties are scalars; `states` is a nested map of state-name →
+ * state-property-map (each property a primitive); `interactive` is a boolean.
+ * The recursive shape covers both layers without losing strictness.
+ */
+export type RawComponentValue =
+  | string
+  | number
+  | boolean
+  | { [key: string]: RawComponentValue };
+
+/**
+ * Raw `voice:` block — characters of brand voice. Axes are numeric dials;
+ * `person`, `tense`, `contractions` are short keyword strings; `oxfordComma`
+ * is a boolean. The shape is intentionally flat.
+ */
+export type RawVoice = Record<string, string | number | boolean>;
+
+/**
+ * Raw `copy:` block — content rules. Free-form by design; the model validates
+ * known keys and ignores unknown ones with a warning.
+ */
+export interface RawCopy {
+  casing?: Record<string, string>;
+  buttonLabelMaxWords?: number;
+  errorPattern?: string;
+  emptyStateTone?: string;
+  bannedTerms?: string[];
+  bannedRegex?: string[];
+  approvedTerms?: Record<string, string>;
+  reservedNames?: string[];
+  titleCase?: { exceptions?: string[]; knownProperNouns?: string[] };
+  /** Authors may extend with custom keys; preserved on the way through. */
+  [key: string]: unknown;
+}
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   name?: string | undefined;
   description?: string | undefined;
-  colors?: Record<string, string> | undefined;
+  colors?: Record<string, RawColorValue> | undefined;
   typography?: Record<string, Record<string, string | number>> | undefined;
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
-  components?: Record<string, Record<string, string>> | undefined;
+  /**
+   * Semantic elevation tokens (resting / raised / overlay / modal). Values
+   * are CSS shadow strings; component `shadow` props reference them via
+   * `{elevation.<name>}`.
+   */
+  elevation?: Record<string, string> | undefined;
+  /**
+   * Motion primitives — durations, easings, and the reduced-motion fallback.
+   * Components reference them via `{motion.duration.*}` / `{motion.easing.*}`
+   * inside `transition:` shorthands.
+   */
+  motion?: RawMotionDef | undefined;
+  /**
+   * Iconography — library reference, size scale, stroke weight, color
+   * binding. Components reference sizes via `{iconography.sizes.*}` on
+   * `iconSize:`.
+   */
+  iconography?: RawIconographyDef | undefined;
+  components?: Record<string, Record<string, RawComponentValue>> | undefined;
+  /**
+   * Closed-world registry of component names. When present, every entry in
+   * `components` (the definitions) must correspond to a registry entry.
+   * Absent = open-world (back-compat) behavior.
+   */
+  componentRegistry?: RawRegistryEntry[] | undefined;
+  /** Voice axes + grammatical defaults. */
+  voice?: RawVoice | undefined;
+  /** Content rules. */
+  copy?: RawCopy | undefined;
+  /**
+   * Theme overrides. Keys are theme names; the implicit `light` base lives
+   * in the root token tree (so a `themes.light` entry is unnecessary, though
+   * tolerated). Values are deep-merged onto the base during model build.
+   */
+  themes?: Record<string, RawThemeDef> | undefined;
+  /**
+   * Responsive breakpoint declarations. Optional; absent = the system declares
+   * no breakpoints (and rules that need them no-op).
+   */
+  breakpoints?: RawBreakpointsDef | undefined;
+  /** Layout grid (columns + gutter + margin + maxWidth). Optional. */
+  grid?: RawGridDef | undefined;
+  /** Top-level layout primitives (readable measure, stack spacing, form width). */
+  layoutRules?: RawLayoutRulesDef | undefined;
+  /** Page-template registry. Keys are template names. */
+  templates?: Record<string, RawTemplateDef> | undefined;
+  /** Optional page → template assignment. Keys are route patterns. */
+  pages?: Record<string, RawPageDef> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;
   /** Full content of each section, including heading and body. */
-  documentSections?: Array<{ heading: string; content: string }> | undefined;
+  documentSections?: DocumentSection[] | undefined;
+}
+
+/**
+ * A suppression directive parsed from `<!-- design.md ... -->` HTML comments.
+ * `rule` is the rule name, or `*` for all rules. Line numbers are document-wide
+ * and 1-based; both `fromLine` and `toLine` are inclusive.
+ */
+export interface SuppressionDirective {
+  rule: string;
+  fromLine: number;
+  toLine: number;
+}
+
+/** A line range, 1-based, inclusive on both ends. */
+export interface LineRange {
+  startLine: number;
+  endLine: number;
+}
+
+/** A document section partitioned by H2 heading. */
+export interface DocumentSection {
+  /** The heading text, or '' for the prelude before the first H2. */
+  heading: string;
+  /** The full content of the section, including its heading line. */
+  content: string;
+  /** 1-based line number of the section's first line in the original document. */
+  startLine: number;
+  /** 1-based line number of the section's last line in the original document. */
+  endLine: number;
+  /**
+   * Suppression directives parsed from HTML comments inside the section.
+   * Line numbers are absolute (document-wide), 1-based, inclusive.
+   */
+  suppressions: SuppressionDirective[];
+  /**
+   * Fenced code block ranges within the section. Used by prose-aware rules
+   * to skip content that is intentionally illustrative rather than authored
+   * narrative. Line numbers are absolute (document-wide), 1-based, inclusive.
+   */
+  codeBlockRanges: LineRange[];
 }
 
 // ── RESULT ─────────────────────────────────────────────────────────

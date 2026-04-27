@@ -106,34 +106,81 @@ components:
     rounded: "{rounded.lg}"
     padding: 12px
     height: 48px
-  button-primary-hover:
-    backgroundColor: "{colors.primary-fixed}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-fixed}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   button-secondary:
-    backgroundColor: transparent
+    backgroundColor: "#00000000"
     textColor: "{colors.secondary}"
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: 12px
     height: 48px
-  button-secondary-hover:
-    backgroundColor: rgba(0, 227, 253, 0.1)
+    border: "1px solid {colors.secondary}"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "#00e3fd1a"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface}"
+        border: "1px solid {colors.outline}"
+        cursor: not-allowed
   card-glass-level-2:
-    backgroundColor: rgba(52, 52, 58, 0.2)
+    backgroundColor: "#34343a33"
     rounded: "{rounded.xl}"
     padding: "{spacing.gutter}"
-  card-glass-interactive-hover:
-    backgroundColor: rgba(56, 57, 63, 0.4)
+  card-glass-interactive:
+    backgroundColor: "#34343a33"
+    rounded: "{rounded.xl}"
+    padding: "{spacing.gutter}"
+    border: "1px solid #ffffff14"
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "#38393f66"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        cursor: not-allowed
+        textColor: "{colors.on-surface}"
   input-field:
     backgroundColor: "{colors.surface-container-lowest}"
     textColor: "{colors.on-surface}"
     typography: "{typography.body-md}"
     rounded: "{rounded.lg}"
     padding: 12px
-  list-item-hover:
-    backgroundColor: "{colors.surface-container-high}"
-    textColor: "{colors.primary}"
+    interactive: true
+    states:
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
+  list-item:
+    backgroundColor: "#00000000"
+    textColor: "{colors.on-surface}"
     rounded: "{rounded.md}"
     padding: 8px
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.surface-container-high}"
+        textColor: "{colors.primary}"
+      focus-visible:
+        outline: "2px solid {colors.secondary}"
+      disabled:
+        textColor: "{colors.on-surface}"
+        cursor: not-allowed
   hero-headline:
     textColor: "{colors.primary}"
     typography: "{typography.headline-xl}"
@@ -143,6 +190,24 @@ components:
     typography: "{typography.label-md}"
     rounded: "{rounded.full}"
     padding: 4px
+voice:
+  formality: 3
+  warmth: 3
+  authority: 4
+  playfulness: 4
+  person: second
+  tense: present-active
+  oxfordComma: true
+  contractions: permitted
+copy:
+  casing:
+    button: UPPERCASE
+    nav: UPPERCASE
+  buttonLabelMaxWords: 3
+  bannedTerms:
+    - revolutionary
+    - effortless
+    - synergy
 ---
 
 ## Brand & Style
@@ -170,6 +235,18 @@ This design system uses a dual-font strategy to balance cinematic impact with ut
 - **Inter** provides a neutral, highly legible counterpoint for long-form content and descriptions, ensuring that even in low-light environments, the information remains accessible.
 
 For a truly cinematic feel, apply a subtle text-shadow or "glow" to `headline-xl` elements when they appear on the darkest backgrounds, using a low-opacity version of the Primary color.
+
+## Voice
+
+The festival speaks like a film trailer for the cosmos: dramatic, second-person, theatrical without slipping into cliché. The voice runs even on the formality and warmth axes (3/3) and high on playfulness (4) — copy is meant to feel cinematic, not corporate.
+
+- **Person:** Second-person — "Witness Totality" beats "Festivalgoers will witness the eclipse."
+- **Tense:** Present-active. Always.
+- **Contractions:** Permitted; the festival is not a courtroom.
+<!-- design.md disable-next-line banned-term-in-prose -->
+- **Banned terms:** `revolutionary`, `effortless`, `synergy`. They puncture the mystique on contact.
+
+Buttons and nav use UPPERCASE for a monumental, all-caps marquee feel — and stay short (≤ 3 words) so they never wrap.
 
 ## Layout & Spacing
 

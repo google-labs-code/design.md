@@ -62,4 +62,53 @@ describe('contrastCheck', () => {
     expect(findings.length).toBe(1);
     expect(findings[0]!.message).toMatch(/contrast/);
   });
+
+  it('warns when a theme override breaks contrast for an inherited component', () => {
+    const state = buildState({
+      // Light: black-on-white passes.
+      colors: { primary: '#000000', 'on-primary': '#ffffff' },
+      components: {
+        'button-primary': {
+          backgroundColor: '{colors.primary}',
+          textColor: '{colors.on-primary}',
+        },
+      },
+      themes: {
+        // Dark theme overrides primary to a low-contrast pairing.
+        dark: { colors: { primary: '#dddddd', 'on-primary': '#cccccc' } },
+      },
+    });
+
+    const findings = contrastCheck(state);
+    // Light theme is clean; dark theme fires.
+    const lightFindings = findings.filter(f => !f.message.includes("theme 'dark'"));
+    const darkFindings = findings.filter(f => f.message.includes("theme 'dark'"));
+    expect(lightFindings.length).toBe(0);
+    expect(darkFindings.length).toBe(1);
+    expect(darkFindings[0]!.path).toBe('components.button-primary');
+  });
+
+  it('respects per-theme contrastTarget — high-contrast theme requires AAA-style ratios', () => {
+    // 4.5:1 passes WCAG AA but fails AAA (7:1).
+    const state = buildState({
+      colors: { primary: '#767676', 'on-primary': '#ffffff' },
+      components: {
+        'button-primary': {
+          backgroundColor: '{colors.primary}',
+          textColor: '{colors.on-primary}',
+        },
+      },
+      themes: {
+        'high-contrast': {
+          colors: { primary: '#767676', 'on-primary': '#ffffff' },
+          contrastTarget: { body: 7, large: 4.5, ui: 4.5 },
+        },
+      },
+    });
+
+    const findings = contrastCheck(state);
+    // Light theme passes AA. High-contrast fails AAA target.
+    expect(findings.some(f => f.message.includes("theme 'high-contrast'"))).toBe(true);
+    expect(findings.some(f => !f.message.includes("theme '") && f.path === 'components.button-primary')).toBe(false);
+  });
 });

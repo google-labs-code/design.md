@@ -34,11 +34,18 @@ function yamlEntries(entries: Record<string, string>, indent = 2): string[] {
   );
 }
 
-function yamlObject(entries: Record<string, string | number>, indent = 4): string[] {
-  return Object.entries(entries).map(([k, v]) => {
-    const val = typeof v === 'string' && v.startsWith('{') ? `"${v}"` : v;
-    return `${' '.repeat(indent)}${k}: ${val}`;
-  });
+function yamlObject(entries: Record<string, unknown>, indent = 4): string[] {
+  const lines: string[] = [];
+  for (const [k, v] of Object.entries(entries)) {
+    if (v !== null && typeof v === 'object') {
+      lines.push(`${' '.repeat(indent)}${k}:`);
+      lines.push(...yamlObject(v as Record<string, unknown>, indent + 2));
+    } else {
+      const val = typeof v === 'string' && v.startsWith('{') ? `"${v}"` : v;
+      lines.push(`${' '.repeat(indent)}${k}: ${val}`);
+    }
+  }
+  return lines;
 }
 
 // ── Public renderers ────────────────────────────────────────────
@@ -56,7 +63,7 @@ export function frontmatterExample(config: SpecConfig): string {
     ),
     'typography:',
     `  ${typoName}:`,
-    ...yamlObject(typoProps as Record<string, string | number>),
+    ...yamlObject(typoProps as Record<string, unknown>),
     '---',
   ]);
 }
@@ -71,7 +78,7 @@ export function typographyExample(config: SpecConfig): string {
   const lines = ['typography:'];
   for (const [name, props] of Object.entries(config.EXAMPLES.typography)) {
     lines.push(`  ${name}:`);
-    lines.push(...yamlObject(props as Record<string, string | number>));
+    lines.push(...yamlObject(props as Record<string, unknown>));
   }
   return yamlBlock(lines);
 }
@@ -81,8 +88,46 @@ export function componentsExample(config: SpecConfig): string {
   const lines = ['components:'];
   for (const [name, props] of Object.entries(config.EXAMPLES.components)) {
     lines.push(`  ${name}:`);
-    lines.push(...yamlObject(props as Record<string, string | number>));
+    lines.push(...yamlObject(props as Record<string, unknown>));
   }
+  return yamlBlock(lines);
+}
+
+/** Motion YAML example (durations, easings, reduced-motion fallback). */
+export function motionExample(config: SpecConfig): string {
+  const motion = config.EXAMPLES.motion;
+  if (!motion) return yamlBlock(['motion: {}']);
+  const lines = ['motion:', '  duration:'];
+  for (const [name, value] of Object.entries(motion.duration)) {
+    lines.push(`    ${name}: ${value}`);
+  }
+  lines.push('  easing:');
+  for (const [name, value] of Object.entries(motion.easing)) {
+    lines.push(`    ${name}: "${value}"`);
+  }
+  if (motion.reducedMotion) {
+    lines.push('  reducedMotion:');
+    lines.push(`    duration: ${motion.reducedMotion.duration}`);
+    lines.push(`    easing: ${motion.reducedMotion.easing}`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Iconography YAML example (library, size scale, color binding). */
+export function iconographyExample(config: SpecConfig): string {
+  const ico = config.EXAMPLES.iconography;
+  if (!ico) return yamlBlock(['iconography: {}']);
+  const lines = ['iconography:', '  library:'];
+  lines.push(`    name: ${ico.library.name}`);
+  if (ico.library.version) lines.push(`    version: "${ico.library.version}"`);
+  lines.push(`    style: ${ico.library.style}`);
+  if (ico.strokeWeight) lines.push(`  strokeWeight: ${ico.strokeWeight}`);
+  lines.push('  sizes:');
+  for (const [name, value] of Object.entries(ico.sizes)) {
+    lines.push(`    ${name}: ${value}`);
+  }
+  lines.push(`  defaultSize: ${ico.defaultSize}`);
+  lines.push(`  colorBinding: ${ico.colorBinding}`);
   return yamlBlock(lines);
 }
 
@@ -123,4 +168,107 @@ export function recommendedTokens(config: SpecConfig): string {
       return `**${label}:** ${(tokens as readonly string[]).map((t: string) => `\`${t}\``).join(', ')}`;
     })
     .join('\n\n');
+}
+
+/** Voice block YAML example. */
+export function voiceExample(config: SpecConfig): string {
+  const voice = (config.EXAMPLES as { voice?: Record<string, unknown> }).voice;
+  if (!voice) return yamlBlock(['voice:', '  formality: 3', '  warmth: 4', '  person: second']);
+  return yamlBlock(['voice:', ...yamlObject(voice)]);
+}
+
+/** Copy block YAML example. */
+export function copyExample(config: SpecConfig): string {
+  const copy = (config.EXAMPLES as { copy?: Record<string, unknown> }).copy;
+  if (!copy) return yamlBlock(['copy:', '  bannedTerms: []']);
+  return yamlBlock(['copy:', ...yamlObject(copy)]);
+}
+
+/** Voice axes table (axis name + 1-5 dial). */
+export function voiceAxesTable(config: SpecConfig): string {
+  const lines = ['| Axis | Range | Meaning |', '| --- | --- | --- |'];
+  for (const axis of config.VOICE_AXES) {
+    lines.push(`| \`${axis}\` | 1–5 | The voice's ${axis} dial. 1 = low, 5 = high. |`);
+  }
+  return lines.join('\n');
+}
+
+/** Breakpoints YAML example (philosophy + values). */
+export function breakpointsExample(config: SpecConfig): string {
+  const bp = (config.EXAMPLES as { breakpoints?: { philosophy: string; values: Record<string, string> } }).breakpoints;
+  if (!bp) return yamlBlock(['breakpoints:', '  philosophy: mobile-first', '  values: {}']);
+  const lines = ['breakpoints:', `  philosophy: ${bp.philosophy}`, '  values:'];
+  for (const [name, value] of Object.entries(bp.values)) {
+    const key = /^[a-z]+$/.test(name) ? name : `"${name}"`;
+    lines.push(`    ${key}: ${value}`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Grid YAML example (columns, gutter, margin, maxWidth). */
+export function gridExample(config: SpecConfig): string {
+  const grid = (config.EXAMPLES as {
+    grid?: {
+      columns: number;
+      gutter: string;
+      margin?: Record<string, string>;
+      maxWidth?: string;
+      bleedExceptions?: string[];
+    };
+  }).grid;
+  if (!grid) return yamlBlock(['grid: {}']);
+  const lines = ['grid:', `  columns: ${grid.columns}`, `  gutter: "${grid.gutter}"`];
+  if (grid.margin) {
+    lines.push('  margin:');
+    for (const [k, v] of Object.entries(grid.margin)) {
+      const val = v.startsWith('{') ? `"${v}"` : v;
+      lines.push(`    ${k}: ${val}`);
+    }
+  }
+  if (grid.maxWidth) lines.push(`  maxWidth: ${grid.maxWidth}`);
+  if (grid.bleedExceptions && grid.bleedExceptions.length > 0) {
+    lines.push(`  bleedExceptions: [${grid.bleedExceptions.join(', ')}]`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Layout rules YAML example (readable measure, stack spacing, form width). */
+export function layoutRulesExample(config: SpecConfig): string {
+  const rules = (config.EXAMPLES as { layoutRules?: Record<string, string> }).layoutRules;
+  if (!rules) return yamlBlock(['layoutRules: {}']);
+  const lines = ['layoutRules:'];
+  for (const [k, v] of Object.entries(rules)) {
+    const val = v.startsWith('{') ? `"${v}"` : v;
+    lines.push(`  ${k}: ${val}`);
+  }
+  return yamlBlock(lines);
+}
+
+/** Page templates YAML example. */
+export function templatesExample(config: SpecConfig): string {
+  const templates = (config.EXAMPLES as {
+    templates?: Record<string, Record<string, unknown>>;
+  }).templates;
+  if (!templates) return yamlBlock(['templates: {}']);
+  const lines = ['templates:'];
+  for (const [name, tpl] of Object.entries(templates)) {
+    lines.push(`  ${name}:`);
+    for (const [k, v] of Object.entries(tpl)) {
+      if (Array.isArray(v)) {
+        lines.push(`    ${k}: [${v.join(', ')}]`);
+      } else {
+        lines.push(`    ${k}: ${v}`);
+      }
+    }
+  }
+  return yamlBlock(lines);
+}
+
+/** Casing values table. */
+export function casingTable(config: SpecConfig): string {
+  const lines = ['| Surface | Allowed values |', '| --- | --- |'];
+  for (const surface of config.CASING_SURFACES) {
+    lines.push(`| \`${surface}\` | ${config.CASING_VALUES.map(v => `\`${v}\``).join(', ')} |`);
+  }
+  return lines.join('\n');
 }

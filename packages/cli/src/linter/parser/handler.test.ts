@@ -126,6 +126,103 @@ colors:
     });
   });
 
+  // ── Suppression directives + section line numbers ────────────────
+  describe('suppression directives and section ranges', () => {
+    it('captures startLine, endLine, and code-block ranges per section', () => {
+      const input = `---
+colors:
+  primary: "#000000"
+---
+
+## Colors
+
+Body before code.
+
+\`\`\`
+not yaml — should still be a code block range
+\`\`\`
+
+After.
+`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      const sections = result.data.documentSections!;
+      const colorsSection = sections.find(s => s.heading === 'Colors')!;
+      expect(colorsSection.startLine).toBeGreaterThan(0);
+      expect(colorsSection.endLine).toBeGreaterThan(colorsSection.startLine);
+      expect(colorsSection.codeBlockRanges.length).toBe(1);
+      const range = colorsSection.codeBlockRanges[0]!;
+      expect(range.endLine).toBeGreaterThan(range.startLine);
+    });
+
+    it('parses disable-next-line directives', () => {
+      const input = `---
+colors:
+  primary: "#000000"
+---
+
+## Colors
+
+<!-- design.md disable-next-line prose-token-mismatch -->
+Boston Clay (#B8422E) for legacy.
+`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      const colorsSection = result.data.documentSections!.find(s => s.heading === 'Colors')!;
+      expect(colorsSection.suppressions.length).toBe(1);
+      const s = colorsSection.suppressions[0]!;
+      expect(s.rule).toBe('prose-token-mismatch');
+      expect(s.fromLine).toBe(s.toLine);
+    });
+
+    it('parses region disable/enable directives', () => {
+      const input = `---
+colors:
+  primary: "#000000"
+---
+
+## Colors
+
+<!-- design.md disable prose-token-mismatch -->
+External (#B8422E).
+External (#C84E3A).
+<!-- design.md enable prose-token-mismatch -->
+`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      const colorsSection = result.data.documentSections!.find(s => s.heading === 'Colors')!;
+      expect(colorsSection.suppressions.length).toBe(1);
+      const s = colorsSection.suppressions[0]!;
+      expect(s.rule).toBe('prose-token-mismatch');
+      expect(s.toLine).toBeGreaterThan(s.fromLine);
+    });
+
+    it('parses disable-file directives applying to every section', () => {
+      const input = `---
+colors:
+  primary: "#000000"
+---
+<!-- design.md disable-file prose-token-mismatch -->
+
+## Colors
+
+Anything (#deadbe) goes.
+`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      const sections = result.data.documentSections!;
+      // Both the prelude (between frontmatter and ## Colors) and the
+      // Colors section should carry the suppression.
+      for (const section of sections) {
+        expect(section.suppressions.some(s => s.rule === 'prose-token-mismatch')).toBe(true);
+      }
+    });
+  });
+
   // ── Cycle 6: Malformed YAML ───────────────────────────────────────
   describe('malformed YAML', () => {
     it('returns YAML_PARSE_ERROR on invalid YAML syntax', () => {
@@ -150,6 +247,57 @@ Some markdown text with no YAML blocks.
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.code).toBe('NO_YAML_FOUND');
+      }
+    });
+  });
+
+  describe('component registry shape', () => {
+    it('parses flat components (back-compat) and leaves componentRegistry undefined', () => {
+      const input = `---
+components:
+  button-primary:
+    backgroundColor: "#000000"
+---`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.components?.['button-primary']?.['backgroundColor']).toBe('#000000');
+        expect(result.data.componentRegistry).toBeUndefined();
+      }
+    });
+
+    it('parses registry + definitions split shape', () => {
+      const input = `---
+components:
+  registry:
+    - name: button-primary
+      kind: button
+      requiredProperties: [backgroundColor, padding]
+    - name: card-elevated
+      kind: container
+      composes: card
+    - name: card
+      kind: container
+  definitions:
+    button-primary:
+      backgroundColor: "#000000"
+      padding: "12px"
+    card:
+      backgroundColor: "#ffffff"
+    card-elevated:
+      backgroundColor: "#eeeeee"
+---`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.componentRegistry?.length).toBe(3);
+        const btn = result.data.componentRegistry?.find(e => e.name === 'button-primary');
+        expect(btn?.kind).toBe('button');
+        expect(btn?.requiredProperties).toEqual(['backgroundColor', 'padding']);
+        const elevated = result.data.componentRegistry?.find(e => e.name === 'card-elevated');
+        expect(elevated?.composes).toBe('card');
+        // Definitions are still surfaced via `components`.
+        expect(result.data.components?.['button-primary']?.['backgroundColor']).toBe('#000000');
       }
     });
   });

@@ -112,4 +112,196 @@ describe('TailwindEmitterHandler', () => {
       expect(config.theme.extend).toBeDefined();
     });
   });
+
+  // ── Issue #2: elevation → boxShadow ──────────────────────────────
+  describe('elevation mapping', () => {
+    it('maps elevation tokens to theme.extend.boxShadow', () => {
+      const state = buildState({
+        elevation: {
+          resting: '0 1px 2px rgba(0,0,0,0.06)',
+          raised: '0 4px 8px rgba(0,0,0,0.08)',
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.theme.extend.boxShadow?.['resting']).toBe('0 1px 2px rgba(0,0,0,0.06)');
+      expect(result.data.theme.extend.boxShadow?.['raised']).toBe('0 4px 8px rgba(0,0,0,0.08)');
+    });
+  });
+
+  // ── Ramps and pairs ───────────────────────────────────────────────
+  describe('ramps and pairs', () => {
+    it('emits ramps as nested objects with DEFAULT and step keys', () => {
+      const state = buildState({
+        colors: { primary: { type: 'ramp', anchor: '#3b82f6', humanName: 'Sky' } },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const colors = result.data.theme.extend.colors!;
+      const primary = colors['primary'];
+      expect(typeof primary).toBe('object');
+      const ramp = primary as Record<string, string>;
+      expect(ramp['DEFAULT']).toBe('#3b82f6');
+      expect(ramp['500']).toBe('#3b82f6');
+      expect(ramp['50']).toBeDefined();
+      expect(ramp['900']).toBeDefined();
+      // Steps should not also leak as top-level entries.
+      expect(colors['primary.500']).toBeUndefined();
+    });
+
+    it('emits standalone pair members under hyphenated flat keys', () => {
+      const state = buildState({
+        colors: {
+          'surface-info': { type: 'pair', container: '#E0F2FE', onContainer: '#0C4A6E' },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const colors = result.data.theme.extend.colors!;
+      expect(colors['surface-info']).toBe('#e0f2fe');
+      expect(colors['on-surface-info']).toBe('#0c4a6e');
+      // The dotted-form internal members must not leak as top-level keys.
+      expect(colors['surface-info.container']).toBeUndefined();
+    });
+
+    it('emits inline-ramp pair flat aliases in M3 form', () => {
+      const state = buildState({
+        colors: {
+          primary: {
+            type: 'ramp',
+            anchor: '#3b82f6',
+            humanName: 'Sky',
+            pairs: { container: { bg: 100, fg: 800 } },
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const colors = result.data.theme.extend.colors!;
+      expect(colors['primary-container']).toBeDefined();
+      expect(colors['on-primary-container']).toBeDefined();
+    });
+  });
+
+  describe('motion mapping', () => {
+    it('emits motion durations and easings as transition tokens', () => {
+      const state = buildState({
+        motion: {
+          duration: { fast: '150ms', medium: '0.25s' },
+          easing: { standard: 'cubic-bezier(0.4, 0, 0.2, 1)', linear: 'linear' },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const ext = result.data.theme.extend;
+      expect(ext.transitionDuration?.['fast']).toBe('150ms');
+      expect(ext.transitionDuration?.['medium']).toBe('0.25s');
+      expect(ext.transitionTimingFunction?.['standard']).toBe('cubic-bezier(0.4, 0, 0.2, 1)');
+      expect(ext.transitionTimingFunction?.['linear']).toBe('linear');
+    });
+
+    it('omits transition keys when motion is undeclared', () => {
+      const state = buildState({});
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.theme.extend.transitionDuration).toEqual({});
+      expect(result.data.theme.extend.transitionTimingFunction).toEqual({});
+    });
+  });
+
+  describe('components plugin (opt-in)', () => {
+    it('omits the plugin block by default', () => {
+      const state = buildState({
+        colors: { primary: '#1A1C1E' },
+        components: { 'btn': { backgroundColor: '{colors.primary}' } },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.plugin).toBeUndefined();
+    });
+
+    it('emits a plugin object with state variants when opted in', () => {
+      const state = buildState({
+        colors: { primary: '#1A1C1E', accent: '#FFFFFF' },
+        components: {
+          'btn': {
+            backgroundColor: '{colors.primary}',
+            interactive: true,
+            states: {
+              hover: { backgroundColor: '{colors.accent}' },
+              'focus-visible': { outline: '2px solid {colors.accent}' },
+              disabled: { cursor: 'not-allowed' },
+            },
+          },
+        },
+      });
+      const result = emitter.execute(state, { components: true });
+      if (!result.success) throw new Error('Expected success');
+
+      const plugin = result.data.plugin as Record<string, Record<string, unknown>>;
+      expect(plugin).toBeDefined();
+      const btn = plugin['.btn'];
+      expect(btn).toBeDefined();
+      expect(btn?.['background-color']).toBe('#1a1c1e');
+      const hover = btn?.['&:hover'] as Record<string, unknown>;
+      expect(hover?.['background-color']).toBe('#ffffff');
+      const focus = btn?.['&:focus-visible'] as Record<string, unknown>;
+      expect(focus?.['outline']).toContain('solid');
+      const disabled = btn?.['&:disabled, &[aria-disabled="true"]'] as Record<string, unknown>;
+      expect(disabled?.['cursor']).toBe('not-allowed');
+    });
+  });
+
+  describe('themes mapping', () => {
+    it('omits the themes field when no extra themes are declared', () => {
+      const state = buildState({ colors: { primary: '#1A1C1E' } });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.themes).toBeUndefined();
+    });
+
+    it('emits per-theme color overrides for dark and high-contrast', () => {
+      const state = buildState({
+        colors: { primary: '#1A1C1E', surface: '#FFFFFF' },
+        themes: {
+          dark: { colors: { primary: '#A3C9FF', surface: '#1A1C1E' } },
+          'high-contrast': {
+            colors: { primary: '#000000', surface: '#FFFFFF' },
+            contrastTarget: { body: 7, large: 4.5, ui: 4.5 },
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+
+      // Base colors live in theme.extend.colors as the light defaults.
+      expect(result.data.theme.extend.colors?.['primary']).toBe('#1a1c1e');
+
+      // Themes carries the dark and high-contrast overrides.
+      const themes = result.data.themes!;
+      expect(themes['dark']?.colors['primary']).toBe('#a3c9ff');
+      expect(themes['dark']?.colors['surface']).toBe('#1a1c1e');
+      expect(themes['high-contrast']?.colors['primary']).toBe('#000000');
+      expect(themes['high-contrast']?.contrastTarget).toEqual({ body: 7, large: 4.5, ui: 4.5 });
+    });
+
+    it('emits per-theme ramp groups, mirroring the base shape', () => {
+      const state = buildState({
+        colors: { primary: { type: 'ramp', anchor: '#1A1C1E', humanName: 'Charcoal' } },
+        themes: {
+          dark: { colors: { primary: { type: 'ramp', anchor: '#A3C9FF', humanName: 'Sky' } } },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+
+      const lightPrimary = result.data.theme.extend.colors?.['primary'] as Record<string, string>;
+      expect(lightPrimary?.['DEFAULT']).toBe('#1a1c1e');
+      expect(lightPrimary?.['500']).toBe('#1a1c1e');
+
+      const darkPrimary = result.data.themes!['dark']?.colors['primary'] as Record<string, string>;
+      expect(darkPrimary?.['DEFAULT']).toBe('#a3c9ff');
+      expect(darkPrimary?.['500']).toBe('#a3c9ff');
+    });
+  });
 });

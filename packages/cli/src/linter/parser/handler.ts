@@ -13,7 +13,18 @@
 // limitations under the License.
 
 import YAML from 'yaml';
-import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation } from './spec.js';
+import type {
+  ParserSpec,
+  ParserInput,
+  ParserResult,
+  ParsedDesignSystem,
+  RawRegistryEntry,
+  RawComponentValue,
+  SourceLocation,
+  DocumentSection,
+  SuppressionDirective,
+  LineRange,
+} from './spec.js';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
@@ -37,25 +48,32 @@ export class ParserHandler implements ParserSpec {
       const blocks: Array<{ yaml: string; block: 'frontmatter' | number; startLine: number }> = [];
       const sections: string[] = [];
       const headingsWithLines: Array<{ text: string; line: number }> = [];
+      const allCodeBlockRanges: LineRange[] = [];
       let blockIndex = 0;
 
       visit(ast, (node) => {
         if (node.type === 'yaml') {
           const yamlNode = node as Yaml;
+          const startLine = node.position?.start.line ?? 1;
+          const endLine = node.position?.end.line ?? startLine;
+          allCodeBlockRanges.push({ startLine, endLine });
           blocks.push({
             yaml: yamlNode.value,
             block: 'frontmatter',
-            startLine: node.position?.start.line ?? 1
+            startLine,
           });
         }
 
         if (node.type === 'code') {
           const codeNode = node as Code;
+          const startLine = node.position?.start.line ?? 1;
+          const endLine = node.position?.end.line ?? startLine;
+          allCodeBlockRanges.push({ startLine, endLine });
           if (codeNode.lang === 'yaml' || codeNode.lang === 'yml') {
             blocks.push({
               yaml: codeNode.value,
               block: blockIndex,
-              startLine: node.position?.start.line ?? 1
+              startLine
             });
             blockIndex++;
           }
@@ -75,38 +93,51 @@ export class ParserHandler implements ParserSpec {
 
       // Slice content into sections
       const contentLines = content.split('\n');
-      const documentSections: Array<{ heading: string; content: string }> = [];
-      
+      const allSuppressions = parseSuppressionDirectives(contentLines);
+      const documentSections: DocumentSection[] = [];
+
       const firstHeading = headingsWithLines[0];
       if (firstHeading) {
         // Prelude (content before first H2)
         const firstHeadingLine = firstHeading.line;
         if (firstHeadingLine > 1) {
-          documentSections.push({
-            heading: '',
-            content: contentLines.slice(0, firstHeadingLine - 1).join('\n')
-          });
+          documentSections.push(buildSection(
+            '',
+            contentLines,
+            1,
+            firstHeadingLine - 1,
+            allSuppressions,
+            allCodeBlockRanges,
+          ));
         }
 
         for (let i = 0; i < headingsWithLines.length; i++) {
           const current = headingsWithLines[i];
           if (!current) continue;
-          
+
           const next = headingsWithLines[i + 1];
-          const startIdx = current.line - 1;
-          const endIdx = next ? next.line - 1 : contentLines.length;
-          
-          documentSections.push({
-            heading: current.text,
-            content: contentLines.slice(startIdx, endIdx).join('\n')
-          });
+          const startLine = current.line;
+          const endLine = next ? next.line - 1 : contentLines.length;
+
+          documentSections.push(buildSection(
+            current.text,
+            contentLines,
+            startLine,
+            endLine,
+            allSuppressions,
+            allCodeBlockRanges,
+          ));
         }
       } else {
         // No H2 headings found, entire file is one section
-        documentSections.push({
-          heading: '',
-          content: content
-        });
+        documentSections.push(buildSection(
+          '',
+          contentLines,
+          1,
+          contentLines.length,
+          allSuppressions,
+          allCodeBlockRanges,
+        ));
       }
 
       if (blocks.length === 0) {
@@ -137,7 +168,7 @@ export class ParserHandler implements ParserSpec {
    * Merge multiple code blocks into a single ParsedDesignSystem.
    * Detects duplicate top-level sections across blocks.
    */
-  private mergeCodeBlocks(blocks: Array<{ yaml: string; block: 'frontmatter' | number; startLine: number }>, sections: string[], documentSections: Array<{ heading: string; content: string }>): ParserResult {
+  private mergeCodeBlocks(blocks: Array<{ yaml: string; block: 'frontmatter' | number; startLine: number }>, sections: string[], documentSections: DocumentSection[]): ParserResult {
     const merged: Record<string, unknown> = {};
     const sourceMap = new Map<string, SourceLocation>();
     const seenSections = new Map<string, 'frontmatter' | number>();
@@ -189,15 +220,32 @@ export class ParserHandler implements ParserSpec {
   /**
    * Map a raw parsed object to the ParsedDesignSystem interface.
    */
-  private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: Array<{ heading: string; content: string }>): ParsedDesignSystem {
+  private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: DocumentSection[]): ParsedDesignSystem {
+    const { components, componentRegistry } = normalizeComponents(raw['components']);
     return {
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
-      colors: raw['colors'] as Record<string, string> | undefined,
+      colors: raw['colors'] as ParsedDesignSystem['colors'],
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
-      components: raw['components'] as Record<string, Record<string, string>> | undefined,
+      elevation: raw['elevation'] as Record<string, string> | undefined,
+      motion: raw['motion'] as ParsedDesignSystem['motion'],
+      iconography: raw['iconography'] as ParsedDesignSystem['iconography'],
+      components,
+      componentRegistry,
+      voice: raw['voice'] && typeof raw['voice'] === 'object' && !Array.isArray(raw['voice'])
+        ? (raw['voice'] as Record<string, string | number | boolean>)
+        : undefined,
+      copy: raw['copy'] && typeof raw['copy'] === 'object' && !Array.isArray(raw['copy'])
+        ? (raw['copy'] as ParsedDesignSystem['copy'])
+        : undefined,
+      themes: raw['themes'] as ParsedDesignSystem['themes'],
+      breakpoints: raw['breakpoints'] as ParsedDesignSystem['breakpoints'],
+      grid: raw['grid'] as ParsedDesignSystem['grid'],
+      layoutRules: raw['layoutRules'] as ParsedDesignSystem['layoutRules'],
+      templates: raw['templates'] as ParsedDesignSystem['templates'],
+      pages: raw['pages'] as ParsedDesignSystem['pages'],
       sourceMap,
       sections,
       documentSections,
@@ -210,4 +258,150 @@ export class ParserHandler implements ParserSpec {
       .join('')
       .trim();
   }
+}
+
+/**
+ * Build a section, scoping suppressions and code-block ranges to the
+ * section's [startLine, endLine] window.
+ */
+function buildSection(
+  heading: string,
+  contentLines: string[],
+  startLine: number,
+  endLine: number,
+  allSuppressions: SuppressionDirective[],
+  allCodeBlockRanges: LineRange[],
+): DocumentSection {
+  const suppressions = allSuppressions.filter(s =>
+    !(s.toLine < startLine || s.fromLine > endLine)
+  );
+  const codeBlockRanges = allCodeBlockRanges.filter(r =>
+    !(r.endLine < startLine || r.startLine > endLine)
+  );
+  return {
+    heading,
+    content: contentLines.slice(startLine - 1, endLine).join('\n'),
+    startLine,
+    endLine,
+    suppressions,
+    codeBlockRanges,
+  };
+}
+
+/**
+ * Scan markdown for `<!-- design.md ... -->` HTML comment directives.
+ * Recognized forms:
+ *   <!-- design.md disable-next-line <rule>[,<rule>...] -->
+ *   <!-- design.md disable-file      <rule>[,<rule>...] -->
+ *   <!-- design.md disable           <rule>[,<rule>...] -->
+ *   <!-- design.md enable            <rule>[,<rule>...] -->
+ * Use `*` as the rule name to apply to all rules.
+ */
+const DIRECTIVE_RE = /<!--\s*design\.md\s+(disable-next-line|disable-file|disable|enable)\s+([\w*][\w*,\s-]*?)\s*-->/g;
+
+function parseSuppressionDirectives(contentLines: string[]): SuppressionDirective[] {
+  const directives: SuppressionDirective[] = [];
+  // Per-rule open ranges keyed by rule name (or `*`).
+  const open = new Map<string, number>();
+  const totalLines = contentLines.length;
+
+  for (let i = 0; i < contentLines.length; i++) {
+    const line = contentLines[i];
+    if (!line) continue;
+    DIRECTIVE_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = DIRECTIVE_RE.exec(line)) !== null) {
+      const kind = m[1]!;
+      const rules = m[2]!.split(',').map(r => r.trim()).filter(Boolean);
+      if (rules.length === 0) continue;
+      const lineNum = i + 1; // 1-based
+
+      if (kind === 'disable-next-line') {
+        for (const rule of rules) {
+          directives.push({ rule, fromLine: lineNum + 1, toLine: lineNum + 1 });
+        }
+      } else if (kind === 'disable-file') {
+        for (const rule of rules) {
+          directives.push({ rule, fromLine: 1, toLine: totalLines });
+        }
+      } else if (kind === 'disable') {
+        for (const rule of rules) {
+          if (!open.has(rule)) open.set(rule, lineNum);
+        }
+      } else if (kind === 'enable') {
+        for (const rule of rules) {
+          const from = open.get(rule);
+          if (from !== undefined) {
+            directives.push({ rule, fromLine: from, toLine: lineNum });
+            open.delete(rule);
+          }
+        }
+      }
+    }
+  }
+
+  // Close any still-open ranges at EOF.
+  for (const [rule, from] of open) {
+    directives.push({ rule, fromLine: from, toLine: totalLines });
+  }
+
+  return directives;
+}
+
+/**
+ * Normalize the `components:` block into definitions + optional registry.
+ *
+ * Two accepted shapes:
+ *   1. Flat (back-compat, open-world):
+ *        components:
+ *          button-primary: { backgroundColor: ... }
+ *   2. Registry + definitions (closed-world):
+ *        components:
+ *          registry:
+ *            - name: button-primary
+ *              kind: button
+ *          definitions:
+ *            button-primary: { backgroundColor: ... }
+ *
+ * Shape detection: presence of a top-level `registry` key (whose value is an
+ * array) selects the closed-world form. Anything else falls through to the
+ * flat form.
+ */
+function normalizeComponents(raw: unknown): {
+  components: Record<string, Record<string, RawComponentValue>> | undefined;
+  componentRegistry: RawRegistryEntry[] | undefined;
+} {
+  if (!raw || typeof raw !== 'object') {
+    return { components: undefined, componentRegistry: undefined };
+  }
+  const obj = raw as Record<string, unknown>;
+  const hasRegistry = Array.isArray(obj['registry']);
+  if (!hasRegistry) {
+    return {
+      components: obj as Record<string, Record<string, RawComponentValue>>,
+      componentRegistry: undefined,
+    };
+  }
+  const registry = (obj['registry'] as unknown[]).filter(
+    (e): e is Record<string, unknown> => !!e && typeof e === 'object'
+  ).map((e): RawRegistryEntry => {
+    const entry: RawRegistryEntry = {
+      name: typeof e['name'] === 'string' ? e['name'] : '',
+    };
+    if (typeof e['kind'] === 'string') entry.kind = e['kind'];
+    if (typeof e['interactive'] === 'boolean') entry.interactive = e['interactive'];
+    if (Array.isArray(e['requiredProperties'])) {
+      entry.requiredProperties = (e['requiredProperties'] as unknown[]).filter(
+        (x): x is string => typeof x === 'string'
+      );
+    }
+    if (typeof e['composes'] === 'string') entry.composes = e['composes'];
+    return entry;
+  }).filter(e => e.name.length > 0);
+
+  const definitions = obj['definitions'] && typeof obj['definitions'] === 'object'
+    ? (obj['definitions'] as Record<string, Record<string, RawComponentValue>>)
+    : {};
+
+  return { components: definitions, componentRegistry: registry };
 }

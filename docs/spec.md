@@ -91,11 +91,15 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 1. **Overview** (also: "Brand & Style")
 2. **Colors**
 3. **Typography**
-4. **Layout** (also: "Layout & Spacing")
-5. **Elevation & Depth** (also: "Elevation")
-6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+4. **Voice** (also: "Tone", "Voice & Tone")
+5. **Themes** (also: "Modes", "Themes & Modes")
+6. **Layout** (also: "Layout & Spacing")
+7. **Motion** (also: "Motion & Animation")
+8. **Elevation & Depth** (also: "Elevation")
+9. **Shapes**
+10. **Iconography** (also: "Icons")
+11. **Components**
+12. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -198,13 +202,104 @@ typography:
     letterSpacing: 0.1em
 ```
 
+## Voice
+
+Also known as "Tone" or "Voice & Tone".
+
+This section captures the **verbal** half of the brand — the personality of the words on the page. Two products with identical visual tokens but different brands should sound different. Voice carries that difference.
+
+The block has two halves: `voice:` (a small set of dials describing the personality) and `copy:` (concrete content rules a linter can enforce).
+
+### Voice axes
+
+Voice axes are 1–5 integer dials. Pick the four that pay for themselves with examples that read distinctly:
+
+| Axis | Range | Meaning |
+| --- | --- | --- |
+| `formality` | 1–5 | The voice's formality dial. 1 = low, 5 = high. |
+| `warmth` | 1–5 | The voice's warmth dial. 1 = low, 5 = high. |
+| `authority` | 1–5 | The voice's authority dial. 1 = low, 5 = high. |
+| `playfulness` | 1–5 | The voice's playfulness dial. 1 = low, 5 = high. |
+
+`person`, `tense`, `oxfordComma`, and `contractions` are flat brand facts that complement the axes.
+
+```yaml
+voice:
+    formality: 3
+    warmth: 4
+    authority: 3
+    playfulness: 2
+    person: second
+    tense: present-active
+    oxfordComma: true
+    contractions: permitted
+```
+
+### Casing rules
+
+Per-surface casing conventions live under `copy.casing`. The `casing-mismatch` rule reads them and verifies component labels for matching component kinds.
+
+| Surface | Allowed values |
+| --- | --- |
+| `button` | `sentence-case`, `title-case`, `UPPERCASE`, `lowercase` |
+| `nav` | `sentence-case`, `title-case`, `UPPERCASE`, `lowercase` |
+| `section-heading` | `sentence-case`, `title-case`, `UPPERCASE`, `lowercase` |
+
+### Banned and approved terms
+
+`copy.bannedTerms` is the list of words and phrases the brand never uses. The `banned-term-in-prose` rule flags every occurrence in document prose, in component labels (`label`, `placeholder`, `title`, `aria-label`), and — when the CLI is pointed at source — in JSX text and string props.
+
+`copy.approvedTerms` is a `canonical → approved` mapping: when prose mentions the canonical name, the approved form is required (`user → customer`). Mostly used for product-specific jargon and renames.
+
+`copy.bannedRegex` adds phrasal patterns (`(?i)\bgame[- ]?changer\b`) that literal terms can't cover. Patterns are compiled once during model build.
+
+`copy.reservedNames` is the list of product / feature names that must appear verbatim. The `reserved-name-form` rule flags lowercased, hyphenated, or mixed-case variants.
+
+```yaml
+copy:
+    casing:
+      button: sentence-case
+      nav: title-case
+      section-heading: sentence-case
+    buttonLabelMaxWords: 3
+    errorPattern: "{what-happened}. {how-to-fix}."
+    emptyStateTone: encouraging
+    bannedTerms:
+      0: seamless
+      1: unlock
+      2: leverage
+      3: delight
+      4: revolutionary
+      5: effortless
+      6: one-stop shop
+      7: synergy
+    bannedRegex:
+      0: (?i)\bgame[- ]?changer\b
+      1: (?i)\bnext[- ]?gen\b
+    approvedTerms:
+      user: customer
+      dashboard: Home
+    reservedNames:
+      0: DesignMD
+```
+
+### Error and empty-state patterns
+
+`copy.errorPattern` is a string template like `"{what-happened}. {how-to-fix}."`. Components matching the `error-message` kind whose `label` violates the pattern's slot count or literal separators are flagged by `error-pattern-violation`.
+
+`copy.emptyStateTone` records the tone the brand wants its empty states to project (e.g., `encouraging`, `neutral`). Recorded for downstream tools; not enforced in v1.
+
+### Why first-class
+
+Every prior content style guide (Mailchimp, Polaris, GOV.UK) is human-readable only. Encoding voice + copy as data lets the linter enforce them — the contribution opportunity is the enforceability, not the categories themselves.
+
 ## Layout
 
 Also known as "Layout & Spacing".
 
-This section describes the layout and spacing strategy.
+This section describes the layout, grid, breakpoints, and page-template strategy. Layout is a contract — without one, every screen the AI generates is improvised. With one, layout becomes a small, enforceable vocabulary.
 
-Many design systems follow a grid-based layout. Others, like Liquid Glass, use margins, safe areas, and dynamic padding.
+The block has four sub-systems: `breakpoints` (responsive thresholds), `grid` (columns + gutter + margins), `layoutRules` (readable measure, vertical rhythm, form-field width), and `templates` (page-level region registry).
 
 Example:
 
@@ -212,14 +307,103 @@ Example:
 ## Layout
 
 The layout follows a **Fluid Grid** model for mobile devices and a
-**Fixed-Max-Width Grid** for desktop (max 1200px).
+**Fixed-Max-Width Grid** for desktop (max 1280px). Breakpoints follow the
+mobile-first cascade — base styles target the smallest viewport and scale up.
 
-A strict 8px spacing scale (with a 4px half-step for micro-adjustments) is used to maintain a consistent rhythm. Components are grouped using "containment" principles, where related items are housed in cards with generous internal padding (24px) to emphasize the soft, approachable nature of the brand.
+A strict 8px spacing scale (with a 4px half-step for micro-adjustments) is used to maintain a consistent rhythm. Components and dimensions snap to the grid gutter; off-grid values are flagged by `off-grid-dimension`.
 ```
 
-### Design Tokens
+### Mobile-first or desktop-first
 
-The spacing section defines the spacing design tokens. These may include spacing units that are useful for implementing the layout model. For example, a fixed grid layout may have spacing units for column spans, gutters, and margins.
+Pick one and document it. Mobile-first means base styles target the smallest viewport and scale up; desktop-first the reverse. The choice changes how every breakpoint is read and is recorded as `breakpoints.philosophy: {BREAKPOINT_PHILOSOPHIES.join(' | ')}`. We recommend mobile-first as the industry default; desktop-first is supported but should be a deliberate choice.
+
+### Breakpoint philosophy
+
+Breakpoints are content-driven, not device-driven. Add a breakpoint when the layout actually breaks, not because tablets exist. Document the meaning of each breakpoint, not just its pixel value. The conventional ordering is `{BREAKPOINT_KEYS.join(' < ')}`; values must increase strictly across that sequence (`breakpoint-monotonicity`).
+
+```yaml
+breakpoints:
+  philosophy: mobile-first
+  values:
+    sm: 640px
+    md: 768px
+    lg: 1024px
+    xl: 1280px
+    "2xl": 1536px
+```
+
+### Grid usage
+
+Components and layout dimensions snap to the grid (column count or gutter multiple). The `off-grid-dimension` rule warns on layout dimensions (`width`, `height`, `padding`, `gap`, `margin`) that are neither a multiple of `grid.gutter` nor a declared `spacing` token.
+
+Off-grid is acceptable for documented exceptions only — full-bleed imagery, modal overlays, hero artwork. List those region names in `grid.bleedExceptions`.
+
+```yaml
+grid:
+  columns: 12
+  gutter: "{spacing.md}"
+  margin:
+    sm: "{spacing.md}"
+    lg: "{spacing.xl}"
+  maxWidth: 1280px
+  bleedExceptions: [hero, gallery, modal-overlay]
+```
+
+### Readable measure
+
+Body prose stays under `layoutRules.contentMaxWidth` (≈ 60–80 characters per line). Never let prose run the full width of the viewport on desktop. `layoutRules.stackSpacing` is the default vertical rhythm between blocks; `layoutRules.formFieldWidth` is the canonical width for text inputs.
+
+```yaml
+layoutRules:
+  contentMaxWidth: 720px
+  stackSpacing: "{spacing.lg}"
+  formFieldWidth: 480px
+```
+
+### Responsive content strategy
+
+Narrower viewports don't just shrink; they *restructure*. Multi-column becomes stacked; navigation collapses to a menu; tables become cards. Don't squish, reflow.
+
+### Page templates
+
+A template is a closed set of named regions for a class of page. Common templates: `marketing` (header / hero / sections / cta / footer), `app-shell` (topbar / sidebar / main / statusbar), `settings` (topbar / sidebar-nav / content). Each template declares `regions` (the named slots a page may use) and `requiredRegions` (the subset that must be present). Pages are assigned to templates via `pages:`.
+
+Once `templates` is declared the closed-world rules engage:
+
+* **`unknown-template`** (error) — `pages.X.template` references a name not in the registry.
+* **`missing-region`** (error) — a page assigned to template T whose declared regions miss a `requiredRegions` entry.
+* **`template-region-purity`** (warning) — region names whose conventional semantics conflict across templates (e.g., `header` is global identity, `topbar` is contextual to the current page).
+
+```yaml
+templates:
+  marketing:
+    regions: [header, hero, sections, cta, footer]
+    requiredRegions: [header, footer]
+    maxWidth: 1280px
+  app-shell:
+    regions: [topbar, sidebar, main, statusbar]
+    requiredRegions: [topbar, main]
+    sidebarWidth: 280px
+  settings:
+    regions: [topbar, sidebar-nav, content]
+    requiredRegions: [topbar, content]
+```
+
+### Region semantics
+
+Every template region has a defined role: `header` is identity + global nav; `topbar` is contextual to the current page; `sidebar` is persistent navigation, `aside` is contextual auxiliary content. Don't repurpose regions across templates — pick one vocabulary and hold it across the system.
+
+### Template decision tree
+
+* **`marketing`** — public-facing pages with a hero, sales-style sections, and a footer (landing pages, pricing, about). Identity-level navigation.
+* **`app-shell`** — authenticated product surfaces with persistent topbar + sidebar + main content. Contextual navigation.
+* **`settings`** — secondary surfaces inside the app, often with sub-navigation in a sidebar-nav. Inherits app chrome.
+
+Anti-pattern: marketing template used for in-app pages, or app-shell used for the public homepage. The `data-template` attribute (when source-side scanning is enabled) makes the assignment explicit per file.
+
+### Design Tokens — spacing
+
+The `spacing` section defines the spacing design tokens. These may include spacing units that are useful for implementing the layout model. For example, a fixed grid layout may have spacing units for column spans, gutters, and margins. The grid's `gutter:` typically references one of these tokens (`{spacing.md}`).
 
 It is a
 map\<string, Dimension | number> that maps the spacing scale identifier to a dimension value or a unitless number (e.g., column counts or ratios).
@@ -236,6 +420,50 @@ spacing:
   margin: 32px
 ```
 
+## Motion
+
+Also known as "Motion & Animation".
+
+This section describes when and how the interface moves. Motion communicates causality (this caused that), state change, and spatial relationship. It is never decorative.
+
+* **Easing semantics** — entrance uses *decelerate* (fast in, slow stop); exit uses *accelerate*; movement on screen uses *standard*. Match easing to physical intuition.
+* **Duration scale** — `fast` for state changes (button press), `medium` for component transitions (modal open), `slow` for page-level transitions only. Anything over 400ms feels broken (`overlong-duration`).
+* **Reduced motion** — every system declares a `reducedMotion:` fallback. Required, not optional (`missing-reduced-motion`).
+* **What never animates** — layout properties (`width`, `height`, `padding`, `margin`) cause thrash; animate `transform` and `opacity` instead (`animating-layout-property`).
+
+### Design Tokens
+
+The `motion` section defines the temporal vocabulary. `duration` carries timing primitives in ms or s; `easing` carries CSS easings (keyword or `cubic-bezier(...)`); `reducedMotion` names the duration and easing applied under `prefers-reduced-motion`.
+
+It is a record with three optional sub-blocks: `duration`, `easing`, and `reducedMotion`.
+
+```yaml
+motion:
+  duration:
+    instant: 0ms
+    fast: 150ms
+    medium: 250ms
+    slow: 400ms
+  easing:
+    standard: "cubic-bezier(0.4, 0, 0.2, 1)"
+    decelerate: "cubic-bezier(0, 0, 0.2, 1)"
+    accelerate: "cubic-bezier(0.4, 0, 1, 1)"
+    emphasized: "cubic-bezier(0.2, 0, 0, 1)"
+  reducedMotion:
+    duration: instant
+    easing: standard
+```
+
+Components reference motion tokens from `transition:` shorthands:
+
+```yaml
+components:
+  button-primary:
+    transition: "opacity {motion.duration.fast} {motion.easing.standard}"
+```
+
+The model resolves the embedded references after validation, so exporters see substituted literal values (`"opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)"`).
+
 ## Elevation & Depth
 
 Also known as "Elevation".
@@ -250,6 +478,28 @@ Example:
 Depth is achieved through **Tonal Layers** rather than heavy shadows. The
 background uses a soft off-white or very light green, while primary content sits on pure white cards.
 ```
+
+### Design Tokens
+
+The `elevation` section defines semantic shadow tokens. Elevation is a
+*meaning* (resting, raised, overlay, modal) rather than a decoration —
+each level should map to a specific z-index intent (resting=0, raised=10,
+overlay=100, modal=1000).
+
+It is a map\<string, ShadowValue>.
+
+```yaml
+elevation:
+  resting: "0 1px 2px rgba(0,0,0,0.06)"
+  raised:  "0 4px 8px rgba(0,0,0,0.08)"
+  overlay: "0 12px 24px rgba(0,0,0,0.12)"
+  modal:   "0 24px 48px rgba(0,0,0,0.16)"
+```
+
+Components reference elevation via `shadow: "{elevation.raised}"` or the
+shorthand `elevation: raised`. Linter rule `elevation-without-semantics`
+nudges authors toward references when literal shadow values are used in
+components.
 
 ## Shapes
 
@@ -281,6 +531,38 @@ rounded:
   full: 9999px
 ```
 
+## Iconography
+
+Also known as "Icons".
+
+This section commits the system to a single icon library and a single stroke weight, plus an icon-size scale that components reference from `iconSize:`.
+
+* **One library, one weight** — never mix Lucide and Material Symbols in the same product. Pick one stroke weight and hold it across the system.
+* **Filled vs. outlined** — outlined is the default; filled signals selection or emphasis (active tab, favorited item). Never mix in the same set.
+* **Icon-text alignment** — icons inside buttons match the cap height of the label, not the line height. Always include accessible labels for icon-only controls.
+* **Color binding** — icons inherit `currentColor` by default. Brand-colored icons are the exception, not the rule.
+* **Sizing** — icons follow text size unless they are the primary affordance (toolbar button, navigation). Document the size scale; component `iconSize` values not on the scale are flagged by `icon-size-off-scale`.
+
+### Design Tokens
+
+The `iconography` section names the library, the stroke weight, the size scale, the default size, and the color binding rule. Library names are validated against a closed enum: \`lucide\`, \`material-symbols\`, \`heroicons\`, \`phosphor\`, \`custom-svg\`.
+
+```yaml
+iconography:
+  library:
+    name: lucide
+    version: "0.451.0"
+    style: outlined
+  strokeWeight: 1.5px
+  sizes:
+    sm: 16px
+    md: 20px
+    lg: 24px
+    xl: 32px
+  defaultSize: md
+  colorBinding: currentColor
+```
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -299,7 +581,12 @@ This section provides style guidance for component atoms within the design syste
 
 The components section defines a collection of design tokens used to ensure consistent styling of common components. It's a map\<string, map\<string, string>> that maps a component identifier to a group of sub token names and values. The design token values may be literal values, or references to previously defined design tokens.
 
-**Variants**. A component may have a variant for different UI states such as active, hover, pressed, etc. Those variant components may be defined under a different but related key, for example, "button-primary", "button-primary-hover", "button-primary-active". The agent will consider all variants and make the appropriate styling decisions.
+**Variants** (configuration: primary/secondary/danger) and **states**
+(transient response to user input: hover/focus/active/disabled/loading) are
+modeled differently. Variants typically appear as separate component entries
+(e.g., `button-primary`, `button-secondary`). States are nested under a
+component's `states:` block and inherit from the base, overriding only the
+properties that change.
 
 ```yaml
 components:
@@ -308,8 +595,19 @@ components:
     textColor: "{colors.primary-20}"
     rounded: "{rounded.md}"
     padding: 12px
-  button-primary-hover:
-    backgroundColor: "{colors.primary-70}"
+    transition: opacity {motion.duration.fast} {motion.easing.standard}
+    interactive: true
+    states:
+      hover:
+        backgroundColor: "{colors.primary-70}"
+      focus-visible:
+        outline: 2px solid {colors.primary-40}
+      active:
+        opacity: 0.9
+      disabled:
+        backgroundColor: "{colors.surface-variant}"
+        textColor: "{colors.on-surface-variant}"
+        cursor: not-allowed
 ```
 
 ### Component Property Tokens
@@ -320,17 +618,163 @@ Each component has a set of properties that are themselves design tokens:
 - textColor: \<Color\>
 - typography: \<Typography\>
 - rounded: \<Dimension\>
-- padding: \<Dimension\>
+- padding: \<Dimension\> - Accepts a single Dimension (`12px`) or a CSS shorthand of two-to-four Dimensions (`12px 16px`).
 - size: \<Dimension\>
 - height: \<Dimension\>
 - width: \<Dimension\>
-- gap: \<Dimension\> - Gap between child elements (CSS `gap`).
-- border: \<string\> - CSS `border` shorthand (width style color), e.g. `1px solid {colors.neutral-30}`.
-- outline: \<string\> - CSS `outline` shorthand. Useful for focus rings.
-- opacity: \<number\> - Numeric opacity from 0 to 1.
-- boxShadow: \<string\> - CSS `box-shadow` value. Multiple shadows may be comma-separated.
-- transition: \<string\> - CSS `transition` shorthand, e.g. `background-color 150ms ease`.
+- border: \<BorderShorthand\> - CSS shorthand `<width> <style> <color>` (e.g., `1px solid {colors.outline}`) or a Color/Dimension token reference.
+- borderColor: \<Color\>
+- borderWidth: \<Dimension\>
+- shadow: \<ShadowValue\> - CSS shorthand `<offsetX> <offsetY> <blur> [<spread>] <color>` or a reference to an `{elevation.*}` token.
+- elevation: \<ElevationLevel\> - Reference to an `{elevation.*}` token (semantic: resting, raised, overlay, modal).
+- gap: \<Dimension\>
+- iconSize: \<Dimension | "auto"\> - `auto` (the default) follows the nearest text size. Otherwise a Dimension or `{typography.*}` reference.
+- opacity: \<Number\> - A unitless number between 0 and 1. Use for state (disabled, loading), not for tinting.
+- transition: \<TransitionShorthand\> - CSS shorthand `<property> <duration> <easing>`. Until motion tokens land, literal values are accepted with a warning.
+- outline: \<string\> - CSS outline shorthand (typically used in `focus-visible` state).
+- boxShadow: \<string\> - CSS box-shadow string. Prefer `shadow` + the `elevation.*` semantic tokens.
 - backdropFilter: \<string\> - CSS `backdrop-filter` value, e.g. `blur(8px)`.
+- cursor: \<string\> - CSS cursor keyword. Pair `cursor: not-allowed` with disabled-state contrast changes.
+- label: \<string\> - Visible button / nav text content. The voice + copy linter rules read this property.
+- placeholder: \<string\> - Input placeholder text. Subject to the same content rules as `label`.
+- title: \<string\> - Tooltip / accessible name. Subject to the same content rules as `label`.
+- aria-label: \<string\> - Accessible name. Subject to the same content rules as `label`.
+
+### Authoring Rules
+
+The Components section is also the place where the design system explains
+*how* its visual properties combine. The linter checks the structural
+shape; the prose carries the rationale. Cover at least:
+
+* **Separation hierarchy** — when to use border vs shadow vs background
+  contrast for visual separation. Pick **one** strategy per surface;
+  combining all three reads as visual noise (`triple-separation` rule).
+* **Elevation semantics** — elevation is a meaning, not a decoration.
+  Map every shadow to a semantic level (resting, raised, overlay,
+  modal). Reach for `{elevation.*}` references rather than literal
+  shadows (`elevation-without-semantics` rule).
+* **Opacity discipline** — opacity expresses *state* (disabled, loading).
+  Tint with color tokens, never with opacity. Never stack opacity layers
+  on top of an already-translucent backgroundColor (`opacity-stacking`
+  rule).
+* **Transitions** — animate `transform` and `opacity`. Animating
+  `width`, `height`, `padding`, or `margin` triggers layout on every
+  frame and is flagged by `animating-layout-property`. Always honor
+  `prefers-reduced-motion`.
+* **Icon sizing** — `iconSize: auto` follows the nearest text size and is
+  the right default. Override only when the icon is the primary
+  affordance for the component.
+* **Border usage** — borders communicate input affordances and dividers.
+  Borders should not be the primary visual identity of a surface —
+  reach for color or elevation first.
+
+### Component Registry (Closed-World)
+
+By default, the components map is **open-world**: any component name is
+accepted and the linter will not complain. To opt into a closed set —
+the equivalent of TypeScript's `noImplicitAny` for components — split
+the components block into a `registry` (the catalog) and `definitions`
+(the values):
+
+```yaml
+components:
+  registry:
+    - name: button-primary
+      kind: button
+      requiredProperties: [backgroundColor, padding]
+    - name: card
+      kind: container
+    - name: card-elevated
+      kind: container
+      composes: card           # pre-merge card's props before overrides
+  definitions:
+    button-primary:
+      backgroundColor: "{colors.primary}"
+      padding: 12px
+    card:
+      backgroundColor: "{colors.surface}"
+    card-elevated:
+      shadow: "{elevation.raised}"
+```
+
+Once a registry is declared, the closed-world rules engage:
+
+* **`unbound-component`** (error) — flags definitions and prose
+  `{components.X}` references whose name isn't in the registry.
+* **`missing-required-property`** (error) — a registry entry's
+  `requiredProperties` must each be set by the matching definition
+  (composed properties count).
+* **`registry-without-definition`** (warning) — a registry entry has no
+  matching definition.
+* **`composes-cycle`** (error) — cycles in the `composes:` graph.
+* **`naming-convention`** (warning) — registry names follow
+  `noun-modifier` ordering with a closed modifier vocabulary
+  (primary/secondary/tertiary/danger/ghost/outline/subtle/bare/elevated/
+  hover/focus/active/disabled).
+
+**Authoring discipline.** Adding a registry entry is a deliberate,
+reviewable act. Definitions can be added or edited freely; only the
+registry edit signals "this system now supports a new component". When
+in doubt, prefer composing existing components (Card with an Image
+inside) over inventing a new one — the registry should grow slowly.
+
+**Variant vs new component.** If two components differ only in color or
+size, they're variants — express the difference via a hover/focus/etc.
+state on a single registry entry, not a separate name. If they differ in
+structure (slots, behavior, role), they're new components and warrant
+their own entry.
+
+**Anti-patterns.** `card-with-image`, `button-but-rounded`, `header-v2`
+— all signals that variants or composition are missing. The naming and
+composition rules above will flag the symptom; the prose explains the
+cure.
+
+### Interactive States
+
+States express transient responses to user input. They live under a
+component's `states:` block and override only the properties that change from
+the rest state. A component opts in by setting `interactive: true`.
+
+The recognized state vocabulary is opinionated but not closed; novel state
+names produce a warning rather than an error.
+
+#### State hierarchy
+
+Visual weight order, lightest to heaviest: rest < hover < focus-visible
+< active < pressed. Each state communicates a different message — never
+combine them into one undifferentiated lift.
+
+#### Focus-visible discipline
+
+Every interactive component **must** declare a `focus-visible` state. Never
+suppress the native outline (`outline: none`) without supplying a replacement
+signal — `boxShadow`, `border`, or an `outline-offset` ring. Focus rings use
+their own dedicated token, not the hover color.
+
+#### Disabled affordance
+
+A `disabled` state must reduce contrast **and** set `cursor: not-allowed`.
+Opacity-only signaling fails for users who can't see the cursor change and is
+opaque to assistive tech.
+
+#### Hover is desktop-only
+
+Hover state must never be the only signal of interactivity. Touch devices
+skip hover entirely; the rest state must already communicate affordance via
+shape, weight, or color.
+
+#### State vs. variant
+
+A state is a transient response to user input (hover, active). A variant is
+a persistent configuration (primary, secondary, danger). Don't conflate
+them; the explosion `button-primary-hover-disabled` is exactly what the
+nested `states:` block exists to prevent.
+
+#### Loading / busy
+
+Loading is a state, not an absence. The component must remain visible and
+indicate progress — never collapse, hide, or replace it with a spinner that
+shifts surrounding layout.
 
 ## Do's and Don'ts
 
@@ -355,15 +799,62 @@ The following names are commonly used across design systems. They are not requir
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
+**Motion-duration:** `instant`, `fast`, `medium`, `slow`
+
+**Motion-easing:** `standard`, `decelerate`, `accelerate`, `emphasized`
+
+**Iconography-sizes:** `sm`, `md`, `lg`, `xl`
+
 # Consumer Behavior for Unknown Content
 
 When a DESIGN.md consumer encounters content not defined by this spec:
 
 | Scenario | Behavior | Example |
 |---|---|---|
-| Unknown section heading | Preserve; do not error | `## Iconography` |
+| Unknown section heading | Preserve; do not error | `## Voice & Tone` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
-| Unknown component property | Accept with warning | `borderColor` |
+| Unknown component property | Accept with warning | `myCustomProp` |
+| Typed component property with malformed value | Reject with error | `opacity: 2` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |
+
+# Linting
+
+The active linting rules are listed in the rules table emitted by `design.md spec --rules`.
+
+### Why `prose-token-mismatch`
+
+A DESIGN.md typically describes its palette in two places: the YAML tokens
+under `colors:`, and the prose under `## Colors` (e.g.
+*"Boston Clay (#B8422E) is the sole driver for interaction"*). When a
+designer recolors a token, the prose can silently fall out of sync. The
+existing `broken-ref` rule validates `{colors.tertiary}`-style references
+but cannot see hex literals embedded in sentences.
+
+`prose-token-mismatch` scans markdown prose for hex literals and verifies
+that each one resolves to a defined token's value. When an inline anchor
+is present — a backticked token key (`` `tertiary` ``, `` `colors.tertiary` ``)
+or a ramp anchor's `humanName` — the rule additionally checks that the hex
+matches *that specific token's* current value, catching renames and
+recolors as well as deletions.
+
+### Suppression Directives
+
+Linter findings can be suppressed inline with HTML comment directives.
+This is useful when prose intentionally cites a historical, external, or
+OS-default color that should not match a token.
+
+```markdown
+<!-- design.md disable-next-line prose-token-mismatch -->
+The legacy logo used Boston Red (#C8102E).
+
+<!-- design.md disable prose-token-mismatch -->
+External examples (#FF6700) appear throughout this section.
+<!-- design.md enable prose-token-mismatch -->
+
+<!-- design.md disable-file prose-token-mismatch -->
+```
+
+Use `*` as the rule name to suppress every rule. Multiple rules may be
+listed, separated by commas (e.g. `disable-next-line rule-a, rule-b`).
