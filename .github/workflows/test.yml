@@ -52,3 +52,22 @@ jobs:
         npx design.md lint DESIGN.md
         node -e "import('@google/design.md/linter').then(m => console.log('OK:', Object.keys(m).length, 'exports'))"
 
+  npm-registry-smoke-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+        registry-url: https://registry.npmjs.org
+
+    - name: Install @google/design.md from the public npm registry
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/npm-registry-smoke"
+        cd "$RUNNER_TEMP/npm-registry-smoke"
+        npm init -y
+        npm install "@google/design.md@latest"
+        node node_modules/@google/design.md/dist/index.js spec --rules-only --format json > /dev/null
+        node -e "import('@google/design.md/linter').then(m => console.log('OK:', Object.keys(m).length, 'exports'))"
+

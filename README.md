@@ -179,11 +179,29 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 npm install @google/design.md
 ```
 
-Or run directly:
+On **Windows**, quote the package name if your shell treats `@` specially (PowerShell, some terminals):
+
+```bash
+npm install "@google/design.md"
+```
+
+Or run directly (always resolves from the public npm registry):
 
 ```bash
 npx @google/design.md lint DESIGN.md
 ```
+
+#### `npm error ENOVERSIONS` (“No versions available for @google/design.md”)
+
+The CLI is published as [`@google/design.md` on npm](https://www.npmjs.com/package/@google/design.md). `ENOVERSIONS` almost always means npm is not querying the public registry (custom `registry=` in `.npmrc`, a corporate mirror that has not synced this package, or a misconfigured `@google:registry` for the `@google` scope).
+
+Check your effective registry:
+
+```bash
+npm config get registry
+```
+
+For a normal install from the internet it should be `https://registry.npmjs.org/`. After fixing config, retry with `npm cache clean --force` if a stale 404 was cached.
 
 All commands accept a file path or `-` for stdin. Output defaults to JSON.
 
