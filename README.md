@@ -125,7 +125,7 @@ components:
 | Color | `#` + hex (sRGB) | `"#1A1C1E"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
 | Token Reference | `{path.to.token}` | `{colors.primary}` |
-| Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation`, `textTransform` | See example above |
+| Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation`, `textTransform` | See the example above |
 
 ### Section Order
 
