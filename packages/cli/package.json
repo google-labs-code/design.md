@@ -20,7 +20,8 @@
   "private": false,
   "type": "module",
   "bin": {
-    "design.md": "./dist/index.js"
+    "design.md": "./dist/index.js",
+    "designmd": "./dist/index.js"
   },
   "exports": {
     ".": {

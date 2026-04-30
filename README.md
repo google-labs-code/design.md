@@ -187,6 +187,21 @@ npx @google/design.md lint DESIGN.md
 
 All commands accept a file path or `-` for stdin. Output defaults to JSON.
 
+> **Windows tip**: when invoking the CLI directly from a `package.json` script
+> (rather than through `npx`), use the `designmd` alias instead of `design.md`.
+> The `.md` suffix in the original bin name confuses Windows command resolution
+> with the file association for Markdown files. The `designmd` shim resolves to
+> the same entrypoint and works identically across all platforms.
+>
+> ```jsonc
+> // package.json
+> {
+>   "scripts": {
+>     "design:lint": "designmd lint DESIGN.md"
+>   }
+> }
+> ```
+
 ### `lint`
 
 Validate a DESIGN.md file for structural correctness.
