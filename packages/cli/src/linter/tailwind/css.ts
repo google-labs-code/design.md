@@ -19,52 +19,94 @@ import type {
 } from './spec.js';
 
 /**
- * Render a Tailwind v4 `@theme` CSS stylesheet from a successful emitter
- * result. Tailwind v4 deprecates `tailwind.config.js`; theme tokens now live
- * in CSS as `--color-*`, `--font-*`, `--text-*`, `--radius-*`, `--spacing-*`,
- * `--shadow-*`, `--breakpoint-*`, `--container-*`, `--ease-*`, `--duration-*`
- * custom properties under `@theme { ... }`.
+ * Render a Tailwind v4 stylesheet in the shadcn/ui `globals.css` shape:
  *
- * Per-theme overrides emit as `.<theme>` selectors that override the same
- * variables (consumers toggle by setting `class="dark"` on `<html>` or the
- * appropriate ancestor).
+ *   :root { --primary: ...; --on-primary: ...; ... }
+ *   .dark { --primary: ...; ... }
+ *   @theme inline {
+ *     --color-primary: var(--primary);
+ *     --radius-sm: 0.25rem;
+ *     ...
+ *   }
+ *
+ * Color tokens flow through a `:root` → `@theme inline` indirection so that
+ * per-theme overrides (`.dark`, `.high-contrast`) can swap underlying values
+ * at runtime without rebuilding the Tailwind theme. Non-color tokens
+ * (typography, radius, spacing, shadow, breakpoint, motion) emit directly
+ * inside `@theme` since they typically don't theme-switch.
  */
 export function renderTailwindThemeCss(result: TailwindEmitterResult): string {
   if (!result.success) {
     throw new Error(`Cannot render CSS from failed emitter result: ${result.error.message}`);
   }
   const { theme, themes } = result.data;
-  const lines: string[] = ['@theme {'];
+  const colors = theme.extend.colors;
 
-  emitExtend(lines, theme.extend);
+  const out: string[] = [];
 
-  // theme.container.padding maps to --container-padding-* on the DEFAULT key
-  // and to per-breakpoint variables. We expose just the DEFAULT here; authors
-  // who need responsive padding can layer their own utilities.
-  if (theme.container?.padding) {
-    const padding = theme.container.padding;
-    if (typeof padding === 'string') {
-      lines.push(`  --container-padding: ${padding};`);
-    } else if (padding.DEFAULT) {
-      lines.push(`  --container-padding: ${padding.DEFAULT};`);
-    }
+  if (colors) {
+    out.push(':root {');
+    emitColorVars(out, colors);
+    out.push('}');
   }
-
-  lines.push('}');
 
   if (themes) {
     for (const [name, view] of Object.entries(themes)) {
-      lines.push('', `.${name} {`);
-      emitColors(lines, view.colors);
-      lines.push('}');
+      out.push('', `.${name} {`);
+      emitColorVars(out, view.colors);
+      out.push('}');
     }
   }
 
-  return lines.join('\n') + '\n';
+  out.push('', '@theme inline {');
+  if (colors) emitColorAliases(out, colors);
+  emitNonColorTokens(out, theme.extend);
+  if (theme.container?.padding) {
+    const padding = theme.container.padding;
+    const dflt = typeof padding === 'string' ? padding : padding.DEFAULT;
+    if (dflt) out.push(`  --container-padding: ${dflt};`);
+  }
+  out.push('}');
+
+  return out.join('\n') + '\n';
 }
 
-function emitExtend(lines: string[], extend: TailwindThemeExtend): void {
-  if (extend.colors) emitColors(lines, extend.colors);
+function emitColorVars(
+  lines: string[],
+  colors: Record<string, string | Record<string, string>>,
+): void {
+  for (const [name, value] of Object.entries(colors)) {
+    if (typeof value === 'string') {
+      lines.push(`  --${name}: ${value};`);
+    } else {
+      for (const [step, color] of Object.entries(value)) {
+        const key = step === 'DEFAULT' ? `--${name}` : `--${name}-${step}`;
+        lines.push(`  ${key}: ${color};`);
+      }
+    }
+  }
+}
+
+function emitColorAliases(
+  lines: string[],
+  colors: Record<string, string | Record<string, string>>,
+): void {
+  for (const [name, value] of Object.entries(colors)) {
+    if (typeof value === 'string') {
+      lines.push(`  --color-${name}: var(--${name});`);
+    } else {
+      for (const step of Object.keys(value)) {
+        if (step === 'DEFAULT') {
+          lines.push(`  --color-${name}: var(--${name});`);
+        } else {
+          lines.push(`  --color-${name}-${step}: var(--${name}-${step});`);
+        }
+      }
+    }
+  }
+}
+
+function emitNonColorTokens(lines: string[], extend: TailwindThemeExtend): void {
   if (extend.fontFamily) {
     for (const [name, stack] of Object.entries(extend.fontFamily)) {
       lines.push(`  --font-${name}: ${stack.join(', ')};`);
@@ -112,23 +154,6 @@ function emitExtend(lines: string[], extend: TailwindThemeExtend): void {
   if (extend.maxWidth) {
     for (const [name, value] of Object.entries(extend.maxWidth)) {
       lines.push(`  --container-${name}: ${value};`);
-    }
-  }
-}
-
-function emitColors(
-  lines: string[],
-  colors: Record<string, string | Record<string, string>>,
-): void {
-  for (const [name, value] of Object.entries(colors)) {
-    if (typeof value === 'string') {
-      lines.push(`  --color-${name}: ${value};`);
-    } else {
-      // Ramp: { DEFAULT, 50, 100, ..., 900 }
-      for (const [step, color] of Object.entries(value)) {
-        const key = step === 'DEFAULT' ? `--color-${name}` : `--color-${name}-${step}`;
-        lines.push(`  ${key}: ${color};`);
-      }
     }
   }
 }
