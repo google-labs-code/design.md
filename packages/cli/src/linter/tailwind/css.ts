@@ -21,18 +21,22 @@ import type {
 /**
  * Render a Tailwind v4 stylesheet in the shadcn/ui `globals.css` shape:
  *
- *   :root { --primary: ...; --on-primary: ...; ... }
+ *   @import "tailwindcss";
+ *
+ *   @custom-variant dark (&:is(.dark *));
+ *
+ *   :root { --primary: ...; --primary-foreground: ...; --rounded-md: ...; }
  *   .dark { --primary: ...; ... }
  *   @theme inline {
  *     --color-primary: var(--primary);
- *     --radius-sm: 0.25rem;
+ *     --radius-md: var(--rounded-md);
  *     ...
  *   }
  *
- * Color tokens flow through a `:root` → `@theme inline` indirection so that
- * per-theme overrides (`.dark`, `.high-contrast`) can swap underlying values
- * at runtime without rebuilding the Tailwind theme. Non-color tokens
- * (typography, radius, spacing, shadow, breakpoint, motion) emit directly
+ * Color and radius tokens flow through a `:root` → `@theme inline` indirection
+ * so that per-theme overrides (`.dark`, `.high-contrast`) can swap underlying
+ * values at runtime without rebuilding the Tailwind theme. Other non-color
+ * tokens (typography, spacing, shadow, breakpoint, motion) emit directly
  * inside `@theme` since they typically don't theme-switch.
  */
 export function renderTailwindThemeCss(result: TailwindEmitterResult): string {
@@ -41,12 +45,16 @@ export function renderTailwindThemeCss(result: TailwindEmitterResult): string {
   }
   const { theme, themes } = result.data;
   const colors = theme.extend.colors;
+  const borderRadius = theme.extend.borderRadius;
 
   const out: string[] = [];
 
-  if (colors) {
+  out.push('@import "tailwindcss";', '', '@custom-variant dark (&:is(.dark *));', '');
+
+  if (colors || borderRadius) {
     out.push(':root {');
-    emitColorVars(out, colors);
+    if (colors) emitColorVars(out, colors);
+    if (borderRadius) emitRadiusVars(out, borderRadius);
     out.push('}');
   }
 
@@ -60,6 +68,7 @@ export function renderTailwindThemeCss(result: TailwindEmitterResult): string {
 
   out.push('', '@theme inline {');
   if (colors) emitColorAliases(out, colors);
+  if (borderRadius) emitRadiusAliases(out, borderRadius);
   emitNonColorTokens(out, theme.extend);
   if (theme.container?.padding) {
     const padding = theme.container.padding;
@@ -106,6 +115,23 @@ function emitColorAliases(
   }
 }
 
+function emitRadiusVars(lines: string[], borderRadius: Record<string, string>): void {
+  for (const [name, value] of Object.entries(borderRadius)) {
+    const key = name === 'DEFAULT' ? '--rounded' : `--rounded-${name}`;
+    lines.push(`  ${key}: ${value};`);
+  }
+}
+
+function emitRadiusAliases(lines: string[], borderRadius: Record<string, string>): void {
+  for (const name of Object.keys(borderRadius)) {
+    if (name === 'DEFAULT') {
+      lines.push(`  --radius: var(--rounded);`);
+    } else {
+      lines.push(`  --radius-${name}: var(--rounded-${name});`);
+    }
+  }
+}
+
 function emitNonColorTokens(lines: string[], extend: TailwindThemeExtend): void {
   if (extend.fontFamily) {
     for (const [name, stack] of Object.entries(extend.fontFamily)) {
@@ -118,12 +144,6 @@ function emitNonColorTokens(lines: string[], extend: TailwindThemeExtend): void 
       if (meta.lineHeight) lines.push(`  --text-${name}--line-height: ${meta.lineHeight};`);
       if (meta.letterSpacing) lines.push(`  --text-${name}--letter-spacing: ${meta.letterSpacing};`);
       if (meta.fontWeight) lines.push(`  --text-${name}--font-weight: ${meta.fontWeight};`);
-    }
-  }
-  if (extend.borderRadius) {
-    for (const [name, value] of Object.entries(extend.borderRadius)) {
-      const key = name === 'DEFAULT' ? '--radius' : `--radius-${name}`;
-      lines.push(`  ${key}: ${value};`);
     }
   }
   if (extend.spacing) {

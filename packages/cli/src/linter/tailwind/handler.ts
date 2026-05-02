@@ -272,10 +272,16 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
     // Flat colors and pair members emit as top-level strings. Skip step entries
     // (already nested under their ramp), the bare anchor (already in group), and
     // dotted standalone-pair members (encoded via hyphen flat aliases below).
+    // Pair foregrounds are renamed to `<pair>-foreground` to match the
+    // shadcn/ui Tailwind v4 utility convention (`text-primary-foreground`):
+    // - declared pairs (pairRole === 'on-container'): use the pair name.
+    // - flat M3-style `on-<x>` keys whose sibling `<x>` is also a flat color or
+    //   ramp: rename to `<x>-foreground`.
     for (const [name, color] of colors) {
       if (color.rampMember) continue;
       if (color.pairRole && name.includes('.')) continue;
-      result[name] = emit(color);
+      const emitName = resolveForegroundName(name, color, colors, colorRamps) ?? name;
+      result[emitName] = emit(color);
     }
 
     return result;
@@ -316,4 +322,33 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
   private dimToString(dim: { value: number; unit: string }): string {
     return `${dim.value}${dim.unit}`;
   }
+}
+
+/**
+ * Map a color key to its shadcn-style `<base>-foreground` emit name when
+ * applicable, or null to keep the original name. Two cases produce a rename:
+ *
+ *   1. The color has `pairRole.role === 'on-container'` (declared `type: pair`)
+ *      — use the pair name directly.
+ *   2. The key is `on-<base>` and a sibling `<base>` exists as a flat color or
+ *      a ramp — common for M3-style files that don't declare pairs explicitly.
+ */
+function resolveForegroundName(
+  name: string,
+  color: ResolvedColor,
+  colors: Map<string, ResolvedColor>,
+  colorRamps: Map<string, RampDef>,
+): string | null {
+  if (color.pairRole?.role === 'on-container') {
+    return `${color.pairRole.pair}-foreground`;
+  }
+  if (name.startsWith('on-')) {
+    const base = name.slice(3);
+    const sibling = colors.get(base);
+    const siblingIsFlat = sibling && !sibling.rampMember && !sibling.pairRole;
+    if (siblingIsFlat || colorRamps.has(base)) {
+      return `${base}-foreground`;
+    }
+  }
+  return null;
 }
