@@ -13,71 +13,45 @@
 // limitations under the License.
 
 import type { TailwindEmitterSpec, TailwindEmitterResult } from './spec.js';
-import type { DesignSystemState, ResolvedDimension } from '../model/spec.js';
+import type { DesignSystemState } from '../model/spec.js';
+
+function toKebabCase(s: string) {
+  return s
+    .replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/^-/, '');
+}
 
 /**
- * Pure function mapping DesignSystemState → Tailwind theme.extend config.
+ * Pure function mapping DesignSystemState → Tailwind v4 CSS variables.
  * No side effects.
  */
 export class TailwindEmitterHandler implements TailwindEmitterSpec {
   execute(state: DesignSystemState): TailwindEmitterResult {
-    return {
-      success: true,
-      data: {
-        theme: {
-          extend: {
-            colors: this.mapColors(state),
-            fontFamily: this.mapFontFamilies(state),
-            fontSize: this.mapFontSizes(state),
-            borderRadius: this.mapDimensions(state.rounded),
-            spacing: this.mapDimensions(state.spacing),
-          },
-        },
-      }
-    };
-  }
+    const lines: string[] = ['@theme {'];
 
-  private mapColors(state: DesignSystemState): Record<string, string> {
-    const result: Record<string, string> = {};
     for (const [name, color] of state.colors) {
-      result[name] = color.hex;
+      lines.push(`  --color-${toKebabCase(name)}: ${color.hex};`);
     }
-    return result;
-  }
 
-  private mapFontFamilies(state: DesignSystemState): Record<string, string[]> {
-    const result: Record<string, string[]> = {};
     for (const [name, typo] of state.typography) {
-      if (typo.fontFamily) {
-        result[name] = [typo.fontFamily];
-      }
+      const prefix = `  --typography-${toKebabCase(name)}`;
+      if (typo.fontFamily) lines.push(`${prefix}-font-family: ${typo.fontFamily};`);
+      if (typo.fontSize) lines.push(`${prefix}-font-size: ${typo.fontSize.value}${typo.fontSize.unit};`);
+      if (typo.fontWeight) lines.push(`${prefix}-font-weight: ${typo.fontWeight};`);
+      if (typo.letterSpacing) lines.push(`${prefix}-letter-spacing: ${typo.letterSpacing.value}${typo.letterSpacing.unit};`);
+      if (typo.lineHeight) lines.push(`${prefix}-line-height: ${typo.lineHeight.value}${typo.lineHeight.unit || ''};`);
     }
-    return result;
-  }
 
-  private mapFontSizes(state: DesignSystemState): Record<string, [string, Record<string, string>]> {
-    const result: Record<string, [string, Record<string, string>]> = {};
-    for (const [name, typo] of state.typography) {
-      if (typo.fontSize) {
-        const meta: Record<string, string> = {};
-        if (typo.lineHeight) meta['lineHeight'] = this.dimToString(typo.lineHeight);
-        if (typo.letterSpacing) meta['letterSpacing'] = this.dimToString(typo.letterSpacing);
-        if (typo.fontWeight !== undefined) meta['fontWeight'] = String(typo.fontWeight);
-        result[name] = [this.dimToString(typo.fontSize), meta];
-      }
+    for (const [name, dim] of state.spacing) {
+      lines.push(`  --spacing-${toKebabCase(name)}: ${dim.value}${dim.unit};`);
     }
-    return result;
-  }
 
-  private mapDimensions(dims: Map<string, { value: number; unit: string }>): Record<string, string> {
-    const result: Record<string, string> = {};
-    for (const [name, dim] of dims) {
-      result[name] = this.dimToString(dim);
+    for (const [name, dim] of state.rounded) {
+      lines.push(`  --border-radius-${toKebabCase(name)}: ${dim.value}${dim.unit};`);
     }
-    return result;
-  }
 
-  private dimToString(dim: { value: number; unit: string }): string {
-    return `${dim.value}${dim.unit}`;
+    lines.push('}');
+    return { success: true, data: lines.join('\n') };
   }
 }
