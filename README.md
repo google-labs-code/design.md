@@ -54,7 +54,7 @@ An agent that reads this file will produce a UI with deep ink headlines in Publi
 Validate a DESIGN.md against the spec, catch broken token references, check WCAG contrast ratios, and surface structural findings — all as structured JSON that agents can act on.
 
 ```bash
-npx @google/design.md lint DESIGN.md
+bun run cli lint DESIGN.md
 ```
 
 ```json
@@ -73,7 +73,7 @@ npx @google/design.md lint DESIGN.md
 Compare two versions of a design system to detect token-level and prose regressions:
 
 ```bash
-npx @google/design.md diff DESIGN.md DESIGN-v2.md
+bun run cli diff DESIGN.md DESIGN-v2.md
 ```
 
 ```json
@@ -175,14 +175,18 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 
 ### Installation
 
+This fork is not published to npm. Clone the repo and install dependencies with [Bun](https://bun.sh):
+
 ```bash
-npm install @google/design.md
+git clone https://github.com/joesteinkamp/design.md.git
+cd design.md
+bun install
 ```
 
-Or run directly:
+Then run the CLI from the repo root via the `cli` script defined in `package.json`:
 
 ```bash
-npx @google/design.md lint DESIGN.md
+bun run cli lint DESIGN.md
 ```
 
 All commands accept a file path or `-` for stdin. Output defaults to JSON.
@@ -192,10 +196,10 @@ All commands accept a file path or `-` for stdin. Output defaults to JSON.
 Validate a DESIGN.md file for structural correctness.
 
 ```bash
-npx @google/design.md lint DESIGN.md
-npx @google/design.md lint --format json DESIGN.md
-cat DESIGN.md | npx @google/design.md lint -
-npx @google/design.md lint --fix DESIGN.md   # rewrite the file with auto-fixes applied
+bun run cli lint DESIGN.md
+bun run cli lint --format json DESIGN.md
+cat DESIGN.md | bun run cli lint -
+bun run cli lint --fix DESIGN.md   # rewrite the file with auto-fixes applied
 ```
 
 | Option | Type | Default | Description |
@@ -211,8 +215,8 @@ Exit code `1` if errors are found, `0` otherwise.
 Apply auto-fixes to a DESIGN.md file. Today the only fix is reordering sections into the canonical order; more fixes will follow. By default the fixed content is written to stdout, leaving the input file untouched.
 
 ```bash
-npx @google/design.md fix DESIGN.md > DESIGN.fixed.md
-npx @google/design.md fix --write DESIGN.md   # rewrite in place
+bun run cli fix DESIGN.md > DESIGN.fixed.md
+bun run cli fix --write DESIGN.md   # rewrite in place
 ```
 
 | Option | Type | Default | Description |
@@ -226,7 +230,7 @@ npx @google/design.md fix --write DESIGN.md   # rewrite in place
 Compare two DESIGN.md files and report token-level changes.
 
 ```bash
-npx @google/design.md diff DESIGN.md DESIGN-v2.md
+bun run cli diff DESIGN.md DESIGN-v2.md
 ```
 
 | Option | Type | Default | Description |
@@ -242,8 +246,8 @@ Exit code `1` if regressions are detected (more errors or warnings in the "after
 Export DESIGN.md tokens to other formats (tailwind, dtcg).
 
 ```bash
-npx @google/design.md export --format tailwind DESIGN.md > theme.css
-npx @google/design.md export --format dtcg DESIGN.md > tokens.json
+bun run cli export --format tailwind DESIGN.md > theme.css
+bun run cli export --format dtcg DESIGN.md > tokens.json
 ```
 
 The `tailwind` format emits a Tailwind v4 `@theme` stylesheet — Tailwind v4 deprecates `tailwind.config.js` in favor of CSS-first configuration via `@theme { --color-*; --font-*; ... }`. Import the generated file from your app's main stylesheet alongside `@import "tailwindcss";`.
@@ -258,9 +262,9 @@ The `tailwind` format emits a Tailwind v4 `@theme` stylesheet — Tailwind v4 de
 Output the DESIGN.md format specification (useful for injecting spec context into agent prompts).
 
 ```bash
-npx @google/design.md spec
-npx @google/design.md spec --rules
-npx @google/design.md spec --rules-only --format json
+bun run cli spec
+bun run cli spec --rules
+bun run cli spec --rules-only --format json
 ```
 
 | Option | Type | Default | Description |
@@ -302,8 +306,8 @@ console.log(report.designSystem);   // Parsed DesignSystemState
 
 DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.designtokens.org/). The `export` command converts tokens to other formats:
 
-- **Tailwind v4 `@theme` CSS** — `npx @google/design.md export --format tailwind DESIGN.md`
-- **DTCG tokens.json** ([W3C Design Tokens Format Module](https://tr.designtokens.org/format/)) — `npx @google/design.md export --format dtcg DESIGN.md`
+- **Tailwind v4 `@theme` CSS** — `bun run cli export --format tailwind DESIGN.md`
+- **DTCG tokens.json** ([W3C Design Tokens Format Module](https://tr.designtokens.org/format/)) — `bun run cli export --format dtcg DESIGN.md`
 
 ## Status
 
