@@ -59,6 +59,7 @@ export {
 } from './linter/rules/index.js';
 export { contrastRatio } from './model/handler.js';
 export { TailwindEmitterHandler } from './tailwind/handler.js';
+export { renderTailwindThemeCss } from './tailwind/css.js';
 export { DtcgEmitterHandler } from './dtcg/handler.js';
 export { fixSectionOrder } from './fixer/handler.js';
 export type { FixerInput, FixerResult } from './fixer/spec.js';

@@ -242,9 +242,11 @@ Exit code `1` if regressions are detected (more errors or warnings in the "after
 Export DESIGN.md tokens to other formats (tailwind, dtcg).
 
 ```bash
-npx @google/design.md export --format tailwind DESIGN.md > tailwind.theme.json
+npx @google/design.md export --format tailwind DESIGN.md > theme.css
 npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 ```
+
+The `tailwind` format emits a Tailwind v4 `@theme` stylesheet — Tailwind v4 deprecates `tailwind.config.js` in favor of CSS-first configuration via `@theme { --color-*; --font-*; ... }`. Import the generated file from your app's main stylesheet alongside `@import "tailwindcss";`.
 
 | Option | Type | Default | Description |
 |:-------|:-----|:--------|:------------|
@@ -300,7 +302,7 @@ console.log(report.designSystem);   // Parsed DesignSystemState
 
 DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.designtokens.org/). The `export` command converts tokens to other formats:
 
-- **Tailwind theme config** — `npx @google/design.md export --format tailwind DESIGN.md`
+- **Tailwind v4 `@theme` CSS** — `npx @google/design.md export --format tailwind DESIGN.md`
 - **DTCG tokens.json** ([W3C Design Tokens Format Module](https://tr.designtokens.org/format/)) — `npx @google/design.md export --format dtcg DESIGN.md`
 
 ## Status

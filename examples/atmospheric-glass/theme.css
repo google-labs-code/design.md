@@ -1,0 +1,108 @@
+/**
+ * Copyright 2026 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@theme {
+  --color-surface: #0b1326;
+  --color-surface-dim: #0b1326;
+  --color-surface-bright: #31394d;
+  --color-surface-container-lowest: #060e20;
+  --color-surface-container-low: #131b2e;
+  --color-surface-container: #171f33;
+  --color-surface-container-high: #222a3d;
+  --color-surface-container-highest: #2d3449;
+  --color-on-surface: #dae2fd;
+  --color-on-surface-variant: #c4c7c8;
+  --color-inverse-surface: #dae2fd;
+  --color-inverse-on-surface: #283044;
+  --color-outline: #8e9192;
+  --color-outline-variant: #444748;
+  --color-surface-tint: #c6c6c7;
+  --color-primary: #ffffff;
+  --color-on-primary: #2f3131;
+  --color-primary-container: #e2e2e2;
+  --color-on-primary-container: #636565;
+  --color-inverse-primary: #5d5f5f;
+  --color-secondary: #adc9eb;
+  --color-on-secondary: #14324e;
+  --color-secondary-container: #304b68;
+  --color-on-secondary-container: #9fbbdd;
+  --color-tertiary: #ffffff;
+  --color-on-tertiary: #620040;
+  --color-tertiary-container: #ffd8e7;
+  --color-on-tertiary-container: #ab3779;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+  --color-primary-fixed: #e2e2e2;
+  --color-primary-fixed-dim: #c6c6c7;
+  --color-on-primary-fixed: #1a1c1c;
+  --color-on-primary-fixed-variant: #454747;
+  --color-secondary-fixed: #d0e4ff;
+  --color-secondary-fixed-dim: #adc9eb;
+  --color-on-secondary-fixed: #001d35;
+  --color-on-secondary-fixed-variant: #2d4965;
+  --color-tertiary-fixed: #ffd8e7;
+  --color-tertiary-fixed-dim: #ffafd3;
+  --color-on-tertiary-fixed: #3d0026;
+  --color-on-tertiary-fixed-variant: #85145a;
+  --color-background: #0b1326;
+  --color-on-background: #dae2fd;
+  --color-surface-variant: #2d3449;
+  --font-display-lg: Inter;
+  --font-headline-lg: Inter;
+  --font-headline-md: Inter;
+  --font-body-lg: Inter;
+  --font-body-md: Inter;
+  --font-label-sm: Inter;
+  --text-display-lg: 84px;
+  --text-display-lg--line-height: 90px;
+  --text-display-lg--letter-spacing: -0.04em;
+  --text-display-lg--font-weight: 700;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--font-weight: 500;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--letter-spacing: 0.05em;
+  --text-label-sm--font-weight: 600;
+  --radius-sm: 0.25rem;
+  --radius: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+  --spacing-unit: 8px;
+  --spacing-container-padding: 24px;
+  --spacing-card-gap: 16px;
+  --spacing-section-margin: 40px;
+  --spacing-glass-padding: 20px;
+  --shadow-resting: 0 1px 2px rgba(0,0,0,0.20);
+  --shadow-raised: 0 8px 24px rgba(0,0,0,0.25);
+  --shadow-overlay: 0 12px 32px rgba(0,0,0,0.40);
+  --shadow-modal: 0 24px 48px rgba(0,0,0,0.50);
+}
+

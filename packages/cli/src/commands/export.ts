@@ -14,6 +14,7 @@
 
 import { defineCommand } from 'citty';
 import { lint, TailwindEmitterHandler } from '../linter/index.js';
+import { renderTailwindThemeCss } from '../linter/tailwind/css.js';
 import { DtcgEmitterHandler } from '../linter/dtcg/handler.js';
 import { readInput } from '../utils.js';
 
@@ -23,7 +24,7 @@ type ExportFormat = typeof FORMATS[number];
 export default defineCommand({
   meta: {
     name: 'export',
-    description: 'Export DESIGN.md tokens to other formats (tailwind, dtcg).',
+    description: 'Export DESIGN.md tokens to other formats (tailwind, dtcg). The tailwind format emits a Tailwind v4 `@theme` CSS stylesheet.',
   },
   args: {
     file: {
@@ -38,7 +39,7 @@ export default defineCommand({
     },
     components: {
       type: 'boolean',
-      description: 'Include components in the export (currently only the tailwind format projects components, as a plugin block).',
+      description: 'Include components in the export. Ignored by the tailwind CSS emitter; component styles should be authored alongside the @theme stylesheet.',
       default: false,
     },
   },
@@ -59,7 +60,7 @@ export default defineCommand({
 
     if (format === 'tailwind') {
       const handler = new TailwindEmitterHandler();
-      const result = handler.execute(report.designSystem, { components: Boolean(args.components) });
+      const result = handler.execute(report.designSystem);
 
       if (!result.success) {
         console.error(JSON.stringify({ error: result.error.message }));
@@ -67,7 +68,7 @@ export default defineCommand({
         return;
       }
 
-      console.log(JSON.stringify(result.data, null, 2));
+      console.log(renderTailwindThemeCss(result));
     } else if (format === 'dtcg') {
       const handler = new DtcgEmitterHandler();
       const result = handler.execute(report.designSystem);

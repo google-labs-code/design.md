@@ -1,0 +1,184 @@
+/**
+ * Copyright 2026 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@theme {
+  --color-surface: #f9f9ff;
+  --color-surface-dim: #d3daea;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f3ff;
+  --color-surface-container: #e7eefe;
+  --color-surface-container-high: #e2e8f8;
+  --color-surface-container-highest: #dce2f3;
+  --color-on-surface: #151c27;
+  --color-on-surface-variant: #534434;
+  --color-inverse-surface: #2a313d;
+  --color-inverse-on-surface: #ebf1ff;
+  --color-outline: #867461;
+  --color-outline-variant: #d8c3ad;
+  --color-surface-tint: #855300;
+  --color-primary: #855300;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #f59e0b;
+  --color-on-primary-container: #613b00;
+  --color-inverse-primary: #ffb95f;
+  --color-secondary: #0058be;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #2170e4;
+  --color-on-secondary-container: #fefcff;
+  --color-tertiary: #00658b;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #1abdff;
+  --color-on-tertiary-container: #004966;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-primary-fixed: #ffddb8;
+  --color-primary-fixed-dim: #ffb95f;
+  --color-on-primary-fixed: #2a1700;
+  --color-on-primary-fixed-variant: #653e00;
+  --color-secondary-fixed: #d8e2ff;
+  --color-secondary-fixed-dim: #adc6ff;
+  --color-on-secondary-fixed: #001a42;
+  --color-on-secondary-fixed-variant: #004395;
+  --color-tertiary-fixed: #c5e7ff;
+  --color-tertiary-fixed-dim: #7fd0ff;
+  --color-on-tertiary-fixed: #001e2d;
+  --color-on-tertiary-fixed-variant: #004c6a;
+  --color-background: #f9f9ff;
+  --color-on-background: #151c27;
+  --color-surface-variant: #dce2f3;
+  --font-display: Plus Jakarta Sans;
+  --font-headline-lg: Plus Jakarta Sans;
+  --font-headline-md: Plus Jakarta Sans;
+  --font-title-lg: Plus Jakarta Sans;
+  --font-body-lg: Plus Jakarta Sans;
+  --font-body-md: Plus Jakarta Sans;
+  --font-label-md: Plus Jakarta Sans;
+  --font-label-sm: Plus Jakarta Sans;
+  --text-display: 44px;
+  --text-display--line-height: 52px;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 800;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 700;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--font-weight: 700;
+  --text-title-lg: 20px;
+  --text-title-lg--line-height: 28px;
+  --text-title-lg--font-weight: 600;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.01em;
+  --text-label-md--font-weight: 600;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--font-weight: 500;
+  --radius-sm: 0.25rem;
+  --radius: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+  --spacing-base: 8px;
+  --spacing-xs: 4px;
+  --spacing-sm: 12px;
+  --spacing-md: 24px;
+  --spacing-lg: 40px;
+  --spacing-xl: 64px;
+  --spacing-gutter: 16px;
+  --spacing-margin: 24px;
+  --shadow-resting: 0 1px 2px rgba(133,83,0,0.06);
+  --shadow-raised: 0 4px 12px rgba(133,83,0,0.10);
+  --shadow-overlay: 0 12px 24px rgba(133,83,0,0.14);
+  --shadow-modal: 0 24px 48px rgba(133,83,0,0.18);
+  --duration-instant: 0ms;
+  --duration-fast: 150ms;
+  --duration-medium: 250ms;
+  --duration-slow: 400ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  --container-container: 1280px;
+  --container-prose: 720px;
+  --container-padding: 24px;
+}
+
+.dark {
+  --color-surface: #0f1420;
+  --color-surface-dim: #0a0e18;
+  --color-surface-bright: #1c2230;
+  --color-surface-container-lowest: #070a12;
+  --color-surface-container-low: #141a26;
+  --color-surface-container: #1a2030;
+  --color-surface-container-high: #212838;
+  --color-surface-container-highest: #2a3142;
+  --color-on-surface: #e7ecf8;
+  --color-on-surface-variant: #bfbab2;
+  --color-inverse-surface: #e7ecf8;
+  --color-inverse-on-surface: #151c27;
+  --color-outline: #9c8a76;
+  --color-outline-variant: #574a3c;
+  --color-surface-tint: #ffb95f;
+  --color-primary: #ffb95f;
+  --color-on-primary: #3d2400;
+  --color-primary-container: #5b3500;
+  --color-on-primary-container: #ffddb8;
+  --color-inverse-primary: #855300;
+  --color-secondary: #adc6ff;
+  --color-on-secondary: #001a42;
+  --color-secondary-container: #003a89;
+  --color-on-secondary-container: #d8e2ff;
+  --color-tertiary: #7fd0ff;
+  --color-on-tertiary: #001e2d;
+  --color-tertiary-container: #004966;
+  --color-on-tertiary-container: #c5e7ff;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+  --color-primary-fixed: #ffddb8;
+  --color-primary-fixed-dim: #ffb95f;
+  --color-on-primary-fixed: #2a1700;
+  --color-on-primary-fixed-variant: #653e00;
+  --color-secondary-fixed: #d8e2ff;
+  --color-secondary-fixed-dim: #adc6ff;
+  --color-on-secondary-fixed: #001a42;
+  --color-on-secondary-fixed-variant: #004395;
+  --color-tertiary-fixed: #c5e7ff;
+  --color-tertiary-fixed-dim: #7fd0ff;
+  --color-on-tertiary-fixed: #001e2d;
+  --color-on-tertiary-fixed-variant: #004c6a;
+  --color-background: #0f1420;
+  --color-on-background: #e7ecf8;
+  --color-surface-variant: #2a3142;
+}
+
