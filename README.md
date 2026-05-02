@@ -255,18 +255,25 @@ Exit code `1` if regressions are detected (more errors or warnings in the "after
 
 ### `export`
 
-Export DESIGN.md tokens to other formats (tailwind, tailwind-v3, dtcg). `tailwind` targets the latest Tailwind (v4, CSS `@theme`); use `tailwind-v3` for legacy `tailwind.config.js` output.
+Export DESIGN.md tokens to other formats.
 
 ```bash
-npx @google/design.md export --format tailwind DESIGN.md > theme.css
-npx @google/design.md export --format tailwind-v3 DESIGN.md > tailwind.theme.json
+npx @google/design.md export --format json-tailwind DESIGN.md > tailwind.theme.json
+npx @google/design.md export --format css-tailwind DESIGN.md > theme.css
 npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 ```
 
 | Option | Type | Default | Description |
 |:-------|:-----|:--------|:------------|
 | `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
-| `--format` | `tailwind` \| `tailwind-v3` \| `dtcg` | required | Output format |
+| `--format` | `json-tailwind` \| `css-tailwind` \| `tailwind` \| `dtcg` | required | Output format |
+
+| Format | Output | Description |
+|:-------|:-------|:------------|
+| `json-tailwind` | JSON | Tailwind v3 `theme.extend` config object |
+| `css-tailwind` | CSS | Tailwind v4 `@theme { ... }` block with CSS custom properties |
+| `tailwind` | JSON | Alias for `json-tailwind` |
+| `dtcg` | JSON | W3C Design Tokens Format Module |
 
 ### `spec`
 
@@ -317,8 +324,8 @@ console.log(report.designSystem);   // Parsed DesignSystemState
 
 DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.designtokens.org/). The `export` command converts tokens to other formats:
 
-- **Tailwind CSS (v4, default)** — `npx @google/design.md export --format tailwind DESIGN.md` — emits a CSS `@theme { ... }` block using Tailwind v4's CSS-variable token namespaces (`--color-*`, `--font-*`, `--text-*`, `--leading-*`, `--tracking-*`, `--font-weight-*`, `--radius-*`, `--spacing-*`). Output is CSS text.
-- **Tailwind v3 config** — `npx @google/design.md export --format tailwind-v3 DESIGN.md` — emits the legacy `tailwind.config.js` `theme.extend` JSON shape for Tailwind v3.
+- **Tailwind v3 config (JSON)** — `npx @google/design.md export --format json-tailwind DESIGN.md` — emits a `theme.extend` JSON object for `tailwind.config.js`. `--format tailwind` is a backwards-compatible alias.
+- **Tailwind v4 theme (CSS)** — `npx @google/design.md export --format css-tailwind DESIGN.md` — emits a CSS `@theme { ... }` block using Tailwind v4's CSS-variable token namespaces (`--color-*`, `--font-*`, `--text-*`, `--leading-*`, `--tracking-*`, `--font-weight-*`, `--radius-*`, `--spacing-*`).
 - **DTCG tokens.json** ([W3C Design Tokens Format Module](https://tr.designtokens.org/format/)) — `npx @google/design.md export --format dtcg DESIGN.md`
 
 ## Status

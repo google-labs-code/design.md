@@ -17,13 +17,13 @@ import { lint, TailwindEmitterHandler, TailwindV4EmitterHandler, serializeTailwi
 import { DtcgEmitterHandler } from '../linter/dtcg/handler.js';
 import { readInput } from '../utils.js';
 
-const FORMATS = ['tailwind', 'tailwind-v3', 'dtcg'] as const;
+const FORMATS = ['css-tailwind', 'json-tailwind', 'tailwind', 'dtcg'] as const;
 type ExportFormat = typeof FORMATS[number];
 
 export default defineCommand({
   meta: {
     name: 'export',
-    description: 'Export DESIGN.md tokens to other formats (tailwind, tailwind-v3, dtcg). `tailwind` targets the latest (v4) CSS @theme syntax; use `tailwind-v3` for legacy tailwind.config.js output.',
+    description: 'Export DESIGN.md tokens to other formats. `css-tailwind` emits Tailwind v4 CSS @theme; `json-tailwind` emits Tailwind v3 theme.extend JSON; `tailwind` is an alias for `json-tailwind`; `dtcg` emits W3C Design Tokens.',
   },
   args: {
     file: {
@@ -52,7 +52,7 @@ export default defineCommand({
     const content = await readInput(args.file);
     const report = lint(content);
 
-    if (format === 'tailwind') {
+    if (format === 'css-tailwind') {
       const handler = new TailwindV4EmitterHandler();
       const result = handler.execute(report.designSystem);
 
@@ -63,7 +63,7 @@ export default defineCommand({
       }
 
       console.log(serializeTailwindV4(result.data.theme));
-    } else if (format === 'tailwind-v3') {
+    } else if (format === 'json-tailwind' || format === 'tailwind') {
       const handler = new TailwindEmitterHandler();
       const result = handler.execute(report.designSystem);
 
