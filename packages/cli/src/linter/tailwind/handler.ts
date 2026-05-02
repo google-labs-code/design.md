@@ -272,10 +272,15 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
     // Flat colors and pair members emit as top-level strings. Skip step entries
     // (already nested under their ramp), the bare anchor (already in group), and
     // dotted standalone-pair members (encoded via hyphen flat aliases below).
+    // Pair foregrounds are renamed from `on-<pair>` to `<pair>-foreground` to
+    // match the shadcn/ui Tailwind v4 utility convention (`text-primary-foreground`).
     for (const [name, color] of colors) {
       if (color.rampMember) continue;
       if (color.pairRole && name.includes('.')) continue;
-      result[name] = emit(color);
+      const emitName = color.pairRole?.role === 'on-container'
+        ? `${color.pairRole.pair}-foreground`
+        : name;
+      result[emitName] = emit(color);
     }
 
     return result;

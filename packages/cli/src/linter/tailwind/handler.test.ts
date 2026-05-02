@@ -159,7 +159,7 @@ describe('TailwindEmitterHandler', () => {
       if (!result.success) throw new Error('Expected success');
       const colors = result.data.theme.extend.colors!;
       expect(colors['surface-info']).toBe('#e0f2fe');
-      expect(colors['on-surface-info']).toBe('#0c4a6e');
+      expect(colors['surface-info-foreground']).toBe('#0c4a6e');
       // The dotted-form internal members must not leak as top-level keys.
       expect(colors['surface-info.container']).toBeUndefined();
     });
@@ -179,7 +179,7 @@ describe('TailwindEmitterHandler', () => {
       if (!result.success) throw new Error('Expected success');
       const colors = result.data.theme.extend.colors!;
       expect(colors['primary-container']).toBeDefined();
-      expect(colors['on-primary-container']).toBeDefined();
+      expect(colors['primary-container-foreground']).toBeDefined();
     });
   });
 

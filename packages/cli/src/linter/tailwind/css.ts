@@ -21,7 +21,7 @@ import type {
 /**
  * Render a Tailwind v4 stylesheet in the shadcn/ui `globals.css` shape:
  *
- *   :root { --primary: ...; --on-primary: ...; ... }
+ *   :root { --primary: ...; --primary-foreground: ...; ... }
  *   .dark { --primary: ...; ... }
  *   @theme inline {
  *     --color-primary: var(--primary);
