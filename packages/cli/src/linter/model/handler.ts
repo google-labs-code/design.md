@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem } from '../parser/spec.js';
+import type { ParsedDesignSystem, ParsedColorValue } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -263,7 +263,7 @@ export class ModelHandler implements ModelSpec {
  * Flattens nested color tokens into a list of leaves.
  */
 function flattenColorTokens(
-  rawTokens: Record<string, any>,
+  rawTokens: Record<string, ParsedColorValue>,
   prefix: string = '',
   pathPrefix: string = ''
 ): Array<{ canonicalName: string; refPath: string; raw: string; errorPath?: string }> {

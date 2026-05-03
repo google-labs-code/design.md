@@ -70,6 +70,7 @@ describe('DtcgEmitterHandler', () => {
         ['primary', makeColor('#1A1C1E', 0x1A, 0x1C, 0x1E)],
         ['white', makeColor('#FFFFFF', 255, 255, 255)],
         ['black', makeColor('#000000', 0, 0, 0)],
+        ['utility-info-50', makeColor('#EEF7FC', 238, 247, 252)],
       ]),
     });
 
@@ -84,6 +85,11 @@ describe('DtcgEmitterHandler', () => {
     const primaryValue = primary['$value'] as Record<string, unknown>;
     expect(primaryValue['colorSpace']).toBe('srgb');
     expect(primaryValue['hex']).toBe('#1a1c1e');
+
+    const utilityInfo50 = colorGroup['utility-info-50'] as Record<string, unknown>;
+    const utilityInfo50Value = utilityInfo50['$value'] as Record<string, unknown>;
+    expect(utilityInfo50Value['colorSpace']).toBe('srgb');
+    expect(utilityInfo50Value['hex']).toBe('#eef7fc');
 
     const components = primaryValue['components'] as number[];
     expect(components[0]).toBeCloseTo(0x1A / 255, 2);

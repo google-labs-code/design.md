@@ -43,6 +43,24 @@ describe('TailwindEmitterHandler', () => {
       expect(config.theme.extend.colors?.['primary']).toBe('#647d66');
       expect(config.theme.extend.colors?.['secondary']).toBe('#ff0000');
     });
+
+    it('maps grouped colors to flattened keys in theme.extend.colors', () => {
+      const state = buildState({
+        colors: {
+          primary: '#647D66',
+          'utility-info': {
+            '50': '#EEF7FC',
+            '100': '#D4EBF7',
+          }
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const config = result.data;
+      expect(config.theme.extend.colors?.['primary']).toBe('#647d66');
+      expect(config.theme.extend.colors?.['utility-info-50']).toBe('#eef7fc');
+      expect(config.theme.extend.colors?.['utility-info-100']).toBe('#d4ebf7');
+    });
   });
 
   // ── Cycle 23: Typography maps to fontFamily + fontSize ──────────

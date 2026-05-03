@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import YAML from 'yaml';
-import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation } from './spec.js';
+import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation, ParsedColorValue } from './spec.js';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
@@ -193,7 +193,7 @@ export class ParserHandler implements ParserSpec {
     return {
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
-      colors: raw['colors'] as Record<string, any> | undefined,
+      colors: raw['colors'] as Record<string, ParsedColorValue> | undefined,
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,

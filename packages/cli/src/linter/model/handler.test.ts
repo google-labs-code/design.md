@@ -69,6 +69,20 @@ describe('ModelHandler', () => {
       expect(result.findings[0]!.severity).toBe('error');
     });
 
+    it('emits diagnostic for invalid color format within a nested group with a precise path', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+            'bad': 'invalid',
+          }
+        },
+      }));
+      expect(result.findings.length).toBe(1);
+      expect(result.findings[0]!.path).toBe('colors.utility-info.bad');
+      expect(result.findings[0]!.severity).toBe('error');
+    });
+
     it('normalizes #RGB shorthand to #RRGGBB', () => {
       const result = handler.execute(makeParsed({
         colors: { accent: '#abc' },
@@ -110,6 +124,42 @@ describe('ModelHandler', () => {
       const btn = result.designSystem.components.get('button-primary');
       expect(btn).toBeDefined();
       const bg = btn?.properties.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+    });
+
+    it('resolves a flattened component reference {colors.utility-info-50}', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+          }
+        },
+        components: {
+          'card': {
+            backgroundColor: '{colors.utility-info-50}',
+          },
+        },
+      }));
+      const card = result.designSystem.components.get('card');
+      const bg = card?.properties.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+    });
+
+    it('resolves a dot-path component reference {colors.utility-info.50}', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+          }
+        },
+        components: {
+          'card': {
+            backgroundColor: '{colors.utility-info.50}',
+          },
+        },
+      }));
+      const card = result.designSystem.components.get('card');
+      const bg = card?.properties.get('backgroundColor');
       expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
     });
   });
