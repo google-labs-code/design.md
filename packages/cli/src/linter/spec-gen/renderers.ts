@@ -121,3 +121,19 @@ export function recommendedTokens(config: SpecConfig): string {
     })
     .join('\n\n');
 }
+
+/** Font-size scale YAML example. */
+export function fontSizeExample(config: SpecConfig): string {
+  return yamlBlock([
+    'font-size:',
+    ...Object.entries(config.EXAMPLES.font_size).map(([k, v]) => `  ${k}: ${v}`),
+  ]);
+}
+
+/** Paragraph max-width YAML example. */
+export function paragraphMaxWidthExample(config: SpecConfig): string {
+  return yamlBlock([
+    'paragraph-max-width:',
+    ...Object.entries(config.EXAMPLES.paragraph_max_width).map(([k, v]) => `  ${k}: ${v}`),
+  ]);
+}

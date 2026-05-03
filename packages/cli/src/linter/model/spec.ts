@@ -72,6 +72,10 @@ export interface DesignSystemState {
   description?: string | undefined;
   colors: Map<string, ResolvedColor>;
   typography: Map<string, ResolvedTypography>;
+  /** Scalar font-size tokens from the `font-size` YAML section. */
+  fontSizeScale: Map<string, ResolvedDimension>;
+  /** Text-width constraint tokens from the `paragraph-max-width` YAML section. */
+  paragraphMaxWidth: Map<string, ResolvedDimension>;
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
   components: Map<string, ComponentDef>;

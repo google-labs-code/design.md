@@ -43,6 +43,10 @@ export interface ParsedDesignSystem {
   description?: string | undefined;
   colors?: Record<string, string> | undefined;
   typography?: Record<string, Record<string, string | number>> | undefined;
+  /** Scalar font-size tokens from the `font-size` YAML section. */
+  fontSizeScale?: Record<string, string> | undefined;
+  /** Text-width constraint tokens from the `paragraph-max-width` YAML section. */
+  paragraphMaxWidth?: Record<string, string> | undefined;
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
   components?: Record<string, Record<string, string>> | undefined;

@@ -52,6 +52,8 @@ const ConfigSchema = z.object({
   examples: z.object({
     colors: z.record(z.string(), z.string()),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
+    font_size: z.record(z.string(), z.string()),
+    paragraph_max_width: z.record(z.string(), z.string()),
     components: z.record(z.string(), z.record(z.string(), z.string())),
   }),
 });

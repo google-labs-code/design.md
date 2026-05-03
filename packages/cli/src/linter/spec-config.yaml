@@ -102,6 +102,11 @@ recommended_tokens:
     - label-lg
     - label-md
     - label-sm
+  font_size:
+    - base
+  paragraph_max_width:
+    - lead
+    - body
   rounded:
     - none
     - sm
@@ -134,6 +139,11 @@ examples:
       fontWeight: 500
       lineHeight: 1.0
       letterSpacing: "0.1em"
+  font_size:
+    base: 16px
+  paragraph_max_width:
+    lead: 46rem
+    body: 37rem
   components:
     button-primary:
       backgroundColor: "{colors.primary-60}"
