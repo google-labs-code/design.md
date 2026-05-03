@@ -75,6 +75,19 @@ describe('ModelHandler', () => {
       expect(semitransparent?.hex).toBe('#ffffffa6');
       expect(semitransparent?.a).toBeCloseTo(166 / 255, 5);
     });
+
+    it('parses oklch() color and converts to hex', () => {
+      const result = handler.execute(makeParsed({
+        colors: { 'brand-oklch': 'oklch(0.63 0.22 24.87)' },
+      }));
+      const brand = result.designSystem.colors.get('brand-oklch');
+      expect(brand).toBeDefined();
+      expect(brand?.hex).toBe('#f1383e'); // Corrected hex value from culori
+      expect(brand?.oklch).toBe('oklch(0.63 0.22 24.87)');
+      expect(brand?.r).toBeCloseTo(241, 0);
+      expect(brand?.g).toBeCloseTo(56, 0);
+      expect(brand?.b).toBeCloseTo(62, 0);
+    });
   });
 
   // ── Cycle 10: Resolve single-level token reference ────────────────

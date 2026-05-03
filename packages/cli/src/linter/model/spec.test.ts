@@ -26,6 +26,10 @@ describe('isValidColor', () => {
   it.each(invalidColors)('rejects invalid color: %s', (color: string) => {
     expect(isValidColor(color)).toBe(false);
   });
+
+  it('accepts valid oklch color', () => {
+    expect(isValidColor('oklch(0.63 0.22 24.87)')).toBe(true);
+  });
 });
 
 describe('isStandardDimension', () => {
