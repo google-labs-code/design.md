@@ -44,6 +44,8 @@ async function main() {
     frontmatterExample: () => renderers.frontmatterExample(cfg),
     colorsExample: () => renderers.colorsExample(cfg),
     typographyExample: () => renderers.typographyExample(cfg),
+    fontSizeExample: () => renderers.fontSizeExample(cfg),
+    paragraphMaxWidthExample: () => renderers.paragraphMaxWidthExample(cfg),
     componentsExample: () => renderers.componentsExample(cfg),
     typographyPropertyList: () => renderers.typographyPropertyList(cfg),
     sectionOrderList: () => renderers.sectionOrderList(cfg),

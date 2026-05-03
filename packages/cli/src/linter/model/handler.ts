@@ -41,6 +41,8 @@ export class ModelHandler implements ModelSpec {
       const symbolTable = new Map<string, ResolvedValue>();
       const colors = new Map<string, ResolvedColor>();
       const typography = new Map<string, ResolvedTypography>();
+      const fontSizeScale = new Map<string, ResolvedDimension>();
+      const paragraphMaxWidth = new Map<string, ResolvedDimension>();
       const rounded = new Map<string, ResolvedDimension>();
       const spacing = new Map<string, ResolvedDimension>();
 
@@ -101,6 +103,42 @@ export class ModelHandler implements ModelSpec {
             } else {
               symbolTable.set(`rounded.${name}`, raw);
             }
+          }
+        }
+      }
+
+      // Font-size scale (from `font-size` YAML section)
+      if (input.fontSizeScale) {
+        for (const [name, raw] of Object.entries(input.fontSizeScale)) {
+          if (isParseableDimension(raw)) {
+            const resolved = parseDimension(raw);
+            fontSizeScale.set(name, resolved);
+            symbolTable.set(`font-size.${name}`, resolved);
+          } else {
+            findings.push({
+              severity: 'error',
+              path: `font-size.${name}`,
+              message: `'${raw}' is not a valid dimension.`,
+            });
+            symbolTable.set(`font-size.${name}`, raw);
+          }
+        }
+      }
+
+      // Paragraph max-width (from `paragraph-max-width` YAML section)
+      if (input.paragraphMaxWidth) {
+        for (const [name, raw] of Object.entries(input.paragraphMaxWidth)) {
+          if (isParseableDimension(raw)) {
+            const resolved = parseDimension(raw);
+            paragraphMaxWidth.set(name, resolved);
+            symbolTable.set(`paragraph-max-width.${name}`, resolved);
+          } else {
+            findings.push({
+              severity: 'error',
+              path: `paragraph-max-width.${name}`,
+              message: `'${raw}' is not a valid dimension.`,
+            });
+            symbolTable.set(`paragraph-max-width.${name}`, raw);
           }
         }
       }
@@ -210,6 +248,8 @@ export class ModelHandler implements ModelSpec {
           description: input.description,
           colors,
           typography,
+          fontSizeScale,
+          paragraphMaxWidth,
           rounded,
           spacing,
           components,
@@ -223,6 +263,8 @@ export class ModelHandler implements ModelSpec {
         designSystem: {
           colors: new Map(),
           typography: new Map(),
+          fontSizeScale: new Map(),
+          paragraphMaxWidth: new Map(),
           rounded: new Map(),
           spacing: new Map(),
           components: new Map(),

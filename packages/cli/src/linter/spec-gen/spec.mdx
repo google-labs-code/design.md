@@ -1,5 +1,5 @@
 import { SPEC_VERSION, STANDARD_UNITS, SECTIONS, TYPOGRAPHY_PROPERTIES, COMPONENT_SUB_TOKENS, CORE_COLOR_ROLES, RECOMMENDED_TOKENS, EXAMPLES } from '../spec-config.js'
-import { frontmatterExample, colorsExample, typographyExample, componentsExample, typographyPropertyList, sectionOrderList, componentSubTokenList, recommendedTokens } from './renderers.js'
+import { frontmatterExample, colorsExample, typographyExample, fontSizeExample, paragraphMaxWidthExample, componentsExample, typographyPropertyList, sectionOrderList, componentSubTokenList, recommendedTokens } from './renderers.js'
 
 # DESIGN.md Format
 
@@ -134,6 +134,24 @@ It is a
 map\<string, Typography\>
 
 {typographyExample()}
+
+### Font-Size Scale
+
+The `font-size` section defines standalone scalar font-size tokens. These complement the composite `typography` tokens by providing individual font-size values that can be referenced across the design system.
+
+It is a
+map\<string, Dimension\>
+
+{fontSizeExample()}
+
+### Paragraph Max-Width
+
+The `paragraph-max-width` section defines maximum line-length constraints for text blocks. These tokens help maintain readable line lengths across typography variants.
+
+It is a
+map\<string, Dimension\>
+
+{paragraphMaxWidthExample()}
 
 ## Layout
 

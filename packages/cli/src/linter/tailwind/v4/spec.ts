@@ -25,6 +25,8 @@ export const TailwindV4ThemeDataSchema = z.object({
   lineHeight: z.record(z.string()).optional(),
   letterSpacing: z.record(z.string()).optional(),
   fontWeight: z.record(z.string()).optional(),
+  fontSizeScale: z.record(z.string()).optional(),
+  paragraphMaxWidth: z.record(z.string()).optional(),
   borderRadius: z.record(z.string()).optional(),
   spacing: z.record(z.string()).optional(),
 });

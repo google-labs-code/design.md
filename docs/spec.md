@@ -191,6 +191,31 @@ typography:
     letterSpacing: 0.1em
 ```
 
+### Font-Size Scale
+
+The `font-size` section defines standalone scalar font-size tokens. These complement the composite `typography` tokens by providing individual font-size values that can be referenced across the design system.
+
+It is a
+map\<string, Dimension>
+
+```yaml
+font-size:
+  base: 16px
+```
+
+### Paragraph Max-Width
+
+The `paragraph-max-width` section defines maximum line-length constraints for text blocks. These tokens help maintain readable line lengths across typography variants.
+
+It is a
+map\<string, Dimension>
+
+```yaml
+paragraph-max-width:
+  lead: 46rem
+  body: 37rem
+```
+
 ## Layout
 
 Also known as "Layout & Spacing".
@@ -338,6 +363,10 @@ The following names are commonly used across design systems. They are not requir
 **Colors:** `primary`, `secondary`, `tertiary`, `neutral`, `surface`, `on-surface`, `error`
 
 **Typography:** `headline-display`, `headline-lg`, `headline-md`, `body-lg`, `body-md`, `body-sm`, `label-lg`, `label-md`, `label-sm`
+
+**Font_size:** `base`
+
+**Paragraph_max_width:** `lead`, `body`
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 

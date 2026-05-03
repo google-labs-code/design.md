@@ -30,6 +30,8 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
     const allNames: string[] = [
       ...state.colors.keys(),
       ...state.typography.keys(),
+      ...state.fontSizeScale.keys(),
+      ...state.paragraphMaxWidth.keys(),
       ...state.rounded.keys(),
       ...state.spacing.keys(),
     ];
@@ -72,6 +74,16 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
     if (Object.keys(lineHeight).length > 0) theme.lineHeight = lineHeight;
     if (Object.keys(letterSpacing).length > 0) theme.letterSpacing = letterSpacing;
     if (Object.keys(fontWeight).length > 0) theme.fontWeight = fontWeight;
+
+    // Font-size scale → --typography-{name}
+    if (state.fontSizeScale.size > 0) {
+      theme.fontSizeScale = mapDimensions(state.fontSizeScale);
+    }
+
+    // Paragraph max-width → --paragraph-max-width-{name}
+    if (state.paragraphMaxWidth.size > 0) {
+      theme.paragraphMaxWidth = mapDimensions(state.paragraphMaxWidth);
+    }
 
     // borderRadius + spacing
     if (state.rounded.size > 0) {

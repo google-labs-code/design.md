@@ -195,6 +195,8 @@ export class ParserHandler implements ParserSpec {
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
       colors: raw['colors'] as Record<string, string> | undefined,
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
+      fontSizeScale: raw['font-size'] as Record<string, string> | undefined,
+      paragraphMaxWidth: raw['paragraph-max-width'] as Record<string, string> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
       components: raw['components'] as Record<string, Record<string, string>> | undefined,
