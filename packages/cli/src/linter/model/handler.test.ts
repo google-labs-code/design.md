@@ -28,6 +28,25 @@ function makeParsed(overrides: Partial<ParsedDesignSystem> = {}): ParsedDesignSy
 describe('ModelHandler', () => {
   // ── Cycle 9: Build symbol table from parsed colors ────────────────
   describe('symbol table from colors', () => {
+    it('resolves grouped color tokens into the symbol table', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+            '100': '#D4EBF7',
+          }
+        },
+      }));
+      
+      const utilityInfo50 = result.designSystem.symbolTable.get('colors.utility-info-50');
+      expect(utilityInfo50).toBeDefined();
+      expect(typeof utilityInfo50 === 'object' && utilityInfo50 !== null && 'type' in utilityInfo50 && utilityInfo50.type === 'color').toBe(true);
+
+      const colorMapKeys = Array.from(result.designSystem.colors.keys());
+      expect(colorMapKeys).toContain('utility-info-50');
+      expect(colorMapKeys).toContain('utility-info-100');
+    });
+
     it('resolves valid hex colors into the symbol table', () => {
       const result = handler.execute(makeParsed({
         colors: { primary: '#647D66', secondary: '#ff0000' },

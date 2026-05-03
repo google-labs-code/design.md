@@ -41,7 +41,7 @@ export interface SourceLocation {
 export interface ParsedDesignSystem {
   name?: string | undefined;
   description?: string | undefined;
-  colors?: Record<string, string> | undefined;
+  colors?: Record<string, any> | undefined;
   typography?: Record<string, Record<string, string | number>> | undefined;
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;

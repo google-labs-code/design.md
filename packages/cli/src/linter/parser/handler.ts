@@ -193,7 +193,7 @@ export class ParserHandler implements ParserSpec {
     return {
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
-      colors: raw['colors'] as Record<string, string> | undefined,
+      colors: raw['colors'] as Record<string, any> | undefined,
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
