@@ -8,31 +8,29 @@ import { scanSources } from './source-scanner.js';
 const F = (name: string): string => join(import.meta.dir, 'fixtures', name);
 
 describe('scanSources', () => {
-  it('finds tailwind configs and CSS files in Next.js project', () => {
-    const r = scanSources(F('next-minimal'), 'next');
-    expect(r.tailwindConfigs.some((p) => p.endsWith('tailwind.config.js'))).toBe(true);
+  it('finds @theme {} and :root {} CSS files in a project', () => {
+    const r = scanSources(F('theme-css-fixture'), 'unknown');
     expect(r.cssFiles.some((p) => p.endsWith('globals.css'))).toBe(true);
+    expect(r.cssFiles.some((p) => p.endsWith('theme.css'))).toBe(true);
   });
 
   it('skips node_modules', () => {
-    const r = scanSources(F('next-minimal'), 'next');
-    expect(r.tailwindConfigs.every((p) => !p.includes('node_modules'))).toBe(true);
+    const r = scanSources(F('theme-css-fixture'), 'unknown');
     expect(r.cssFiles.every((p) => !p.includes('node_modules'))).toBe(true);
   });
 
   it('finds DTCG tokens.json when present', () => {
-    const r = scanSources(F('vite-react-minimal'), 'vite');
+    const r = scanSources(F('mixed-sources-fixture'), 'unknown');
     expect(r.dtcgFiles.some((p) => p.endsWith('tokens.json'))).toBe(true);
   });
 
-  it('finds Nuxt assets/css paths', () => {
-    const r = scanSources(F('nuxt-minimal'), 'nuxt');
+  it('finds CSS files under nested asset directories', () => {
+    const r = scanSources(F('dtcg-only-fixture'), 'unknown');
     expect(r.cssFiles.some((p) => p.endsWith('main.css'))).toBe(true);
   });
 
-  it('returns all three categories as arrays (never undefined)', () => {
-    const r = scanSources(F('plain-node'), 'node');
-    expect(Array.isArray(r.tailwindConfigs)).toBe(true);
+  it('returns both categories as arrays (never undefined)', () => {
+    const r = scanSources(F('plain-node'), 'unknown');
     expect(Array.isArray(r.cssFiles)).toBe(true);
     expect(Array.isArray(r.dtcgFiles)).toBe(true);
   });

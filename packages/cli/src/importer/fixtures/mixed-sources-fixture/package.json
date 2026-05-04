@@ -1,0 +1,5 @@
+{
+  "name": "mixed-sources-fixture",
+  "description": "Fixture: @theme {} + legacy :root {} CSS + DTCG tokens.",
+  "private": true
+}

@@ -1,0 +1,5 @@
+{
+  "name": "dtcg-only-fixture",
+  "description": "Fixture: DTCG-dominant project — minimal :root CSS + DTCG tokens.",
+  "private": true
+}

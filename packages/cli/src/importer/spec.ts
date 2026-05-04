@@ -34,7 +34,6 @@ export interface FrameworkInfo {
 }
 
 export interface ScanResult {
-  tailwindConfigs: string[];
   cssFiles: string[];
   dtcgFiles: string[];
 }
@@ -46,7 +45,7 @@ export interface SourceCounts {
   rounded: number;
 }
 
-export type SourceKind = 'tailwind' | 'css' | 'dtcg';
+export type SourceKind = 'css' | 'dtcg';
 
 export type ImportStep =
   | { kind: 'detect-start'; projectPath: string }
@@ -89,4 +88,28 @@ export interface IconsData {
   grid?: string;
   size?: Map<string, string>;
   color?: string;
+}
+
+/**
+ * The contract that every token-source plugs into. Adding a new source
+ * (Style Dictionary, Theme UI, …) is one new adapter — no orchestrator
+ * change. The adapter picks which files it cares about from the scan
+ * result, then parses each one into a PartialState the merger consumes.
+ *
+ * `parse` is allowed to be async so adapters that read remote sources
+ * or call expensive subprocesses can fit; the current built-ins are sync.
+ */
+export interface SourceAdapter {
+  /** Stable id. Also the value emitted in `parse-source.source` events. */
+  readonly kind: SourceKind;
+  /** Files this adapter wants from the scan result, in iteration order. */
+  selectFiles(scan: ScanResult): readonly string[];
+  /**
+   * Parse a single file into a partial state. The return type is
+   * deliberately permissive (`unknown` rather than `PartialState`) so
+   * `spec.ts` doesn't need to import from `merger.ts` and form a
+   * dependency cycle. Adapters in this package return the canonical
+   * `PartialState` shape; the orchestrator narrows it.
+   */
+  parse(path: string): unknown | Promise<unknown>;
 }

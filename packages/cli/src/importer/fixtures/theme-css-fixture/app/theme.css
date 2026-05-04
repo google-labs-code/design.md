@@ -1,0 +1,5 @@
+/* Tailwind v4-style @theme block. The CSS parser routes these into
+   the canonical token buckets without needing to execute a JS config. */
+@theme {
+  --color-primary: #112233;
+}

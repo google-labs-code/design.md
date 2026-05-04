@@ -14,12 +14,12 @@ describe('importer spec types', () => {
     const s3: ImportStep = { kind: 'scan-start' };
     const s4: ImportStep = {
       kind: 'scan-done',
-      sources: { tailwindConfigs: [], cssFiles: [], dtcgFiles: [] },
+      sources: { cssFiles: [], dtcgFiles: [] },
     };
     const s5: ImportStep = {
       kind: 'parse-source',
-      source: 'tailwind',
-      path: '/tw',
+      source: 'css',
+      path: '/c',
       counts: { colors: 1, typography: 0, spacing: 0, rounded: 0 },
     };
     const s6: ImportStep = {
@@ -56,7 +56,7 @@ describe('importer spec types', () => {
       success: true,
       markdown: '---\nname: X\n---\n',
       framework: { name: 'unknown', confidence: 'low', evidence: [] },
-      sources: { tailwindConfigs: [], cssFiles: [], dtcgFiles: [] },
+      sources: { cssFiles: [], dtcgFiles: [] },
       warnings: [],
     };
     expect(r.success).toBe(true);

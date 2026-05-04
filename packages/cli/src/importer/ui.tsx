@@ -61,9 +61,8 @@ function renderStep(step: ImportStep, key: number): React.ReactElement {
     case 'scan-done':
       return (
         <Text key={key} color="green">
-          ✓ Found {step.sources.tailwindConfigs.length} tailwind config(s),{' '}
-          {step.sources.cssFiles.length} CSS file(s), {step.sources.dtcgFiles.length}{' '}
-          DTCG token file(s)
+          ✓ Found {step.sources.cssFiles.length} CSS file(s),{' '}
+          {step.sources.dtcgFiles.length} DTCG token file(s)
         </Text>
       );
     case 'parse-source':

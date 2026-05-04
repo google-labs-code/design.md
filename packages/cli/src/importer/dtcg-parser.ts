@@ -14,7 +14,6 @@
 
 import { readFileSync } from 'node:fs';
 import type {
-  DesignSystemState,
   ResolvedColor,
   ResolvedDimension,
   ResolvedTypography,
@@ -22,12 +21,8 @@ import type {
 import { parseDimensionParts } from '../linter/model/spec.js';
 import { hexToResolvedColor } from './color-math.js';
 import { safeJsonParse } from './safe-json.js';
+import type { PartialState } from './merger.js';
 import type { IconsData } from './spec.js';
-
-export interface DtcgPartial extends Partial<DesignSystemState> {
-  warnings?: string[];
-  icons?: IconsData;
-}
 
 interface DtcgNode {
   $type?: string;
@@ -226,7 +221,7 @@ function walk(
   }
 }
 
-export function parseDtcgTokens(absPath: string): DtcgPartial {
+export function parseDtcgTokens(absPath: string): PartialState {
   const colors = new Map<string, ResolvedColor>();
   const spacing = new Map<string, ResolvedDimension>();
   const rounded = new Map<string, ResolvedDimension>();
@@ -252,7 +247,7 @@ export function parseDtcgTokens(absPath: string): DtcgPartial {
       warnings: [`failed to parse DTCG file ${absPath}: invalid JSON`],
     };
   }
-  const result: DtcgPartial = { colors, spacing, rounded, typography };
+  const result: PartialState = { colors, spacing, rounded, typography };
 
   // Top-level icons block: typed structure (not a generic flat-map of
   // $value-bearing tokens), so handle it before generic walking.

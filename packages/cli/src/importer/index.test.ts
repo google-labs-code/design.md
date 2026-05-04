@@ -82,8 +82,8 @@ describe('runImport', () => {
         if (s.kind === 'parse-source') events.push(s.source);
       },
     });
-    // paws-and-paths has both tailwind.config.js and design_tokens.json
-    expect(events).toContain('tailwind');
+    // paws-and-paths ships a DTCG token file. CSS may or may not contribute
+    // depending on what's in the example, but DTCG is the authoritative source.
     expect(events).toContain('dtcg');
   });
 });

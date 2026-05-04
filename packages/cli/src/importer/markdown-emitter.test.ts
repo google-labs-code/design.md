@@ -63,7 +63,26 @@ describe('emitDesignMd', () => {
     expect(md).not.toContain('typography:');
   });
 
-  it('renders a descriptive body with Overview + per-section bullet lists', () => {
+  it('leads with ## Intent + TODO scaffolding so tokens cannot be mistaken for a finished design', () => {
+    const state = mergeStates([
+      {
+        name: 'Demo',
+        colors: new Map([
+          ['primary', { type: 'color', hex: '#112233', r: 0, g: 0, b: 0, luminance: 0 }],
+        ]),
+      },
+    ]);
+    const md = emitDesignMd(state);
+    const intentIdx = md.indexOf('## Intent');
+    const tokensIdx = md.indexOf('## Discovered tokens');
+    expect(intentIdx).toBeGreaterThan(-1);
+    expect(tokensIdx).toBeGreaterThan(intentIdx);
+    expect(md).toContain('<!-- TODO: capture the design intent');
+    expect(md).toContain('What problems does this design system solve?');
+    expect(md).toContain('Replace this section with the actual design intent');
+  });
+
+  it('renders a descriptive body with ## Discovered tokens + per-section bullet lists', () => {
     const state = mergeStates([
       {
         name: 'Demo',
@@ -77,22 +96,21 @@ describe('emitDesignMd', () => {
     const md = emitDesignMd(state, {
       framework: { name: 'next', confidence: 'high', evidence: [] },
       sources: {
-        tailwindConfigs: ['/x/tailwind.config.js'],
         cssFiles: ['/x/app/globals.css'],
         dtcgFiles: [],
       },
     });
     expect(md).toContain('# Demo');
-    expect(md).toContain('## Overview');
+    expect(md).toContain('## Discovered tokens');
     expect(md).toContain('Next.js project');
     expect(md).toContain('1 color');
-    expect(md).toContain('## Colors');
+    expect(md).toContain('### Colors');
     expect(md).toContain('- **primary** — `#112233`');
-    expect(md).toContain('## Spacing');
+    expect(md).toContain('### Spacing');
     expect(md).toContain('- **md** — `16px`');
-    expect(md).toContain('## Rounded');
+    expect(md).toContain('### Rounded');
     expect(md).toContain('- **sm** — `4px`');
-    expect(md).toContain('Sources scanned: 1 tailwind config, 1 CSS file.');
+    expect(md).toContain('Sources scanned: 1 CSS file.');
   });
 
   it('includes README intro paragraph when provided', () => {
@@ -160,13 +178,13 @@ describe('emitDesignMd', () => {
       expect(out).toMatch(/^ {4}lg: 32px$/m);
     });
 
-    it('emits ## Iconography body section', () => {
+    it('emits ### Iconography body section under Discovered tokens', () => {
       const state: MergedState = {
         ...emptyState(),
         icons: { library: 'Lucide', strokeWidth: 1.5 },
       };
       const out = emitDesignMd(state);
-      expect(out).toContain('## Iconography');
+      expect(out).toContain('### Iconography');
       expect(out).toMatch(/- \*\*library\*\* — Lucide/);
       expect(out).toMatch(/- \*\*strokeWidth\*\* — `1\.5`/);
     });
@@ -174,18 +192,18 @@ describe('emitDesignMd', () => {
     it('skips both frontmatter and body when icons is absent', () => {
       const out = emitDesignMd(emptyState());
       expect(out).not.toContain('icons:');
-      expect(out).not.toContain('## Iconography');
+      expect(out).not.toContain('### Iconography');
     });
 
-    it('places ## Iconography AFTER ## Rounded', () => {
+    it('places ### Iconography AFTER ### Rounded', () => {
       const state: MergedState = {
         ...emptyState(),
         rounded: new Map([['sm', { type: 'dimension', value: 4, unit: 'px' }]]),
         icons: { library: 'Lucide' },
       };
       const out = emitDesignMd(state);
-      const roundedIdx = out.indexOf('## Rounded');
-      const iconsIdx = out.indexOf('## Iconography');
+      const roundedIdx = out.indexOf('### Rounded');
+      const iconsIdx = out.indexOf('### Iconography');
       expect(roundedIdx).toBeGreaterThan(-1);
       expect(iconsIdx).toBeGreaterThan(roundedIdx);
     });
@@ -232,7 +250,7 @@ describe('emitDesignMd', () => {
     ]);
     const md = emitDesignMd(state, {
       framework: { name: 'next', confidence: 'high', evidence: [] },
-      sources: { tailwindConfigs: [], cssFiles: ['x'], dtcgFiles: [] },
+      sources: { cssFiles: ['x'], dtcgFiles: [] },
     });
     const re = lint(md);
     expect(re.summary.errors).toBe(0);

@@ -5,18 +5,16 @@ import { describe, it, expect } from 'bun:test';
 import { join } from 'node:path';
 import { runImport } from './index.js';
 import { lint } from '../linter/index.js';
-import type { FrameworkName } from './spec.js';
 
 const F = (name: string): string => join(import.meta.dir, 'fixtures', name);
 
-const CASES: Array<{ dir: string; framework: FrameworkName }> = [
-  { dir: 'next-minimal', framework: 'next' },
-  { dir: 'vite-react-minimal', framework: 'vite' },
-  { dir: 'nuxt-minimal', framework: 'nuxt' },
-];
+// Fixtures are named by the SHAPE of their token sources, not by which
+// framework generated them. The importer doesn't care about Next/Vue/etc.
+// internals — it only reads CSS @theme/:root and DTCG token files.
+const CASES = ['theme-css-fixture', 'mixed-sources-fixture', 'dtcg-only-fixture'];
 
-describe('VR-2: end-to-end import on framework fixtures', () => {
-  for (const { dir, framework } of CASES) {
+describe('VR-2: end-to-end import across token-source shapes', () => {
+  for (const dir of CASES) {
     it(`runs cleanly on ${dir} and produces a lint-clean DESIGN.md`, async () => {
       const steps: string[] = [];
       const result = await runImport({
@@ -28,7 +26,6 @@ describe('VR-2: end-to-end import on framework fixtures', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.framework.name).toBe(framework);
       expect(steps).toContain('detect-done');
       expect(steps).toContain('scan-done');
       expect(steps).toContain('merge-done');
@@ -46,8 +43,8 @@ describe('VR-2: end-to-end import on framework fixtures', () => {
   }
 });
 
-describe('icon-project e2e', () => {
-  const FIXTURE = join(import.meta.dir, 'fixtures', 'icon-project');
+describe('icons-mixed-fixture e2e', () => {
+  const FIXTURE = join(import.meta.dir, 'fixtures', 'icons-mixed-fixture');
 
   it('imports icons from all three sources and the output lints cleanly', async () => {
     const result = await runImport({
@@ -56,7 +53,7 @@ describe('icon-project e2e', () => {
     });
     expect(result.success).toBe(true);
 
-    expect(result.markdown).toContain('## Iconography');
+    expect(result.markdown).toMatch(/^### Iconography$/m);
     expect(result.markdown).toContain('icons:');
 
     // Library from package.json (lucide-react -> Lucide).

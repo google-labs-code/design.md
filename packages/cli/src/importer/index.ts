@@ -17,16 +17,15 @@ import { join } from 'node:path';
 import { safeWriteFile } from './safe-write.js';
 import { detectFramework } from './framework-detector.js';
 import { scanSources } from './source-scanner.js';
-import { parseTailwindConfig } from './tailwind-parser.js';
-import { parseCssVariables } from './css-var-parser.js';
-import { parseDtcgTokens } from './dtcg-parser.js';
 import { mergeStates, type PartialState, type MergedState } from './merger.js';
 import { emitDesignMd } from './markdown-emitter.js';
 import { readProjectMetadata } from './project-metadata.js';
+import { BUILTIN_ADAPTERS } from './adapters.js';
 import type {
   ImportOptions,
   ImportResult,
   ImportStep,
+  SourceAdapter,
   SourceCounts,
 } from './spec.js';
 
@@ -43,7 +42,7 @@ function totalCount(c: SourceCounts): number {
   return c.colors + c.typography + c.spacing + c.rounded;
 }
 
-export async function runImport(opts: ImportOptions): Promise<ImportResult> {
+export async function runImport(opts: ImportOptions, adapters: readonly SourceAdapter[] = BUILTIN_ADAPTERS): Promise<ImportResult> {
   const emit = (s: ImportStep): void => opts.onStep?.(s);
   const warnings: string[] = [];
   const partials: PartialState[] = [];
@@ -65,7 +64,7 @@ export async function runImport(opts: ImportOptions): Promise<ImportResult> {
       success: false,
       markdown: '',
       framework: { name: 'unknown', confidence: 'low', evidence: [msg] },
-      sources: { tailwindConfigs: [], cssFiles: [], dtcgFiles: [] },
+      sources: { cssFiles: [], dtcgFiles: [] },
       warnings: [msg],
     };
   }
@@ -80,51 +79,31 @@ export async function runImport(opts: ImportOptions): Promise<ImportResult> {
 
   // Paths that actually contributed tokens — passed to the emitter so the
   // body's "Sources scanned" line reflects real signal, not the full raw scan.
-  const contributingSources = { tailwindConfigs: [] as string[], cssFiles: [] as string[], dtcgFiles: [] as string[] };
+  const contributingSources = { cssFiles: [] as string[], dtcgFiles: [] as string[] };
 
-  // Order: css → tailwind → dtcg so the most structured source wins.
-  for (const path of sources.cssFiles) {
-    const partial = parseCssVariables(path);
-    if (partial.warnings) warnings.push(...partial.warnings);
-    const counts = countsOf(partial);
-    if (totalCount(counts) === 0) {
-      emit({ kind: 'parse-skip', source: 'css', path, reason: 'no tokens found' });
-      continue;
-    }
-    emit({ kind: 'parse-source', source: 'css', path, counts });
-    contributingSources.cssFiles.push(path);
-    partials.push(partial);
-  }
-
-  for (const path of sources.tailwindConfigs) {
-    try {
-      const partial = await parseTailwindConfig(path);
+  // Adapters parse in registry order; the merger's last-wins rule means
+  // later adapters override earlier ones on conflicting fields. Built-in
+  // order is CSS → DTCG (least to most structured).
+  for (const adapter of adapters) {
+    for (const path of adapter.selectFiles(sources)) {
+      let partial: PartialState;
+      try {
+        partial = (await adapter.parse(path)) as PartialState;
+      } catch (err) {
+        emit({ kind: 'parse-skip', source: adapter.kind, path, reason: (err as Error).message });
+        continue;
+      }
       if (partial.warnings) warnings.push(...partial.warnings);
       const counts = countsOf(partial);
-      emit({ kind: 'parse-source', source: 'tailwind', path, counts });
-      if (totalCount(counts) > 0) contributingSources.tailwindConfigs.push(path);
+      if (totalCount(counts) === 0) {
+        emit({ kind: 'parse-skip', source: adapter.kind, path, reason: 'no tokens found' });
+        continue;
+      }
+      emit({ kind: 'parse-source', source: adapter.kind, path, counts });
+      if (adapter.kind === 'css') contributingSources.cssFiles.push(path);
+      else if (adapter.kind === 'dtcg') contributingSources.dtcgFiles.push(path);
       partials.push(partial);
-    } catch (err) {
-      emit({
-        kind: 'parse-skip',
-        source: 'tailwind',
-        path,
-        reason: (err as Error).message,
-      });
     }
-  }
-
-  for (const path of sources.dtcgFiles) {
-    const partial = parseDtcgTokens(path);
-    if (partial.warnings) warnings.push(...partial.warnings);
-    const counts = countsOf(partial);
-    if (totalCount(counts) === 0) {
-      emit({ kind: 'parse-skip', source: 'dtcg', path, reason: 'no tokens found' });
-      continue;
-    }
-    emit({ kind: 'parse-source', source: 'dtcg', path, counts });
-    contributingSources.dtcgFiles.push(path);
-    partials.push(partial);
   }
 
   const projectMeta = readProjectMetadata(canonicalRoot);

@@ -24,6 +24,8 @@ import type { IconsData } from './spec.js';
 
 export type PartialState = Partial<DesignSystemState> & {
   icons?: IconsData;
+  /** Non-fatal parser warnings, surfaced to the user on the import result. */
+  warnings?: string[];
 };
 
 export interface MergedState extends DesignSystemState {
@@ -43,8 +45,8 @@ function mergeMaps<V>(parts: Array<Map<string, V> | undefined>): Map<string, V> 
 
 /**
  * Merge partial DesignSystemState objects in precedence order (later wins).
- * Recommended caller order: CSS vars → tailwind → DTCG, so the most
- * structured source has final say.
+ * Recommended caller order: CSS vars → DTCG, so the most structured
+ * source has final say.
  */
 export function mergeStates(partials: PartialState[]): MergedState {
   const colors = mergeMaps<ResolvedColor>(partials.map((p) => p.colors));

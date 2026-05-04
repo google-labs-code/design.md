@@ -54,13 +54,6 @@ function isLikelyVendored(absPath: string, basename: string): boolean {
 
 const MAX_DEPTH = 5;
 
-const TAILWIND_BASENAMES = new Set([
-  'tailwind.config.js',
-  'tailwind.config.ts',
-  'tailwind.config.cjs',
-  'tailwind.config.mjs',
-]);
-
 const CSS_EXTENSIONS = new Set(['.css', '.scss', '.pcss', '.postcss']);
 
 function looksLikeDtcg(name: string): boolean {
@@ -109,16 +102,11 @@ function walk(root: string, maxDepth: number, visit: (absPath: string) => void):
 }
 
 export function scanSources(projectPath: string, _framework: FrameworkName): ScanResult {
-  const tailwindConfigs: string[] = [];
   const cssFiles: string[] = [];
   const dtcgFiles: string[] = [];
 
   walk(projectPath, MAX_DEPTH, (abs) => {
     const base = basename(abs);
-    if (TAILWIND_BASENAMES.has(base)) {
-      tailwindConfigs.push(abs);
-      return;
-    }
     if (CSS_EXTENSIONS.has(extname(base))) {
       if (isLikelyVendored(abs, base)) return;
       cssFiles.push(abs);
@@ -129,5 +117,5 @@ export function scanSources(projectPath: string, _framework: FrameworkName): Sca
     }
   });
 
-  return { tailwindConfigs, cssFiles, dtcgFiles };
+  return { cssFiles, dtcgFiles };
 }

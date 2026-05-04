@@ -14,19 +14,14 @@
 
 import { readFileSync } from 'node:fs';
 import type {
-  DesignSystemState,
   ResolvedColor,
   ResolvedDimension,
   ResolvedTypography,
 } from '../linter/model/spec.js';
 import { parseDimensionParts } from '../linter/model/spec.js';
 import { hexToResolvedColor } from './color-math.js';
+import type { PartialState } from './merger.js';
 import type { IconsData } from './spec.js';
-
-export interface CssVarPartial extends Partial<DesignSystemState> {
-  warnings?: string[];
-  icons?: IconsData;
-}
 
 interface Buckets {
   colors: Map<string, ResolvedColor>;
@@ -291,7 +286,7 @@ function iterVars(body: string, visit: (name: string, value: string) => void): v
 
 // ── Public API ──────────────────────────────────────────────────────
 
-export function parseCssVariablesFromString(src: string): CssVarPartial {
+export function parseCssVariablesFromString(src: string): PartialState {
   const buckets = emptyBuckets();
   const icons: IconsData = {};
 
@@ -328,7 +323,7 @@ export function parseCssVariablesFromString(src: string): CssVarPartial {
   };
 }
 
-export function parseCssVariables(absPath: string): CssVarPartial {
+export function parseCssVariables(absPath: string): PartialState {
   try {
     return parseCssVariablesFromString(readFileSync(absPath, 'utf-8'));
   } catch (err) {

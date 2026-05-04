@@ -24,15 +24,14 @@ describe('ImportProgress', () => {
       {
         kind: 'scan-done',
         sources: {
-          tailwindConfigs: ['/my-app/tailwind.config.js'],
           cssFiles: ['/my-app/app/globals.css'],
-          dtcgFiles: [],
+          dtcgFiles: ['/my-app/tokens.json'],
         },
       },
       {
         kind: 'parse-source',
-        source: 'tailwind',
-        path: '/my-app/tailwind.config.js',
+        source: 'css',
+        path: '/my-app/app/globals.css',
         counts: { colors: 12, typography: 4, spacing: 6, rounded: 3 },
       },
       {
@@ -50,8 +49,8 @@ describe('ImportProgress', () => {
     expect(frame).toContain('Next.js');
     expect(frame).toContain('14.2.0');
     expect(frame).toContain('Scanning project');
-    expect(frame).toContain('1 tailwind config');
-    expect(frame).toContain('tailwind');
+    expect(frame).toContain('1 CSS file');
+    expect(frame).toContain('css');
     expect(frame).toContain('12 colors');
     expect(frame).toContain('Merged');
     expect(frame).toContain('Wrote /my-app/DESIGN.md');
