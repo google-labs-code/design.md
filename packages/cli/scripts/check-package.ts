@@ -108,6 +108,19 @@ function phase1_config() {
   const types = pkg.types as string | undefined;
   check('#5  `types` field exists', !!types,
     'Missing "types" field in package.json');
+
+  // 5c. bin map exposes a Windows-friendly alias (no dot in the name).
+  // The `design.md` bin file is unrunnable on Windows because the `.md`
+  // suffix collides with the Markdown file association, so PowerShell
+  // opens the shim in the user's Markdown editor instead of executing it.
+  // A dot-free alias such as `designmd` lets the npm CMD/PowerShell shims
+  // resolve cleanly via PATHEXT. See https://github.com/google-labs-code/design.md/issues/54.
+  const bin = pkg.bin as Record<string, string> | string | undefined;
+  const binEntries = typeof bin === 'object' && bin !== null ? Object.keys(bin) : [];
+  const hasDotFreeAlias = binEntries.some((name) => !name.includes('.'));
+  check('#5c bin map exposes a Windows-friendly alias (no dot in the name)',
+    hasDotFreeAlias,
+    `bin entries: ${binEntries.join(', ') || '(none)'} — add an alias without a dot for Windows compatibility`);
 }
 
 function phase1_paths() {

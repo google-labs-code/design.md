@@ -14,7 +14,8 @@
 
 import { defineCommand } from 'citty';
 import { lint } from '../linter/index.js';
-import { readInput, formatOutput, diffMaps, serializeDesignSystem } from '../utils.js';
+import { readInput, formatOutput, diffMaps } from '../utils.js';
+import type { ComponentDef } from '../linter/model/spec.js';
 
 export default defineCommand({
   meta: {
@@ -51,6 +52,10 @@ export default defineCommand({
         typography: diffMaps(beforeReport.designSystem.typography, afterReport.designSystem.typography),
         rounded: diffMaps(beforeReport.designSystem.rounded, afterReport.designSystem.rounded),
         spacing: diffMaps(beforeReport.designSystem.spacing, afterReport.designSystem.spacing),
+        components: diffMaps(
+          serializeComponents(beforeReport.designSystem.components),
+          serializeComponents(afterReport.designSystem.components),
+        ),
       },
       findings: {
         before: beforeReport.summary,
@@ -68,3 +73,11 @@ export default defineCommand({
     process.exitCode = diff.regression ? 1 : 0;
   },
 });
+
+function serializeComponents(components: Map<string, ComponentDef>): Map<string, Record<string, unknown>> {
+  const result = new Map<string, Record<string, unknown>>();
+  for (const [name, comp] of components) {
+    result.set(name, Object.fromEntries(comp.properties));
+  }
+  return result;
+}
