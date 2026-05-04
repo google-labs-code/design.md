@@ -275,6 +275,23 @@ npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 | `tailwind` | JSON | Alias for `json-tailwind` |
 | `dtcg` | JSON | W3C Design Tokens Format Module |
 
+### `import`
+
+Generate a `DESIGN.md` from an existing Node.js project by statically analyzing its design sources. Framework detection (Next.js, Nuxt, Vite, SvelteKit, Remix, Astro, Create React App, Gatsby, Angular, Vue CLI, generic Node) is cosmetic — parsing is deterministic and source-based. Sources scanned: `tailwind.config.{js,ts,cjs,mjs}`, global CSS custom properties (`:root { --* }`), and any DTCG `tokens.json` / `design_tokens.json` files. No AI or LLM is involved.
+
+```bash
+npx @google/design.md import ./my-app                # writes ./my-app/DESIGN.md
+npx @google/design.md import ./my-app --dryRun       # prints to stdout
+npx @google/design.md import ./my-app --format json  # NDJSON progress events
+```
+
+| Option | Type | Default | Description |
+|:-------|:-----|:--------|:------------|
+| `input` | positional | required | Path to the project root to scan |
+| `--output` | string | `<input>/DESIGN.md` | Where to write the generated DESIGN.md |
+| `--dryRun` | boolean | `false` | Print to stdout instead of writing |
+| `--format` | `pretty` \| `json` | `pretty` | Progress output style |
+
 ### `spec`
 
 Output the DESIGN.md format specification (useful for injecting spec context into agent prompts).

@@ -1,0 +1,9 @@
+:root {
+  --color-primary: #3b82f6;
+  --spacing-md: 16px;
+  --icon-size-sm: 16px;
+  --icon-size-md: 24px;
+  --icon-size-lg: 32px;
+  --icon-stroke-width: 1.5;
+  --icon-grid: 24px;
+}

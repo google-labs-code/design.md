@@ -1,0 +1,7 @@
+@theme {
+  --color-brand: #ff0000;
+}
+
+:root {
+  --space-md: 16px;
+}

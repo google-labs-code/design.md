@@ -52,3 +52,6 @@ export { serializeToCss as serializeTailwindV4 } from './tailwind/v4/serialize.j
 export { DtcgEmitterHandler } from './dtcg/handler.js';
 export { fixSectionOrder } from './fixer/handler.js';
 export type { FixerInput, FixerResult } from './fixer/spec.js';
+
+// ── Import-side API (DesignSystemState → DESIGN.md) ───────────────
+export { emitDesignMd } from '../importer/markdown-emitter.js';

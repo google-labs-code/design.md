@@ -1,0 +1,9 @@
+{
+  "colors": {
+    "primary": { "$value": "#3b82f6", "$type": "color" }
+  },
+  "icons": {
+    "style": { "$value": "outlined" },
+    "color": { "$value": "{colors.primary}" }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "theme-css-fixture",
+  "description": "Fixture: Tailwind v4 @theme {} CSS block + DTCG tokens.",
+  "private": true
+}
