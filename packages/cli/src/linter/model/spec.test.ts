@@ -16,8 +16,8 @@ import { describe, it, expect } from 'bun:test';
 import { isValidColor, isStandardDimension, isParseableDimension, parseDimensionParts, isTokenReference } from './spec.js';
 
 describe('isValidColor', () => {
-  const validColors = ['#ff0000', '#FF0000', '#abc', '#ABC', '#647D66', '#000', '#fff'];
-  const invalidColors = ['red', 'blue', '#gg0000', '#12345', '647D66', '#1234567', '', '#'];
+  const validColors = ['#ff0000', '#FF0000', '#abc', '#ABC', '#647D66', '#000', '#fff', 'red', 'blue'];
+  const invalidColors = ['#gg0000', '#12345', '647D66', '#1234567', '', '#'];
 
   it.each(validColors)('accepts valid hex color: %s', (color: string) => {
     expect(isValidColor(color)).toBe(true);
