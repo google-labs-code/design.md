@@ -1,6 +1,20 @@
 # DESIGN.md
 
-A format specification for describing a visual identity to coding agents. DESIGN.md gives agents a persistent, structured understanding of a design system.
+> **About this fork**
+>
+> This is a fork of [google-labs-code/design.md](https://github.com/google-labs-code/design.md). Upstream defines the core DESIGN.md format and a linter; this fork extends both to push DESIGN.md closer to a complete, agent-ready design system spec.
+>
+> **What changed**
+>
+> - **Expanded token vocabulary** — color ramps and semantic pairs as schema primitives, modern color formats (transparent hex, etc.), and richer component property coverage in the linter.
+> - **New token domains** — themes (light/dark), motion, iconography, voice & copy, and a layout system (responsive breakpoints, grid, page templates, layout rules).
+> - **Tailwind v4 output** — generator emits a shadcn-style `:root` + `@theme inline` CSS, with foreground pairs renamed to the `<pair>-foreground` convention and radius lifted into `:root`.
+> - **Evaluation harness** — a sketch eval suite that checks DESIGN.md fidelity across copy, semantic, and vision layers on top of token extraction.
+> - **Docs** — token-storage documentation and a local-clone `bun` CLI workflow in the README.
+>
+> **Why**
+>
+> Upstream DESIGN.md focuses on the format and a linter for it. The goal of this fork is to test whether DESIGN.md can drive *real* agent output end-to-end: enough tokens to describe a full design system (not just color/type/spacing), a generator that produces idiomatic modern CSS, and evals to measure how faithfully an agent reproduces the intended design.
 
 ## The Format
 
