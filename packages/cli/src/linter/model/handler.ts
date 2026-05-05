@@ -48,7 +48,20 @@ export class ModelHandler implements ModelSpec {
       // Colors
       if (input.colors) {
         const flatColors = flattenColorTokens(input.colors);
+        const seenCanonicalNames = new Set<string>();
+        
         for (const { canonicalName, refPath, raw, errorPath } of flatColors) {
+          if (seenCanonicalNames.has(canonicalName)) {
+            findings.push({
+              severity: 'error',
+              path: `colors.${refPath}`,
+              message: `Grouped color token flattens to '${canonicalName}', which is already defined.`,
+            });
+            // Skip overwriting the previous value to prioritize the first definition, or just let it overwrite but report the error.
+            // Actually, we should probably just let it overwrite or not, but the diagnostic is the main goal.
+          }
+          seenCanonicalNames.add(canonicalName);
+
           if (errorPath) {
             findings.push({
               severity: 'error',

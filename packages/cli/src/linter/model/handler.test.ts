@@ -47,6 +47,22 @@ describe('ModelHandler', () => {
       expect(colorMapKeys).toContain('utility-info-100');
     });
 
+    it('emits diagnostic when grouped token flattens to an existing token name', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info-50': '#111111',
+          'utility-info': {
+            '50': '#222222',
+          }
+        },
+      }));
+      
+      const errorFindings = result.findings.filter(f => f.severity === 'error');
+      expect(errorFindings.length).toBe(1);
+      expect(errorFindings[0]!.path).toBe('colors.utility-info.50');
+      expect(errorFindings[0]!.message).toBe("Grouped color token flattens to 'utility-info-50', which is already defined.");
+    });
+
     it('resolves valid hex colors into the symbol table', () => {
       const result = handler.execute(makeParsed({
         colors: { primary: '#647D66', secondary: '#ff0000' },
@@ -81,6 +97,24 @@ describe('ModelHandler', () => {
       expect(result.findings.length).toBe(1);
       expect(result.findings[0]!.path).toBe('colors.utility-info.bad');
       expect(result.findings[0]!.severity).toBe('error');
+    });
+
+    it('emits diagnostic for invalid color types (boolean, number, array)', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility': {
+            'bool': true as unknown as string,
+            'num': 123,
+            'arr': ['#ffffff'] as unknown as string,
+          }
+        },
+      }));
+      
+      const errorFindings = result.findings.filter(f => f.severity === 'error');
+      expect(errorFindings.length).toBe(3);
+      expect(errorFindings.find(f => f.path === 'colors.utility.bool')).toBeDefined();
+      expect(errorFindings.find(f => f.path === 'colors.utility.num')).toBeDefined();
+      expect(errorFindings.find(f => f.path === 'colors.utility.arr')).toBeDefined();
     });
 
     it('normalizes #RGB shorthand to #RRGGBB', () => {

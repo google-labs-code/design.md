@@ -37,7 +37,10 @@ export interface SourceLocation {
   block: 'frontmatter' | number;
 }
 
-/** Raw, unresolved parsed output — mirrors the YAML schema */
+/** 
+ * Raw, unresolved parsed output — mirrors the YAML schema 
+ * Includes `number` so YAML bare numbers can be safely caught and diagnosed by the linter, rather than crashing during parsing.
+ */
 export type ParsedColorValue = string | number | { [key: string]: ParsedColorValue };
 
 export interface ParsedDesignSystem {
