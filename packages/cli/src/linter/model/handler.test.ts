@@ -418,4 +418,116 @@ describe('ModelHandler', () => {
       expect(btn?.properties.get('fontWeight')).toBe(600);
     });
   });
+
+  describe('motion tokens', () => {
+    it('resolves duration tokens with ms and s units', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          duration: { fast: '150ms', long: '0.4s' },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      expect(result.designSystem.motion?.duration.get('fast'))
+        .toEqual({ type: 'duration', value: 150, unit: 'ms' });
+      expect(result.designSystem.motion?.duration.get('long'))
+        .toEqual({ type: 'duration', value: 0.4, unit: 's' });
+    });
+
+    it('rejects durations with invalid units', () => {
+      const result = handler.execute(makeParsed({
+        motion: { duration: { broken: '150px' } },
+      }));
+      expect(result.findings).toHaveLength(1);
+      expect(result.findings[0]!.path).toBe('motion.duration.broken');
+      expect(result.findings[0]!.severity).toBe('error');
+    });
+
+    it('resolves easing as cubic-bezier control points', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          easing: { standard: [0.2, 0, 0, 1] },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      expect(result.designSystem.motion?.easing.get('standard'))
+        .toEqual({ type: 'easing', controlPoints: [0.2, 0, 0, 1] });
+    });
+
+    it('rejects easing arrays with X-coords outside [0, 1]', () => {
+      const result = handler.execute(makeParsed({
+        motion: { easing: { broken: [1.5, 0, 0, 1] } },
+      }));
+      expect(result.findings).toHaveLength(1);
+      expect(result.findings[0]!.path).toBe('motion.easing.broken');
+    });
+
+    it('resolves transition composites with token references', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          duration: { fast: '150ms' },
+          easing: { standard: [0.2, 0, 0, 1] },
+          transition: {
+            hover: {
+              duration: '{motion.duration.fast}',
+              easing: '{motion.easing.standard}',
+            },
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const hover = result.designSystem.motion?.transition.get('hover');
+      expect(hover?.type).toBe('transition');
+      expect(hover?.duration.value).toBe(150);
+      expect(hover?.easing.controlPoints).toEqual([0.2, 0, 0, 1]);
+    });
+
+    it('flags transitions referencing missing primitives', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          transition: {
+            hover: {
+              duration: '{motion.duration.missing}',
+              easing: [0.2, 0, 0, 1],
+            },
+          },
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.path).toBe('motion.transition.hover.duration');
+    });
+
+    it('exposes motion tokens in the symbol table for component refs', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          duration: { fast: '150ms' },
+          easing: { standard: [0.2, 0, 0, 1] },
+          transition: {
+            hover: {
+              duration: '{motion.duration.fast}',
+              easing: '{motion.easing.standard}',
+            },
+          },
+        },
+        components: {
+          'button-primary': {
+            transition: '{motion.transition.hover}',
+          },
+        },
+      }));
+      const btn = result.designSystem.components.get('button-primary');
+      expect(btn?.unresolvedRefs).toEqual([]);
+      const transition = btn?.properties.get('transition');
+      expect(transition && typeof transition === 'object' && 'type' in transition && transition.type === 'transition').toBe(true);
+    });
+
+    it('produces no motion structure when input.motion is absent', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#000000' },
+      }));
+      expect(result.designSystem.motion?.duration.size).toBe(0);
+      expect(result.designSystem.motion?.easing.size).toBe(0);
+      expect(result.designSystem.motion?.transition.size).toBe(0);
+    });
+  });
 });

@@ -160,4 +160,35 @@ describe('TailwindV4EmitterHandler', () => {
       expect(result.success).toBe(false);
     });
   });
+
+  describe('motion mapping', () => {
+    it('emits durations, easings, and transition shorthand', () => {
+      const state = buildState({
+        motion: {
+          duration: { fast: '150ms' },
+          easing: { standard: [0.2, 0, 0, 1] },
+          transition: {
+            hover: {
+              duration: '{motion.duration.fast}',
+              easing: '{motion.easing.standard}',
+            },
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.theme.duration?.['fast']).toBe('150ms');
+      expect(result.data.theme.easing?.['standard']).toBe('cubic-bezier(0.2, 0, 0, 1)');
+      expect(result.data.theme.transition?.['hover']).toBe('150ms cubic-bezier(0.2, 0, 0, 1)');
+    });
+
+    it('omits motion theme keys when no motion tokens are defined', () => {
+      const state = buildState({ colors: { primary: '#000000' } });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(result.data.theme.duration).toBeUndefined();
+      expect(result.data.theme.easing).toBeUndefined();
+      expect(result.data.theme.transition).toBeUndefined();
+    });
+  });
 });

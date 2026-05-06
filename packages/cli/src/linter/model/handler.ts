@@ -12,19 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem } from '../parser/spec.js';
+import type { ParsedDesignSystem, ParsedTransition } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
   ResolvedColor,
   ResolvedDimension,
   ResolvedTypography,
+  ResolvedDuration,
+  ResolvedEasing,
+  ResolvedTransition,
   ResolvedValue,
   ComponentDef,
   Finding,
 } from './spec.js';
 
-import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
+import {
+  isValidColor,
+  isParseableDimension,
+  isTokenReference,
+  parseDimensionParts,
+  parseDuration,
+  isValidCubicBezier,
+} from './spec.js';
 
 const MAX_REFERENCE_DEPTH = 10;
 
@@ -168,6 +178,122 @@ export class ModelHandler implements ModelSpec {
         }
       }
 
+      // ── Phase 2.5: Resolve motion tokens ────────────────────────────
+      const motionDuration = new Map<string, ResolvedDuration>();
+      const motionEasing = new Map<string, ResolvedEasing>();
+      const motionTransition = new Map<string, ResolvedTransition>();
+
+      if (input.motion?.duration) {
+        for (const [name, raw] of Object.entries(input.motion.duration)) {
+          if (typeof raw !== 'string') {
+            findings.push({
+              severity: 'error',
+              path: `motion.duration.${name}`,
+              message: `Duration must be a string like '150ms', got ${typeof raw}.`,
+            });
+            continue;
+          }
+          if (isTokenReference(raw)) {
+            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+            if (resolved && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'duration') {
+              motionDuration.set(name, resolved);
+              symbolTable.set(`motion.duration.${name}`, resolved);
+            } else {
+              findings.push({
+                severity: 'error',
+                path: `motion.duration.${name}`,
+                message: `Reference ${raw} does not resolve to a duration.`,
+              });
+            }
+          } else {
+            const parsed = parseDuration(raw);
+            if (!parsed) {
+              findings.push({
+                severity: 'error',
+                path: `motion.duration.${name}`,
+                message: `'${raw}' is not a valid duration. Expected a value with unit 'ms' or 's' (e.g., '150ms').`,
+              });
+              continue;
+            }
+            const resolved: ResolvedDuration = {
+              type: 'duration',
+              value: parsed.value,
+              unit: parsed.unit,
+            };
+            motionDuration.set(name, resolved);
+            symbolTable.set(`motion.duration.${name}`, resolved);
+          }
+        }
+      }
+
+      if (input.motion?.easing) {
+        for (const [name, raw] of Object.entries(input.motion.easing)) {
+          if (typeof raw === 'string' && isTokenReference(raw)) {
+            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+            if (resolved && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'easing') {
+              motionEasing.set(name, resolved);
+              symbolTable.set(`motion.easing.${name}`, resolved);
+            } else {
+              findings.push({
+                severity: 'error',
+                path: `motion.easing.${name}`,
+                message: `Reference ${raw} does not resolve to an easing.`,
+              });
+            }
+            continue;
+          }
+          if (!isValidCubicBezier(raw)) {
+            findings.push({
+              severity: 'error',
+              path: `motion.easing.${name}`,
+              message: `Easing must be a 4-number cubic-bezier array (e.g., [0.2, 0, 0, 1]).`,
+            });
+            continue;
+          }
+          const resolved: ResolvedEasing = {
+            type: 'easing',
+            controlPoints: [raw[0]!, raw[1]!, raw[2]!, raw[3]!],
+          };
+          motionEasing.set(name, resolved);
+          symbolTable.set(`motion.easing.${name}`, resolved);
+        }
+      }
+
+      if (input.motion?.transition) {
+        for (const [name, raw] of Object.entries(input.motion.transition)) {
+          // Allow `transition.foo: "{motion.transition.bar}"` shorthand alias.
+          if (typeof raw === 'string' && isTokenReference(raw)) {
+            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+            if (resolved && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'transition') {
+              motionTransition.set(name, resolved);
+              symbolTable.set(`motion.transition.${name}`, resolved);
+            } else {
+              findings.push({
+                severity: 'error',
+                path: `motion.transition.${name}`,
+                message: `Reference ${raw} does not resolve to a transition.`,
+              });
+            }
+            continue;
+          }
+
+          if (typeof raw !== 'object' || raw === null) {
+            findings.push({
+              severity: 'error',
+              path: `motion.transition.${name}`,
+              message: `Transition must be an object with 'duration' and 'easing'.`,
+            });
+            continue;
+          }
+
+          const transition = resolveTransition(raw as ParsedTransition, `motion.transition.${name}`, symbolTable, findings);
+          if (transition) {
+            motionTransition.set(name, transition);
+            symbolTable.set(`motion.transition.${name}`, transition);
+          }
+        }
+      }
+
       // ── Phase 3: Build components ──────────────────────────────────
       const components = new Map<string, ComponentDef>();
       if (input.components) {
@@ -212,6 +338,11 @@ export class ModelHandler implements ModelSpec {
           typography,
           rounded,
           spacing,
+          motion: {
+            duration: motionDuration,
+            easing: motionEasing,
+            transition: motionTransition,
+          },
           components,
           symbolTable,
           sections: input.sections,
@@ -225,6 +356,11 @@ export class ModelHandler implements ModelSpec {
           typography: new Map(),
           rounded: new Map(),
           spacing: new Map(),
+          motion: {
+            duration: new Map(),
+            easing: new Map(),
+            transition: new Map(),
+          },
           components: new Map(),
           symbolTable: new Map(),
         },
@@ -238,6 +374,69 @@ export class ModelHandler implements ModelSpec {
       };
     }
   }
+}
+
+/**
+ * Resolve a transition object's duration + easing into a ResolvedTransition.
+ * Returns null and pushes findings on failure.
+ */
+function resolveTransition(
+  raw: ParsedTransition,
+  path: string,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): ResolvedTransition | null {
+  const duration = resolveDurationField(raw.duration, `${path}.duration`, symbolTable, findings);
+  const easing = resolveEasingField(raw.easing, `${path}.easing`, symbolTable, findings);
+  if (!duration || !easing) return null;
+  return { type: 'transition', duration, easing };
+}
+
+function resolveDurationField(
+  raw: string | undefined,
+  path: string,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): ResolvedDuration | null {
+  if (typeof raw !== 'string') {
+    findings.push({ severity: 'error', path, message: `Missing or invalid 'duration' field.` });
+    return null;
+  }
+  if (isTokenReference(raw)) {
+    const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+    if (resolved && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'duration') {
+      return resolved;
+    }
+    findings.push({ severity: 'error', path, message: `Reference ${raw} does not resolve to a duration.` });
+    return null;
+  }
+  const parsed = parseDuration(raw);
+  if (!parsed) {
+    findings.push({ severity: 'error', path, message: `'${raw}' is not a valid duration.` });
+    return null;
+  }
+  return { type: 'duration', value: parsed.value, unit: parsed.unit };
+}
+
+function resolveEasingField(
+  raw: string | number[] | undefined,
+  path: string,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+): ResolvedEasing | null {
+  if (typeof raw === 'string' && isTokenReference(raw)) {
+    const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+    if (resolved && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'easing') {
+      return resolved;
+    }
+    findings.push({ severity: 'error', path, message: `Reference ${raw} does not resolve to an easing.` });
+    return null;
+  }
+  if (!isValidCubicBezier(raw)) {
+    findings.push({ severity: 'error', path, message: `Easing must be a 4-number cubic-bezier array.` });
+    return null;
+  }
+  return { type: 'easing', controlPoints: [raw[0]!, raw[1]!, raw[2]!, raw[3]!] };
 }
 
 // ── Pure utility functions ─────────────────────────────────────────

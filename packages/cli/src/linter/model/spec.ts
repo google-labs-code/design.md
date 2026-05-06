@@ -60,7 +60,36 @@ export interface ResolvedTypography {
   fontVariation?: string | undefined;
 }
 
-export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string;
+/** A duration token: numeric value + time unit (`ms` or `s`). */
+export interface ResolvedDuration {
+  type: 'duration';
+  value: number;
+  unit: 'ms' | 's';
+}
+
+/** A timing-function token, stored as four cubic-bezier control points. */
+export interface ResolvedEasing {
+  type: 'easing';
+  /** Cubic-bezier control points: [x1, y1, x2, y2]. */
+  controlPoints: [number, number, number, number];
+}
+
+/** A transition token — composite of duration + easing. */
+export interface ResolvedTransition {
+  type: 'transition';
+  duration: ResolvedDuration;
+  easing: ResolvedEasing;
+}
+
+export type ResolvedValue =
+  | ResolvedColor
+  | ResolvedDimension
+  | ResolvedTypography
+  | ResolvedDuration
+  | ResolvedEasing
+  | ResolvedTransition
+  | string
+  | number;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
@@ -74,6 +103,16 @@ export interface DesignSystemState {
   typography: Map<string, ResolvedTypography>;
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
+  /**
+   * Motion tokens. Always present after model resolution; optional on the
+   * type so callers constructing fixtures by hand don't need to spell out
+   * empty maps.
+   */
+  motion?: {
+    duration: Map<string, ResolvedDuration>;
+    easing: Map<string, ResolvedEasing>;
+    transition: Map<string, ResolvedTransition>;
+  } | undefined;
   components: Map<string, ComponentDef>;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;
@@ -181,4 +220,30 @@ export const isValidDimension = isStandardDimension;
  */
 export function isTokenReference(raw: string): boolean {
   return /^\{[a-zA-Z0-9._-]+\}$/.test(raw);
+}
+
+/** Time units accepted for duration values. */
+const DURATION_UNITS = new Set(['ms', 's']);
+
+/**
+ * Parse a duration string like "150ms" or "0.25s".
+ * Returns null for non-duration strings.
+ */
+export function parseDuration(raw: string): { value: number; unit: 'ms' | 's' } | null {
+  const parts = parseDimensionParts(raw);
+  if (!parts) return null;
+  if (!DURATION_UNITS.has(parts.unit)) return null;
+  return { value: parts.value, unit: parts.unit as 'ms' | 's' };
+}
+
+/**
+ * Validate that a value is a 4-element array of numbers (a cubic-bezier curve).
+ * Y-coordinates may exceed [0,1] (overshoot); X-coordinates must be in [0,1].
+ */
+export function isValidCubicBezier(value: unknown): value is [number, number, number, number] {
+  if (!Array.isArray(value) || value.length !== 4) return false;
+  for (const n of value) {
+    if (typeof n !== 'number' || Number.isNaN(n)) return false;
+  }
+  return value[0]! >= 0 && value[0]! <= 1 && value[2]! >= 0 && value[2]! <= 1;
 }

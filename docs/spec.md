@@ -52,6 +52,15 @@ rounded:
   <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+motion:
+  duration:
+    <token-name>: <Duration>
+  easing:
+    <token-name>: <CubicBezier>
+  transition:
+    <token-name>:
+      duration: <Duration | token reference>
+      easing: <CubicBezier | token reference>
 components:
   <component-name>:
     <token-name>: <string|token reference>
@@ -73,6 +82,10 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
 
 **Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
 
+**Duration**: A duration value is a string with a time unit. Valid units are: `ms`, `s` (e.g., `150ms`, `0.25s`).
+
+**CubicBezier**: A timing-function value, expressed as a four-element array of cubic-bezier control points: `[x1, y1, x2, y2]`. X-coordinates must be in the `[0, 1]` range; Y-coordinates may extend beyond it for overshoot easings.
+
 **Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
 
 # Sections
@@ -87,8 +100,9 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 4. **Layout** (also: "Layout & Spacing")
 5. **Elevation & Depth** (also: "Elevation")
 6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+7. **Motion**
+8. **Components**
+9. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -274,6 +288,66 @@ rounded:
   full: 9999px
 ```
 
+## Motion
+
+This section describes how the design system uses motion — the durations,
+easing curves, and transitions that govern animated state changes.
+
+Motion tokens are platform-neutral: durations are stored in `ms` or `s`, and
+easing is stored as cubic-bezier control points so the same values compile to
+CSS, SwiftUI, Compose, and Flutter without reinterpretation.
+
+Example:
+
+```markdown
+## Motion
+
+Motion is editorial, not theatrical. Transitions confirm state changes — they
+do not perform. The system favors short durations and standard easing curves.
+
+- **Hover and focus (100–150ms):** Imperceptibly fast.
+- **Modals (400ms enter, 150ms exit):** Asymmetric in/out, mirroring physical
+  doors.
+- **Easing roles:** `decelerate` for elements entering, `accelerate` for
+  elements exiting, `standard` for everything else.
+```
+
+### Design Tokens
+
+The `motion` section has three sub-groups: `duration`, `easing`, and
+`transition`. Transitions are composite tokens that reference a duration and
+an easing.
+
+```yaml
+motion:
+  duration:
+    fast: 150ms
+    base: 250ms
+    slow: 400ms
+  easing:
+    standard:   [0.2, 0, 0, 1]
+    decelerate: [0, 0, 0, 1]
+    accelerate: [0.3, 0, 1, 1]
+  transition:
+    hover:
+      duration: "{motion.duration.fast}"
+      easing:   "{motion.easing.standard}"
+    enter:
+      duration: "{motion.duration.slow}"
+      easing:   "{motion.easing.decelerate}"
+```
+
+Components consume transitions via the `transition` sub-token. For asymmetric
+in/out timing, define separate component variants:
+
+```yaml
+components:
+  modal-enter:
+    transition: "{motion.transition.enter}"
+  modal-exit:
+    transition: "{motion.transition.exit}"
+```
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -317,6 +391,7 @@ Each component has a set of properties that are themselves design tokens:
 - size: \<Dimension\>
 - height: \<Dimension\>
 - width: \<Dimension\>
+- transition: \<Transition\>
 
 ## Do's and Don'ts
 

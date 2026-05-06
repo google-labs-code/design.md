@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { TailwindEmitterSpec, TailwindEmitterResult } from './spec.js';
-import type { DesignSystemState, ResolvedDimension } from '../model/spec.js';
+import type { DesignSystemState, ResolvedEasing } from '../model/spec.js';
 
 /**
  * Pure function mapping DesignSystemState → Tailwind theme.extend config.
@@ -31,11 +31,32 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
             fontSize: this.mapFontSizes(state),
             borderRadius: this.mapDimensions(state.rounded),
             spacing: this.mapDimensions(state.spacing),
+            transitionDuration: this.mapDurations(state),
+            transitionTimingFunction: this.mapEasings(state),
           },
         },
       }
     };
   }
+
+  private mapDurations(state: DesignSystemState): Record<string, string> {
+    const result: Record<string, string> = {};
+    if (!state.motion) return result;
+    for (const [name, dur] of state.motion.duration) {
+      result[name] = `${dur.value}${dur.unit}`;
+    }
+    return result;
+  }
+
+  private mapEasings(state: DesignSystemState): Record<string, string> {
+    const result: Record<string, string> = {};
+    if (!state.motion) return result;
+    for (const [name, ease] of state.motion.easing) {
+      result[name] = easingCss(ease);
+    }
+    return result;
+  }
+
 
   private mapColors(state: DesignSystemState): Record<string, string> {
     const result: Record<string, string> = {};
@@ -80,4 +101,9 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
   private dimToString(dim: { value: number; unit: string }): string {
     return `${dim.value}${dim.unit}`;
   }
+}
+
+function easingCss(ease: ResolvedEasing): string {
+  const [a, b, c, d] = ease.controlPoints;
+  return `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
 }

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { TailwindV4EmitterSpec, TailwindV4EmitterResult, TailwindV4ThemeData } from './spec.js';
-import type { DesignSystemState, ResolvedDimension } from '../../model/spec.js';
+import type { DesignSystemState, ResolvedDimension, ResolvedDuration, ResolvedEasing, ResolvedTransition } from '../../model/spec.js';
 
 const VALID_TOKEN_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
 
@@ -32,6 +32,9 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
       ...state.typography.keys(),
       ...state.rounded.keys(),
       ...state.spacing.keys(),
+      ...(state.motion?.duration.keys() ?? []),
+      ...(state.motion?.easing.keys() ?? []),
+      ...(state.motion?.transition.keys() ?? []),
     ];
     for (const name of allNames) {
       if (!VALID_TOKEN_NAME.test(name)) {
@@ -81,6 +84,31 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
       theme.spacing = mapDimensions(state.spacing);
     }
 
+    // Motion: duration, easing, transition (composite shorthand)
+    if (state.motion) {
+      if (state.motion.duration.size > 0) {
+        const durations: Record<string, string> = {};
+        for (const [name, dur] of state.motion.duration) {
+          durations[name] = durationToString(dur);
+        }
+        theme.duration = durations;
+      }
+      if (state.motion.easing.size > 0) {
+        const easings: Record<string, string> = {};
+        for (const [name, ease] of state.motion.easing) {
+          easings[name] = easingToCss(ease);
+        }
+        theme.easing = easings;
+      }
+      if (state.motion.transition.size > 0) {
+        const transitions: Record<string, string> = {};
+        for (const [name, t] of state.motion.transition) {
+          transitions[name] = transitionToCss(t);
+        }
+        theme.transition = transitions;
+      }
+    }
+
     return { success: true, data: { theme } };
   }
 }
@@ -95,6 +123,19 @@ function mapDimensions(dims: Map<string, ResolvedDimension>): Record<string, str
 
 function dimToString(dim: ResolvedDimension): string {
   return `${dim.value}${dim.unit}`;
+}
+
+function durationToString(dur: ResolvedDuration): string {
+  return `${dur.value}${dur.unit}`;
+}
+
+function easingToCss(ease: ResolvedEasing): string {
+  const [a, b, c, d] = ease.controlPoints;
+  return `cubic-bezier(${a}, ${b}, ${c}, ${d})`;
+}
+
+function transitionToCss(t: ResolvedTransition): string {
+  return `${durationToString(t.duration)} ${easingToCss(t.easing)}`;
 }
 
 /**

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue } from './spec.js';
-import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography } from '../model/spec.js';
+import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue, DtcgDurationValue, DtcgCubicBezierValue, DtcgTransitionValue } from './spec.js';
+import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography, ResolvedDuration, ResolvedEasing, ResolvedTransition } from '../model/spec.js';
 
 const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.json';
 
@@ -43,7 +43,59 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     const typographyGroup = this.mapTypography(state);
     if (typographyGroup) file['typography'] = typographyGroup;
 
+    const motionGroup = this.mapMotion(state);
+    if (motionGroup) file['motion'] = motionGroup;
+
     return { success: true, data: file as Record<string, unknown> };
+  }
+
+  private mapMotion(state: DesignSystemState): DtcgGroup | null {
+    if (!state.motion) return null;
+    const { duration, easing, transition } = state.motion;
+    if (duration.size === 0 && easing.size === 0 && transition.size === 0) return null;
+
+    const group: DtcgGroup = {};
+
+    if (duration.size > 0) {
+      const durGroup: DtcgGroup = { $type: 'duration' };
+      for (const [name, dur] of duration) {
+        durGroup[name] = { $value: this.durationToValue(dur) } as DtcgToken;
+      }
+      group['duration'] = durGroup;
+    }
+
+    if (easing.size > 0) {
+      const easeGroup: DtcgGroup = { $type: 'cubicBezier' };
+      for (const [name, ease] of easing) {
+        easeGroup[name] = { $value: this.easingToValue(ease) } as DtcgToken;
+      }
+      group['easing'] = easeGroup;
+    }
+
+    if (transition.size > 0) {
+      const tGroup: DtcgGroup = { $type: 'transition' };
+      for (const [name, t] of transition) {
+        tGroup[name] = { $value: this.transitionToValue(t) } as DtcgToken;
+      }
+      group['transition'] = tGroup;
+    }
+
+    return group;
+  }
+
+  private durationToValue(dur: ResolvedDuration): DtcgDurationValue {
+    return { value: dur.value, unit: dur.unit };
+  }
+
+  private easingToValue(ease: ResolvedEasing): DtcgCubicBezierValue {
+    return ease.controlPoints;
+  }
+
+  private transitionToValue(t: ResolvedTransition): DtcgTransitionValue {
+    return {
+      duration: this.durationToValue(t.duration),
+      timingFunction: this.easingToValue(t.easing),
+    };
   }
 
   private mapColors(state: DesignSystemState): DtcgGroup | null {

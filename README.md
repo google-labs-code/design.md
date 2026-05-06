@@ -113,6 +113,15 @@ rounded:
   <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+motion:
+  duration:
+    <token-name>: <Duration>
+  easing:
+    <token-name>: <CubicBezier>
+  transition:
+    <token-name>:
+      duration: <Duration | token reference>
+      easing: <CubicBezier | token reference>
 components:
   <component-name>:
     <token-name>: <string | token reference>
@@ -124,6 +133,8 @@ components:
 |:-----|:-------|:--------|
 | Color | `#` + hex (sRGB) | `"#1A1C1E"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
+| Duration | number + unit (`ms`, `s`) | `150ms`, `0.4s` |
+| CubicBezier | 4-element array `[x1, y1, x2, y2]` | `[0.2, 0, 0, 1]` |
 | Token Reference | `{path.to.token}` | `{colors.primary}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
 
@@ -139,8 +150,9 @@ Sections use `##` headings. They can be omitted, but those present must appear i
 | 4 | Layout | Layout & Spacing |
 | 5 | Elevation & Depth | Elevation |
 | 6 | Shapes | |
-| 7 | Components | |
-| 8 | Do's and Don'ts | |
+| 7 | Motion | |
+| 8 | Components | |
+| 9 | Do's and Don'ts | |
 
 ### Component Tokens
 
@@ -157,7 +169,7 @@ components:
     backgroundColor: "{colors.tertiary-container}"
 ```
 
-Valid component properties: `backgroundColor`, `textColor`, `typography`, `rounded`, `padding`, `size`, `height`, `width`.
+Valid component properties: `backgroundColor`, `textColor`, `typography`, `rounded`, `padding`, `size`, `height`, `width`, `transition`.
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 

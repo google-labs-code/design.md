@@ -36,11 +36,34 @@ export interface DtcgTypographyValue {
   lineHeight?: number;
 }
 
+/** Duration value per DTCG: { value, unit }. */
+export interface DtcgDurationValue {
+  value: number;
+  unit: 'ms' | 's';
+}
+
+/** Cubic-bezier value per DTCG: 4-element array of control points. */
+export type DtcgCubicBezierValue = [number, number, number, number];
+
+/** Transition composite per DTCG: duration + timingFunction. */
+export interface DtcgTransitionValue {
+  duration: DtcgDurationValue;
+  timingFunction: DtcgCubicBezierValue;
+}
+
 // ── DTCG Token & Group Structures ─────────────────────────────────
 
 export interface DtcgToken {
   $type?: string;
-  $value: DtcgColorValue | DtcgDimensionValue | DtcgTypographyValue | string | number;
+  $value:
+    | DtcgColorValue
+    | DtcgDimensionValue
+    | DtcgTypographyValue
+    | DtcgDurationValue
+    | DtcgCubicBezierValue
+    | DtcgTransitionValue
+    | string
+    | number;
   $description?: string;
 }
 

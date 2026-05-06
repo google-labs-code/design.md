@@ -36,6 +36,7 @@ sections:
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Motion
   - canonical: Components
   - canonical: "Do's and Don'ts"
 
@@ -76,6 +77,9 @@ component_sub_tokens:
     type: Dimension
   - name: width
     type: Dimension
+  - name: transition
+    type: Transition
+    description: "Reference to a `motion.transition.*` token. For asymmetric enter/exit, define separate component variants (e.g. `modal-enter`, `modal-exit`)."
 
 color_roles:
   - primary

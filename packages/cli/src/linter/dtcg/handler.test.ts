@@ -191,4 +191,49 @@ describe('DtcgEmitterHandler', () => {
     expect(value['lineHeight']).toBeUndefined();
     expect(value['letterSpacing']).toBeUndefined();
   });
+
+  test('motion → duration/cubicBezier/transition groups under "motion"', () => {
+    const duration = new Map([
+      ['fast', { type: 'duration', value: 150, unit: 'ms' }],
+    ] as const);
+    const easing = new Map([
+      ['standard', { type: 'easing', controlPoints: [0.2, 0, 0, 1] }],
+    ] as const);
+    const transition = new Map([
+      ['hover', {
+        type: 'transition',
+        duration: { type: 'duration', value: 150, unit: 'ms' },
+        easing: { type: 'easing', controlPoints: [0.2, 0, 0, 1] },
+      }],
+    ] as const);
+    const state = emptyState({
+      motion: {
+        duration: duration as Map<string, never>,
+        easing: easing as Map<string, never>,
+        transition: transition as Map<string, never>,
+      } as never,
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const motion = result.data['motion'] as Record<string, Record<string, unknown>>;
+    expect(motion).toBeDefined();
+    expect(motion['duration']!['$type']).toBe('duration');
+    expect((motion['duration']!['fast'] as Record<string, unknown>)['$value']).toEqual({ value: 150, unit: 'ms' });
+    expect(motion['easing']!['$type']).toBe('cubicBezier');
+    expect((motion['easing']!['standard'] as Record<string, unknown>)['$value']).toEqual([0.2, 0, 0, 1]);
+    expect(motion['transition']!['$type']).toBe('transition');
+    const transitionValue = (motion['transition']!['hover'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+    expect(transitionValue['duration']).toEqual({ value: 150, unit: 'ms' });
+    expect(transitionValue['timingFunction']).toEqual([0.2, 0, 0, 1]);
+  });
+
+  test('motion group is omitted entirely when no motion tokens exist', () => {
+    const result = handler.execute(emptyState());
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data['motion']).toBeUndefined();
+  });
 });

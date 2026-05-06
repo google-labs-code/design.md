@@ -37,6 +37,22 @@ export interface SourceLocation {
   block: 'frontmatter' | number;
 }
 
+/** Raw, unresolved transition object — mirrors the YAML schema */
+export interface ParsedTransition {
+  /** Duration as a dimension string (e.g., "150ms") or token reference. */
+  duration?: string | undefined;
+  /** Easing as a token reference or a 4-number cubic-bezier array. */
+  easing?: string | number[] | undefined;
+}
+
+/** Raw, unresolved motion tokens — mirrors the YAML schema */
+export interface ParsedMotion {
+  duration?: Record<string, string> | undefined;
+  /** Either a 4-number cubic-bezier array, or a `{motion.easing.foo}` reference. */
+  easing?: Record<string, string | number[]> | undefined;
+  transition?: Record<string, ParsedTransition | string> | undefined;
+}
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   name?: string | undefined;
@@ -45,7 +61,8 @@ export interface ParsedDesignSystem {
   typography?: Record<string, Record<string, string | number>> | undefined;
   rounded?: Record<string, string> | undefined;
   spacing?: Record<string, string> | undefined;
-  components?: Record<string, Record<string, string>> | undefined;
+  motion?: ParsedMotion | undefined;
+  components?: Record<string, Record<string, string | number>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;

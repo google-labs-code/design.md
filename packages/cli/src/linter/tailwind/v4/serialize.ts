@@ -24,6 +24,9 @@ const CATEGORIES: ReadonlyArray<readonly [keyof TailwindV4ThemeData, string]> = 
   ['fontWeight', '--font-weight-'],
   ['borderRadius', '--radius-'],
   ['spacing', '--spacing-'],
+  ['duration', '--duration-'],
+  ['easing', '--ease-'],
+  ['transition', '--transition-'],
 ];
 
 /**
