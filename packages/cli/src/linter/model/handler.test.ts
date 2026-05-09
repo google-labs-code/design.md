@@ -506,4 +506,99 @@ describe('ModelHandler', () => {
       expect(btn?.properties.get('fontWeight')).toBe(600);
     });
   });
+
+  // ── Fix #75: non-string YAML scalars crash model builder ──────────
+  describe('non-string component property values', () => {
+    it('does not crash when a property value is a bare float (regression for #42)', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        components: {
+          'button': {
+            backgroundColor: '{colors.primary}',
+            opacity: 0.9 as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('opacity')).toBe(0.9 as unknown as never);
+    });
+
+    it('does not crash when a property value is a YAML boolean', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'button': {
+            disabled: false as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('disabled')).toBe(false as unknown as never);
+    });
+
+    it('does not crash when a property value is YAML null', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'button': {
+            metadata: null as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('metadata')).toBeNull();
+    });
+
+    it('does not crash when a property value is a YAML sequence', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'button': {
+            items: ['a', 'b'] as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('items')).toEqual(['a', 'b'] as unknown as never);
+    });
+
+    it('does not crash when a property value is a nested YAML mapping', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'button': {
+            nested: { foo: 'bar' } as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('nested')).toEqual({ foo: 'bar' } as unknown as never);
+    });
+
+    it('still resolves valid string token references and color/dimension props in same component', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        spacing: { md: '16px' },
+        components: {
+          'button': {
+            backgroundColor: '{colors.primary}',
+            padding: '{spacing.md}',
+            borderRadius: '4px',
+            opacity: 0.9 as unknown as string,
+            disabled: false as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn).toBeDefined();
+      const bg = btn?.properties.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+      const padding = btn?.properties.get('padding');
+      expect(typeof padding === 'object' && padding !== null && 'type' in padding && padding.type === 'dimension').toBe(true);
+      expect(btn?.properties.get('opacity')).toBe(0.9 as unknown as never);
+      expect(btn?.properties.get('disabled')).toBe(false as unknown as never);
+    });
+  });
 });

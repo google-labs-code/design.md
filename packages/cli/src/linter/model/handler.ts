@@ -177,12 +177,13 @@ export class ModelHandler implements ModelSpec {
           const unresolvedRefs: string[] = [];
 
           for (const [propName, rawValue] of Object.entries(props)) {
-            // Numeric values (e.g. fontWeight: 600, borderWidth: 1) are valid
-            // per spec and must be stored as-is, coercing to string first
-            // would cause isTokenReference / isValidColor to call .match() on
-            // a number and crash with "raw.match is not a function".
-            if (typeof rawValue === 'number') {
-              properties.set(propName, rawValue);
+            // YAML scalars that aren't strings (numbers, booleans, null) and
+            // non-scalar values (arrays, objects) must be stored as-is.
+            // Passing them to isTokenReference / isValidColor / isParseableDimension
+            // would crash inside .match() / .trim() with errors like
+            // "raw.match is not a function" or "colorStr.trim is not a function".
+            if (typeof rawValue !== 'string') {
+              properties.set(propName, rawValue as unknown as ResolvedValue);
             } else if (isTokenReference(rawValue)) {
               const refPath = rawValue.slice(1, -1);
               const resolved = resolveReference(symbolTable, refPath, new Set());
