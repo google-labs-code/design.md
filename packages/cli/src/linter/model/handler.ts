@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ParsedDesignSystem } from '../parser/spec.js';
+import type { ParsedDesignSystem, ParsedColorValue } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -48,22 +48,50 @@ export class ModelHandler implements ModelSpec {
       // ── Phase 1: Resolve primitive tokens ──────────────────────────
       // Colors
       if (input.colors) {
-        for (const [name, raw] of Object.entries(input.colors)) {
+        const flatColors = flattenColorTokens(input.colors);
+        const seenCanonicalNames = new Set<string>();
+        
+        for (const { canonicalName, refPath, raw, errorPath } of flatColors) {
+          if (seenCanonicalNames.has(canonicalName)) {
+            findings.push({
+              severity: 'error',
+              path: `colors.${refPath}`,
+              message: `Grouped color token flattens to '${canonicalName}', which is already defined.`,
+            });
+            // Skip overwriting the previous value to prioritize the first definition, or just let it overwrite but report the error.
+            // Actually, we should probably just let it overwrite or not, but the diagnostic is the main goal.
+          }
+          seenCanonicalNames.add(canonicalName);
+
+          if (errorPath) {
+            findings.push({
+              severity: 'error',
+              path: errorPath,
+              message: `'${raw}' is not a valid color. Expected a hex color code (e.g., #ffffff).`,
+            });
+            symbolTable.set(`colors.${canonicalName}`, raw);
+            if (canonicalName !== refPath) symbolTable.set(`colors.${refPath}`, raw);
+            continue;
+          }
+
           if (isTokenReference(raw)) {
             // Store raw reference for later resolution
-            symbolTable.set(`colors.${name}`, raw);
+            symbolTable.set(`colors.${canonicalName}`, raw);
+            if (canonicalName !== refPath) symbolTable.set(`colors.${refPath}`, raw);
           } else if (isValidColor(raw)) {
             const resolved = parseColor(raw);
-            colors.set(name, resolved);
-            symbolTable.set(`colors.${name}`, resolved);
+            colors.set(canonicalName, resolved);
+            symbolTable.set(`colors.${canonicalName}`, resolved);
+            if (canonicalName !== refPath) symbolTable.set(`colors.${refPath}`, resolved);
           } else {
             findings.push({
               severity: 'error',
-              path: `colors.${name}`,
+              path: `colors.${refPath}`,
               message: `'${raw}' is not a valid color. Expected a hex color code (e.g., #ffffff).`,
             });
             // Store as-is for fallback
-            symbolTable.set(`colors.${name}`, raw);
+            symbolTable.set(`colors.${canonicalName}`, raw);
+            if (canonicalName !== refPath) symbolTable.set(`colors.${refPath}`, raw);
           }
         }
       }
@@ -122,12 +150,14 @@ export class ModelHandler implements ModelSpec {
       // ── Phase 2: Resolve chained color references ──────────────────
       // Iterate color entries that are still raw references and resolve them
       if (input.colors) {
-        for (const [name, raw] of Object.entries(input.colors)) {
-          if (isTokenReference(raw)) {
+        const flatColors = flattenColorTokens(input.colors);
+        for (const { canonicalName, refPath, raw } of flatColors) {
+          if (typeof raw === 'string' && isTokenReference(raw)) {
             const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
             if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
-              colors.set(name, resolved as ResolvedColor);
-              symbolTable.set(`colors.${name}`, resolved);
+              colors.set(canonicalName, resolved as ResolvedColor);
+              symbolTable.set(`colors.${canonicalName}`, resolved);
+              if (canonicalName !== refPath) symbolTable.set(`colors.${refPath}`, resolved);
             }
           }
         }
@@ -242,6 +272,33 @@ export class ModelHandler implements ModelSpec {
 }
 
 // ── Pure utility functions ─────────────────────────────────────────
+
+/**
+/**
+ * Flattens nested color tokens into a list of leaves.
+ */
+function flattenColorTokens(
+  rawTokens: Record<string, ParsedColorValue>,
+  prefix: string = '',
+  pathPrefix: string = ''
+): Array<{ canonicalName: string; refPath: string; raw: string; errorPath?: string }> {
+  const result: Array<{ canonicalName: string; refPath: string; raw: string; errorPath?: string }> = [];
+
+  for (const [key, value] of Object.entries(rawTokens)) {
+    const newPrefix = prefix ? `${prefix}-${key}` : key;
+    const newPathPrefix = pathPrefix ? `${pathPrefix}.${key}` : key;
+
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      result.push(...flattenColorTokens(value, newPrefix, newPathPrefix));
+    } else if (typeof value === 'string' || typeof value === 'number') {
+      result.push({ canonicalName: newPrefix, refPath: newPathPrefix, raw: String(value) });
+    } else {
+      result.push({ canonicalName: newPrefix, refPath: newPathPrefix, raw: String(value), errorPath: `colors.${newPathPrefix}` });
+    }
+  }
+
+  return result;
+}
 
 /**
  * Parse a CSS color string into a ResolvedColor with RGB + WCAG luminance.

@@ -28,6 +28,41 @@ function makeParsed(overrides: Partial<ParsedDesignSystem> = {}): ParsedDesignSy
 describe('ModelHandler', () => {
   // ── Cycle 9: Build symbol table from parsed colors ────────────────
   describe('symbol table from colors', () => {
+    it('resolves grouped color tokens into the symbol table', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+            '100': '#D4EBF7',
+          }
+        },
+      }));
+      
+      const utilityInfo50 = result.designSystem.symbolTable.get('colors.utility-info-50');
+      expect(utilityInfo50).toBeDefined();
+      expect(typeof utilityInfo50 === 'object' && utilityInfo50 !== null && 'type' in utilityInfo50 && utilityInfo50.type === 'color').toBe(true);
+
+      const colorMapKeys = Array.from(result.designSystem.colors.keys());
+      expect(colorMapKeys).toContain('utility-info-50');
+      expect(colorMapKeys).toContain('utility-info-100');
+    });
+
+    it('emits diagnostic when grouped token flattens to an existing token name', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info-50': '#111111',
+          'utility-info': {
+            '50': '#222222',
+          }
+        },
+      }));
+      
+      const errorFindings = result.findings.filter(f => f.severity === 'error');
+      expect(errorFindings.length).toBe(1);
+      expect(errorFindings[0]!.path).toBe('colors.utility-info.50');
+      expect(errorFindings[0]!.message).toBe("Grouped color token flattens to 'utility-info-50', which is already defined.");
+    });
+
     it('resolves valid hex colors into the symbol table', () => {
       const result = handler.execute(makeParsed({
         colors: { primary: '#647D66', secondary: '#ff0000' },
@@ -48,6 +83,38 @@ describe('ModelHandler', () => {
       expect(result.findings.length).toBe(1);
       expect(result.findings[0]!.path).toBe('colors.primary');
       expect(result.findings[0]!.severity).toBe('error');
+    });
+
+    it('emits diagnostic for invalid color format within a nested group with a precise path', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+            'bad': 'invalid',
+          }
+        },
+      }));
+      expect(result.findings.length).toBe(1);
+      expect(result.findings[0]!.path).toBe('colors.utility-info.bad');
+      expect(result.findings[0]!.severity).toBe('error');
+    });
+
+    it('emits diagnostic for invalid color types (boolean, number, array)', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility': {
+            'bool': true as unknown as string,
+            'num': 123,
+            'arr': ['#ffffff'] as unknown as string,
+          }
+        },
+      }));
+      
+      const errorFindings = result.findings.filter(f => f.severity === 'error');
+      expect(errorFindings.length).toBe(3);
+      expect(errorFindings.find(f => f.path === 'colors.utility.bool')).toBeDefined();
+      expect(errorFindings.find(f => f.path === 'colors.utility.num')).toBeDefined();
+      expect(errorFindings.find(f => f.path === 'colors.utility.arr')).toBeDefined();
     });
 
     it('normalizes #RGB shorthand to #RRGGBB', () => {
@@ -179,6 +246,42 @@ describe('ModelHandler', () => {
       const btn = result.designSystem.components.get('button-primary');
       expect(btn).toBeDefined();
       const bg = btn?.properties.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+    });
+
+    it('resolves a flattened component reference {colors.utility-info-50}', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+          }
+        },
+        components: {
+          'card': {
+            backgroundColor: '{colors.utility-info-50}',
+          },
+        },
+      }));
+      const card = result.designSystem.components.get('card');
+      const bg = card?.properties.get('backgroundColor');
+      expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
+    });
+
+    it('resolves a dot-path component reference {colors.utility-info.50}', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#EEF7FC',
+          }
+        },
+        components: {
+          'card': {
+            backgroundColor: '{colors.utility-info.50}',
+          },
+        },
+      }));
+      const card = result.designSystem.components.get('card');
+      const bg = card?.properties.get('backgroundColor');
       expect(typeof bg === 'object' && bg !== null && 'type' in bg && bg.type === 'color').toBe(true);
     });
   });

@@ -29,7 +29,7 @@ version: <string>          # optional, current version: "alpha"
 name: <string>
 description: <string>      # optional
 colors:
-  <token-name>: <Color>
+  <token-name>: <Color | Color Group>
 typography:
   <token-name>: <Typography>
 rounded:
@@ -96,8 +96,9 @@ The palette is rooted in high-contrast neutrals and a single, evocative accent c
 
 The `colors` section defines all color design tokens. The color tokens should be derived from the key color palettes defined in the markdown prose. The exact mapping from color palettes to color tokens may follow any consistent naming convention.
 
-It is a
-map\<string, Color\>, that maps the name of the color token to its value.
+It is a map\<string, Color | Color Group\>, that maps the name of the color token (or group) to its value.
+
+Tokens defined in nested groups are automatically flattened. For example, `utility-info` with a nested `50` key becomes the `utility-info-50` color token and can be referenced via `{colors.utility-info-50}` or `{colors.utility-info.50}`.
 
 {colorsExample()}
 
