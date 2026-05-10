@@ -25,6 +25,7 @@ import type {
 } from './spec.js';
 
 import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
+import { parseCssColor } from './color-parser.js';
 
 const MAX_REFERENCE_DEPTH = 10;
 
@@ -273,6 +274,7 @@ export class ModelHandler implements ModelSpec {
 // ── Pure utility functions ─────────────────────────────────────────
 
 /**
+/**
  * Flattens nested color tokens into a list of leaves.
  */
 function flattenColorTokens(
@@ -299,47 +301,17 @@ function flattenColorTokens(
 }
 
 /**
- * Parse a hex color string into a ResolvedColor with RGB + WCAG luminance.
+ * Parse a CSS color string into a ResolvedColor with RGB + WCAG luminance.
  */
 export function parseColor(raw: string): ResolvedColor {
-  let hex = raw;
-
-  // Normalize #RGB to #RRGGBB
-  if (hex.length === 4) {
-    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  const parsed = parseCssColor(raw);
+  if (!parsed) {
+    throw new Error(`Invalid color: ${raw}`);
   }
-  // Normalize #RGBA to #RRGGBBAA
-  if (hex.length === 5) {
-    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}${hex[4]}${hex[4]}`;
-  }
-
-  hex = hex.toLowerCase();
-
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  let a: number | undefined;
-  if (hex.length === 9) {
-    a = parseInt(hex.slice(7, 9), 16) / 255;
-  }
-
-  const luminance = computeLuminance(r, g, b);
-
-  return { type: 'color', hex, r, g, b, a, luminance };
-}
-
-/**
- * Compute WCAG 2.1 relative luminance.
- * Uses sRGB linearization.
- */
-function computeLuminance(r: number, g: number, b: number): number {
-  const linearize = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  return {
+    type: 'color',
+    ...parsed,
   };
-  
-  return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
 }
 
 /**

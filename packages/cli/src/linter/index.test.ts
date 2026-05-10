@@ -116,7 +116,7 @@ components:
     const content = `---
 colors:
   primary: "#647D66"
-  bad-color: red
+  bad-color: not-a-color
 
 components:
   card:

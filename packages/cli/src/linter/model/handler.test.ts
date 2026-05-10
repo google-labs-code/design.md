@@ -142,6 +142,94 @@ describe('ModelHandler', () => {
       expect(semitransparent?.hex).toBe('#ffffffa6');
       expect(semitransparent?.a).toBeCloseTo(166 / 255, 5);
     });
+
+    it('resolves standard CSS named colors and converts them to hex/sRGB', () => {
+      const result = handler.execute(makeParsed({
+        colors: { c1: 'red', c2: 'transparent', c3: 'aliceblue' },
+      }));
+      expect(result.findings.length).toBe(0);
+      const c1 = result.designSystem.colors.get('c1');
+      expect(c1?.hex).toBe('#ff0000');
+      expect(c1?.r).toBe(255);
+      expect(c1?.g).toBe(0);
+      expect(c1?.b).toBe(0);
+      
+      const c2 = result.designSystem.colors.get('c2');
+      expect(c2?.hex).toBe('#00000000');
+      expect(c2?.a).toBe(0);
+    });
+
+    it('resolves functional rgb/rgba colors', () => {
+      // comma separated
+      const resComma = handler.execute(makeParsed({
+        colors: { rgb1: 'rgb(255, 100, 50)', rgba1: 'rgba(255, 100, 50, 0.5)' },
+      }));
+      expect(resComma.findings.length).toBe(0);
+      expect(resComma.designSystem.colors.get('rgb1')?.hex).toBe('#ff6432');
+      expect(resComma.designSystem.colors.get('rgba1')?.a).toBeCloseTo(0.5);
+
+      // space separated and percentages
+      const resSpace = handler.execute(makeParsed({
+        colors: { rgb2: 'rgb(100% 50% 0%)', rgba2: 'rgb(100% 50% 0% / 40%)' },
+      }));
+      expect(resSpace.findings.length).toBe(0);
+      expect(resSpace.designSystem.colors.get('rgb2')?.r).toBe(255);
+      expect(resSpace.designSystem.colors.get('rgb2')?.g).toBe(128);
+      expect(resSpace.designSystem.colors.get('rgba2')?.a).toBeCloseTo(0.4);
+    });
+
+    it('resolves functional hsl/hsla colors', () => {
+      const result = handler.execute(makeParsed({
+        colors: { hsl1: 'hsl(120, 100%, 50%)', hsla1: 'hsl(120deg 100% 50% / 0.25)' },
+      }));
+      expect(result.findings.length).toBe(0);
+      const hsl1 = result.designSystem.colors.get('hsl1');
+      expect(hsl1?.hex).toBe('#00ff00');
+      const hsla1 = result.designSystem.colors.get('hsla1');
+      expect(hsla1?.hex).toBe('#00ff0040');
+      expect(hsla1?.a).toBeCloseTo(0.25);
+    });
+
+    it('resolves functional hwb colors', () => {
+      const result = handler.execute(makeParsed({
+        colors: { hwb1: 'hwb(120 0% 0%)', hwb2: 'hwb(120 50% 50%)', hwb3: 'hwb(120 20% 40% / 0.5)' },
+      }));
+      expect(result.findings.length).toBe(0);
+      expect(result.designSystem.colors.get('hwb1')?.hex).toBe('#00ff00');
+      expect(result.designSystem.colors.get('hwb2')?.hex).toBe('#808080');
+      expect(result.designSystem.colors.get('hwb3')?.a).toBeCloseTo(0.5);
+    });
+
+    it('resolves lab, lch, oklab, oklch color spaces', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          lab1: 'lab(50% 40 -20)',
+          lch1: 'lch(50% 44.72 333.43)',
+          oklab1: 'oklab(0.6 0.1 -0.1)',
+          oklch1: 'oklch(0.6 0.1414 315)'
+        },
+      }));
+      expect(result.findings.length).toBe(0);
+      expect(result.designSystem.colors.get('lab1')).toBeDefined();
+      expect(result.designSystem.colors.get('lch1')).toBeDefined();
+      expect(result.designSystem.colors.get('oklab1')).toBeDefined();
+      expect(result.designSystem.colors.get('oklch1')).toBeDefined();
+    });
+
+    it('resolves color-mix colors', () => {
+      const result = handler.execute(makeParsed({
+        colors: { mix1: 'color-mix(in srgb, red 20%, blue 80%)', mix2: 'color-mix(in srgb, red, white 50%)' },
+      }));
+      expect(result.findings.length).toBe(0);
+      const mix1 = result.designSystem.colors.get('mix1');
+      expect(mix1?.r).toBe(51);
+      expect(mix1?.b).toBe(204);
+      
+      const mix2 = result.designSystem.colors.get('mix2');
+      expect(mix2?.r).toBe(255);
+      expect(mix2?.g).toBe(128);
+      expect(mix2?.b).toBe(128);
+    });
   });
 
   // ── Cycle 10: Resolve single-level token reference ────────────────

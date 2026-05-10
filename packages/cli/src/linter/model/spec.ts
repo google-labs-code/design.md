@@ -19,6 +19,7 @@ import {
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
   VALID_COMPONENT_SUB_TOKENS as _VALID_COMPONENT_SUB_TOKENS,
 } from '../spec-config.js';
+import { parseCssColor } from './color-parser.js';
 
 export const SeveritySchema = z.enum(['error', 'warning', 'info']);
 export type Severity = z.infer<typeof SeveritySchema>;
@@ -151,7 +152,7 @@ export function parseDimensionParts(raw: string): { value: number; unit: string 
  * Validate a hex color string. Accepts #RGB, #RGBA, #RRGGBB, and #RRGGBBAA.
  */
 export function isValidColor(raw: string): boolean {
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(raw);
+  return parseCssColor(raw) !== null;
 }
 
 /**
