@@ -15,7 +15,7 @@
 import type { TailwindV4EmitterSpec, TailwindV4EmitterResult, TailwindV4ThemeData } from './spec.js';
 import type { DesignSystemState, ResolvedDimension } from '../../model/spec.js';
 
-const VALID_TOKEN_NAME = /^[a-zA-Z][a-zA-Z0-9-]*$/;
+const VALID_TOKEN_NAME = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
 
 /**
  * Pure function mapping DesignSystemState → Tailwind v4 theme data.
@@ -39,7 +39,7 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
           success: false,
           error: {
             code: 'INVALID_TOKEN_NAME',
-            message: `Token name "${name}" is not a valid CSS identifier for Tailwind v4 export (must match /^[a-zA-Z][a-zA-Z0-9-]*$/).`,
+            message: `Token name "${name}" is not a valid CSS identifier for Tailwind v4 export (must match /^[a-zA-Z0-9][a-zA-Z0-9-]*$/).`,
           },
         };
       }

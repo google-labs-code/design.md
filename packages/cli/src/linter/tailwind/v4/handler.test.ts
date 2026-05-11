@@ -144,13 +144,15 @@ describe('TailwindV4EmitterHandler', () => {
       expect(result.error.message).toContain('primary.surface');
     });
 
-    it('fails when a spacing token name starts with a digit', () => {
+    it('allows Tailwind-style dimension token names that start with a digit', () => {
       const state = buildState({});
-      state.spacing.set('1bad', { type: 'dimension', value: 4, unit: 'px' });
+      state.spacing.set('2xs', { type: 'dimension', value: 2, unit: 'px' });
+      state.rounded.set('4xl', { type: 'dimension', value: 32, unit: 'px' });
       const result = emitter.execute(state);
-      expect(result.success).toBe(false);
-      if (result.success) return;
-      expect(result.error.code).toBe('INVALID_TOKEN_NAME');
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.data.theme.spacing?.['2xs']).toBe('2px');
+      expect(result.data.theme.borderRadius?.['4xl']).toBe('32px');
     });
 
     it('fails when a token name contains a space', () => {
