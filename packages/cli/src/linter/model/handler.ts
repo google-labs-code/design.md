@@ -315,6 +315,8 @@ function parseTypography(props: Record<string, string | number>, path: string, f
   if (typeof props['fontFeature'] === 'string') result.fontFeature = props['fontFeature'];
   if (typeof props['fontVariation'] === 'string') result.fontVariation = props['fontVariation'];
 
+  if (typeof props['textTransform'] === 'string') result.textTransform = props['textTransform'];
+
   const dimensionProps = ['fontSize', 'lineHeight', 'letterSpacing'] as const;
   for (const prop of dimensionProps) {
     const raw = props[prop];

@@ -59,6 +59,7 @@ export interface ResolvedTypography {
   letterSpacing?: ResolvedDimension | undefined;
   fontFeature?: string | undefined;
   fontVariation?: string | undefined;
+  textTransform?: string | undefined;
 }
 
 export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string;

@@ -295,6 +295,16 @@ describe('ModelHandler', () => {
       const headline = result.designSystem.typography.get('headline');
       expect(headline?.fontWeight).toBe(700);
     });
+
+    it('accepts textTransform values', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          caps: { textTransform: 'uppercase' },
+        },
+      }));
+      expect(result.findings.length).toBe(0);
+      expect(result.designSystem.typography.get('caps')?.textTransform).toBe('uppercase');
+    });
   });
 
   describe('rounded validation', () => {

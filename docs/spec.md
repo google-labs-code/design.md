@@ -70,6 +70,7 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
   [`font-feature-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-feature-settings).
 - `fontVariation` (string) - configures
   [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings).
+- `textTransform` (string) - Controls text casing. Maps to CSS [`text-transform`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/text-transform).
 
 **Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
 
@@ -189,6 +190,7 @@ typography:
     fontWeight: 500
     lineHeight: 1
     letterSpacing: 0.1em
+    textTransform: uppercase
 ```
 
 ## Layout

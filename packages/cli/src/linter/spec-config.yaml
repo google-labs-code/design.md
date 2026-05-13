@@ -58,6 +58,9 @@ typography_properties:
   - name: fontVariation
     type: string
     description: "configures\n  [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings)."
+  - name: textTransform
+    type: string
+    description: "Controls text casing. Maps to CSS [`text-transform`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/text-transform)."
 
 component_sub_tokens:
   - name: backgroundColor
@@ -134,6 +137,7 @@ examples:
       fontWeight: 500
       lineHeight: 1.0
       letterSpacing: "0.1em"
+      textTransform: uppercase
   components:
     button-primary:
       backgroundColor: "{colors.primary-60}"
