@@ -261,12 +261,13 @@ Export DESIGN.md tokens to other formats.
 npx @google/design.md export --format json-tailwind DESIGN.md > tailwind.theme.json
 npx @google/design.md export --format css-tailwind DESIGN.md > theme.css
 npx @google/design.md export --format dtcg DESIGN.md > tokens.json
+npx @google/design.md export --format html DESIGN.md > preview.html
 ```
 
 | Option | Type | Default | Description |
 |:-------|:-----|:--------|:------------|
 | `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
-| `--format` | `json-tailwind` \| `css-tailwind` \| `tailwind` \| `dtcg` | required | Output format |
+| `--format` | `json-tailwind` \| `css-tailwind` \| `tailwind` \| `dtcg` \| `html` | required | Output format |
 
 | Format | Output | Description |
 |:-------|:-------|:------------|
@@ -274,6 +275,7 @@ npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 | `css-tailwind` | CSS | Tailwind v4 `@theme { ... }` block with CSS custom properties |
 | `tailwind` | JSON | Alias for `json-tailwind` |
 | `dtcg` | JSON | W3C Design Tokens Format Module |
+| `html` | HTML | Human-readable static preview site for reviewing the design settings in a browser |
 
 ### `spec`
 
@@ -327,6 +329,7 @@ DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.desig
 - **Tailwind v3 config (JSON)** — `npx @google/design.md export --format json-tailwind DESIGN.md` — emits a `theme.extend` JSON object for `tailwind.config.js`. `--format tailwind` is a backwards-compatible alias.
 - **Tailwind v4 theme (CSS)** — `npx @google/design.md export --format css-tailwind DESIGN.md` — emits a CSS `@theme { ... }` block using Tailwind v4's CSS-variable token namespaces (`--color-*`, `--font-*`, `--text-*`, `--leading-*`, `--tracking-*`, `--font-weight-*`, `--radius-*`, `--spacing-*`).
 - **DTCG tokens.json** ([W3C Design Tokens Format Module](https://tr.designtokens.org/format/)) — `npx @google/design.md export --format dtcg DESIGN.md`
+- **HTML preview** — `npx @google/design.md export --format html DESIGN.md > preview.html` — emits a polished static site that renders colors, type, components, spacing, and radius tokens for quick human review.
 
 ## Status
 

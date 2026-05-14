@@ -30,6 +30,7 @@ export type { Finding, Severity } from './linter/spec.js';
 export type { TailwindEmitterResult, TailwindThemeExtend } from './tailwind/spec.js';
 export type { TailwindV4EmitterResult, TailwindV4ThemeData } from './tailwind/v4/spec.js';
 export type { DtcgEmitterResult, DtcgTokenFile } from './dtcg/spec.js';
+export type { HtmlPreviewEmitterResult } from './html/spec.js';
 
 // ── Advanced linting ───────────────────────────────────────────────
 export { runLinter, preEvaluate } from './linter/runner.js';
@@ -50,5 +51,6 @@ export { TailwindEmitterHandler } from './tailwind/handler.js';
 export { TailwindV4EmitterHandler } from './tailwind/v4/handler.js';
 export { serializeToCss as serializeTailwindV4 } from './tailwind/v4/serialize.js';
 export { DtcgEmitterHandler } from './dtcg/handler.js';
+export { HtmlPreviewEmitterHandler, renderHtmlPreview } from './html/handler.js';
 export { fixSectionOrder } from './fixer/handler.js';
 export type { FixerInput, FixerResult } from './fixer/spec.js';

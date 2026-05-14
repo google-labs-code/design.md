@@ -7,6 +7,8 @@ DESIGN.md is a self-contained, plain-text representation of a design system. It 
 
 A DESIGN.md file contains two parts: An optional YAML frontmatter, and a markdown body. The YAML front matter contains machine-readable design tokens. The markdown body sections provide human-readable design rationale and guidance. Prose may use descriptive color names (e.g., "Midnight Forest Green") that correspond to systematic token names (e.g., `primary`). The tokens are the normative values; the prose provides context for how to apply them.
 
+The CLI can also emit a human-readable HTML preview from the same tokens. This preview is intentionally static, so it can be opened directly in a browser or committed alongside example systems for visual review.
+
 # Design Tokens
 
 DESIGN.md may embed design tokens in a structured format. The system that we use to describe design tokens is inspired by the
