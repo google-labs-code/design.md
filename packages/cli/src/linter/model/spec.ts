@@ -142,6 +142,7 @@ const CSS_UNITS = new Set([
  * Returns null for non-dimension strings (bare numbers, keywords like `auto`).
  */
 export function parseDimensionParts(raw: string): { value: number; unit: string } | null {
+  if (typeof raw !== 'string') return null;
   const match = raw.match(/^(-?\d*\.?\d+)([a-zA-Z%]+)$/);
   if (!match) return null;
   const value = parseFloat(match[1]!);

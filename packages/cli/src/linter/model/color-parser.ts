@@ -60,6 +60,7 @@ const CSS_NAMED_COLORS: Record<string, string> = {
  * Returns null if the color is invalid.
  */
 export function parseCssColor(colorStr: string): ParsedColorResult | null {
+  if (typeof colorStr !== 'string') return null;
   const clean = colorStr.trim().toLowerCase();
   if (!clean) return null;
 

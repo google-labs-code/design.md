@@ -178,9 +178,10 @@ export class ModelHandler implements ModelSpec {
 
           for (const [propName, rawValue] of Object.entries(props)) {
             // Numeric values (e.g. fontWeight: 600, borderWidth: 1) are valid
-            // per spec and must be stored as-is, coercing to string first
-            // would cause isTokenReference / isValidColor to call .match() on
-            // a number and crash with "raw.match is not a function".
+            // per spec and must be stored as-is. We check for 'number' here,
+            // but isTokenReference, isValidColor, and isParseableDimension
+            // are also guarded against other non-string types (like booleans)
+            // to prevent crashes like "raw.match is not a function".
             if (typeof rawValue === 'number') {
               properties.set(propName, rawValue);
             } else if (isTokenReference(rawValue)) {
