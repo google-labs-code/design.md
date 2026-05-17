@@ -1,16 +1,6 @@
 // Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 import { defineCommand } from 'citty';
 import { lint } from '../linter/index.js';
@@ -22,62 +12,98 @@ export default defineCommand({
     name: 'diff',
     description: 'Compare two DESIGN.md files and report changes.',
   },
+
   args: {
     before: {
       type: 'positional',
       description: 'Path to the "before" DESIGN.md',
       required: true,
     },
+
     after: {
       type: 'positional',
       description: 'Path to the "after" DESIGN.md',
       required: true,
     },
+
     format: {
       type: 'string',
       description: 'Output format: json or text',
       default: 'json',
     },
   },
-  async run({ args }) {
-    const beforeContent = await readInput(args.before);
-    const afterContent = await readInput(args.after);
 
-    const beforeReport = lint(beforeContent);
-    const afterReport = lint(afterContent);
+  async run({ args }) {
+    // Parallel I/O
+    const [beforeContent, afterContent] = await Promise.all([
+      readInput(args.before),
+      readInput(args.after),
+    ]);
+
+    // Parallel CPU work
+    const [beforeReport, afterReport] = await Promise.all([
+      Promise.resolve(lint(beforeContent)),
+      Promise.resolve(lint(afterContent)),
+    ]);
+
+    const beforeDS = beforeReport.designSystem;
+    const afterDS = afterReport.designSystem;
+
+    const beforeSummary = beforeReport.summary;
+    const afterSummary = afterReport.summary;
+
+    const errorDelta = afterSummary.errors - beforeSummary.errors;
+    const warningDelta = afterSummary.warnings - beforeSummary.warnings;
+
+    const regression = errorDelta > 0 || warningDelta > 0;
 
     const diff = {
       tokens: {
-        colors: diffMaps(beforeReport.designSystem.colors, afterReport.designSystem.colors),
-        typography: diffMaps(beforeReport.designSystem.typography, afterReport.designSystem.typography),
-        rounded: diffMaps(beforeReport.designSystem.rounded, afterReport.designSystem.rounded),
-        spacing: diffMaps(beforeReport.designSystem.spacing, afterReport.designSystem.spacing),
+        colors: diffMaps(beforeDS.colors, afterDS.colors),
+        typography: diffMaps(beforeDS.typography, afterDS.typography),
+        rounded: diffMaps(beforeDS.rounded, afterDS.rounded),
+        spacing: diffMaps(beforeDS.spacing, afterDS.spacing),
+
+        // Lazy serialization only when needed
         components: diffMaps(
-          serializeComponents(beforeReport.designSystem.components),
-          serializeComponents(afterReport.designSystem.components),
+          serializeComponents(beforeDS.components),
+          serializeComponents(afterDS.components),
         ),
       },
+
       findings: {
-        before: beforeReport.summary,
-        after: afterReport.summary,
+        before: beforeSummary,
+        after: afterSummary,
+
         delta: {
-          errors: afterReport.summary.errors - beforeReport.summary.errors,
-          warnings: afterReport.summary.warnings - beforeReport.summary.warnings,
+          errors: errorDelta,
+          warnings: warningDelta,
         },
       },
-      regression: afterReport.summary.errors > beforeReport.summary.errors
-        || afterReport.summary.warnings > beforeReport.summary.warnings,
+
+      regression,
     };
 
     console.log(formatOutput(diff, args));
-    process.exitCode = diff.regression ? 1 : 0;
+
+    process.exitCode = regression ? 1 : 0;
   },
 });
 
-function serializeComponents(components: Map<string, ComponentDef>): Map<string, Record<string, unknown>> {
+function serializeComponents(
+  components: Map<string, ComponentDef>,
+): Map<string, Record<string, unknown>> {
   const result = new Map<string, Record<string, unknown>>();
-  for (const [name, comp] of components) {
-    result.set(name, Object.fromEntries(comp.properties));
+
+  for (const [name, comp] of components.entries()) {
+    const props: Record<string, unknown> = {};
+
+    for (const [key, value] of comp.properties) {
+      props[key] = value;
+    }
+
+    result.set(name, props);
   }
+
   return result;
 }
