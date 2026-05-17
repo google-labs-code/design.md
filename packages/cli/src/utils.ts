@@ -54,8 +54,15 @@ export function formatOutput(data: unknown, args: { format?: string }): string {
 function formatAsMarkdown(data: unknown): string {
   if (typeof data === 'object' && data !== null) {
     const obj = data as Record<string, unknown>;
+
+    // Lint report shape: { findings: Finding[], summary: { errors, warnings, infos } }
+    if (Array.isArray(obj.findings) && isLintSummary(obj.summary)) {
+      return formatLintAsMarkdown(obj.findings as LintFinding[], obj.summary as LintSummary);
+    }
+
+    // Legacy fixer/diff shape: { summary: string, details?: ..., patches?: ... }
     let result = '';
-    if (obj.summary) {
+    if (typeof obj.summary === 'string') {
       result += `# ${obj.summary}\n\n`;
     }
     if (obj.details) {
@@ -71,6 +78,53 @@ function formatAsMarkdown(data: unknown): string {
     return result || formatAsText(data);
   }
   return String(data);
+}
+
+interface LintSummary {
+  errors: number;
+  warnings: number;
+  infos: number;
+}
+
+interface LintFinding {
+  severity: string;
+  path?: string;
+  message: string;
+}
+
+function isLintSummary(value: unknown): value is LintSummary {
+  if (typeof value !== 'object' || value === null) return false;
+  const s = value as Record<string, unknown>;
+  return (
+    typeof s.errors === 'number' &&
+    typeof s.warnings === 'number' &&
+    typeof s.infos === 'number'
+  );
+}
+
+function formatLintAsMarkdown(findings: LintFinding[], summary: LintSummary): string {
+  const lines: string[] = [];
+  lines.push('# Lint Report');
+  lines.push('');
+  lines.push(
+    `**${summary.errors} errors**, **${summary.warnings} warnings**, **${summary.infos} infos**`,
+  );
+  lines.push('');
+
+  if (findings.length === 0) {
+    lines.push('No findings.');
+    lines.push('');
+    return lines.join('\n');
+  }
+
+  lines.push('## Findings');
+  lines.push('');
+  for (const f of findings) {
+    const path = f.path ? ` \`${f.path}\`` : '';
+    lines.push(`- **${f.severity}**${path}: ${f.message}`);
+  }
+  lines.push('');
+  return lines.join('\n');
 }
 
 function formatAsText(data: unknown, indent = 0): string {
