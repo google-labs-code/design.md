@@ -80,6 +80,8 @@ export interface DesignSystemState {
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
   sections?: string[] | undefined;
+  /** Top-level YAML keys that are not part of the known schema */
+  unknownKeys?: string[] | undefined;
 }
 
 export interface ComponentDef {

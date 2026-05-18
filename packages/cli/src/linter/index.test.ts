@@ -129,4 +129,21 @@ components:
     // Should have errors: invalid color + broken reference
     expect(result.summary.errors).toBeGreaterThanOrEqual(2);
   });
+
+  it('warns on a misspelled top-level key via the default rule set', () => {
+    const content = `---
+name: Example
+colours:
+  primary: "#647D66"
+---`;
+
+    const result = lint(content);
+
+    const finding = result.findings.find(
+      f => f.message === 'Unexpected unknown top-level key "colours"'
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('warning');
+    expect(finding!.path).toBe('colours');
+  });
 });

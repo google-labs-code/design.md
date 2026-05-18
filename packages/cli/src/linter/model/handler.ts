@@ -29,6 +29,18 @@ import { parseCssColor } from './color-parser.js';
 
 const MAX_REFERENCE_DEPTH = 10;
 
+/** Known top-level YAML keys, per docs/spec.md. */
+export const KNOWN_TOP_LEVEL_KEYS: ReadonlySet<string> = new Set([
+  'version',
+  'name',
+  'description',
+  'colors',
+  'typography',
+  'rounded',
+  'spacing',
+  'components',
+]);
+
 /**
  * Builds a resolved DesignSystemState from parsed YAML tokens.
  * Handles color parsing, dimension parsing, typography construction,
@@ -205,6 +217,10 @@ export class ModelHandler implements ModelSpec {
         }
       }
 
+      const unknownKeys = [...input.sourceMap.keys()].filter(
+        key => !KNOWN_TOP_LEVEL_KEYS.has(key)
+      );
+
       return {
         designSystem: {
           name: input.name,
@@ -216,6 +232,7 @@ export class ModelHandler implements ModelSpec {
           components,
           symbolTable,
           sections: input.sections,
+          unknownKeys,
         },
         findings,
       };
