@@ -70,12 +70,42 @@ component_sub_tokens:
     type: Dimension
   - name: padding
     type: Dimension
+  - name: paddingLeft
+    type: Dimension
+    description: "CSS logical directional padding, e.g. for margin-note inset patterns."
   - name: size
     type: Dimension
   - name: height
     type: Dimension
   - name: width
     type: Dimension
+  - name: minHeight
+    type: Dimension
+    description: "Minimum height (commonly 44px for touch-target compliance)."
+  - name: minWidth
+    type: Dimension
+    description: "Minimum width (e.g. circular buttons, touch-target compliance)."
+  - name: fontFamily
+    type: string
+    description: "Font family override per component (e.g. serif for CTAs, sans for chips)."
+  - name: fontWeight
+    type: "number | string"
+    description: "Font weight override per component."
+  - name: fontStyle
+    type: string
+    description: "CSS font-style value (e.g. 'italic' for margin-note patterns)."
+  - name: borderColor
+    type: Color
+    description: "Border color for card, chip, and container edges."
+  - name: borderLeftColor
+    type: Color
+    description: "Directional border color (e.g. accent left-edge for margin-notes)."
+  - name: borderLeftWidth
+    type: Dimension
+    description: "Directional border width. Follows CSS box-model naming."
+  - name: elevation
+    type: string
+    description: "Shadow/elevation class (e.g. 'shadow-lg'). Use sparingly; most components reject digital shadows in favor of tonal layers."
 
 color_roles:
   - primary
