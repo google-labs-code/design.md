@@ -140,10 +140,27 @@ colours:
     const result = lint(content);
 
     const finding = result.findings.find(
-      f => f.message === 'Unexpected unknown top-level key "colours"'
+      f => f.message === 'Unknown key "colours" — did you mean "colors"?'
     );
     expect(finding).toBeDefined();
     expect(finding!.severity).toBe('warning');
     expect(finding!.path).toBe('colours');
+  });
+
+  it('stays silent for custom extension keys that are not close to any known key', () => {
+    const content = `---
+name: Example
+icons:
+  search: "search-icon.svg"
+motion:
+  fast: "100ms"
+---`;
+
+    const result = lint(content);
+
+    const unknownKeyFindings = result.findings.filter(f =>
+      f.message.startsWith('Unknown key ')
+    );
+    expect(unknownKeyFindings).toEqual([]);
   });
 });

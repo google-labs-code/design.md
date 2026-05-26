@@ -191,6 +191,7 @@ export class ParserHandler implements ParserSpec {
    */
   private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: Array<{ heading: string; content: string }>): ParsedDesignSystem {
     return {
+      version: typeof raw['version'] === 'string' ? raw['version'] : undefined,
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
       colors: raw['colors'] as Record<string, string> | undefined,

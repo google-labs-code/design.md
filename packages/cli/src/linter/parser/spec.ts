@@ -39,6 +39,7 @@ export interface SourceLocation {
 
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
+  version?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
   colors?: Record<string, string> | undefined;
@@ -52,6 +53,20 @@ export interface ParsedDesignSystem {
   /** Full content of each section, including heading and body. */
   documentSections?: Array<{ heading: string; content: string }> | undefined;
 }
+
+/** Canonical top-level YAML keys per the DESIGN.md schema. */
+export const SCHEMA_KEYS = [
+  'version',
+  'name',
+  'description',
+  'colors',
+  'typography',
+  'rounded',
+  'spacing',
+  'components',
+] as const;
+
+export type SchemaKey = typeof SCHEMA_KEYS[number];
 
 // ── RESULT ─────────────────────────────────────────────────────────
 export type ParserResult =

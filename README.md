@@ -305,7 +305,7 @@ The linter runs nine rules against a parsed DESIGN.md. Each rule produces findin
 | `missing-sections` | info | Optional sections (spacing, rounded) absent when other tokens exist |
 | `missing-typography` | warning | Colors are defined but no typography tokens exist — agents will use default fonts |
 | `section-order` | warning | Sections appear out of the canonical order defined by the spec |
-| `unknown-key` | warning | A top-level YAML key is not part of the known schema (catches typos like `colours:`) |
+| `unknown-key` | warning | A top-level YAML key looks like a typo of a known schema key (e.g. `colours:` → `colors:`); custom extension keys stay silent |
 
 ### Programmatic API
 

@@ -12,25 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { SCHEMA_KEYS } from '../../parser/spec.js';
 import type { DesignSystemState } from '../../model/spec.js';
 import type { RuleDescriptor, RuleFinding } from './types.js';
+import { levenshtein } from './levenshtein.js';
+
+/** Max edit distance to consider a typo (not a custom key). */
+const MAX_TYPO_DISTANCE = 2;
 
 /**
- * Unknown key — warns when a top-level YAML key (in front matter or a fenced
- * yaml block) is not part of the known schema. A misspelled section name
- * (e.g. `colours`) is otherwise silently discarded by the parser, leaving the
- * author with no signal that an entire block of tokens was ignored.
+ * Unknown key — warns when a top-level YAML key looks like a typo of a known
+ * schema key. The DESIGN.md schema is intentionally extensible (custom keys
+ * are allowed), so only close matches to known keys are reported; unrelated
+ * extension keys stay silent.
  */
 export function unknownKey(state: DesignSystemState): RuleFinding[] {
-  return (state.unknownKeys ?? []).map(key => ({
-    path: key,
-    message: `Unexpected unknown top-level key "${key}"`,
-  }));
+  const knownSet = new Set<string>(SCHEMA_KEYS);
+  return (state.unknownKeys ?? []).flatMap(key => {
+    if (knownSet.has(key)) return [];
+
+    let bestMatch: string | undefined;
+    let bestDist = Infinity;
+    for (const known of SCHEMA_KEYS) {
+      const dist = levenshtein(key.toLowerCase(), known.toLowerCase());
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestMatch = known;
+      }
+    }
+
+    if (bestDist <= MAX_TYPO_DISTANCE && bestMatch) {
+      return [{
+        path: key,
+        message: `Unknown key "${key}" — did you mean "${bestMatch}"?`,
+      }];
+    }
+
+    return [];
+  });
 }
 
 export const unknownKeyRule: RuleDescriptor = {
   name: 'unknown-key',
   severity: 'warning',
-  description: 'Unknown key — warns when a top-level YAML key is not part of the known schema.',
+  description: 'Unknown key — warns when a top-level YAML key looks like a typo of a known schema key.',
   run: unknownKey,
 };
