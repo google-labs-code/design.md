@@ -5,3 +5,6 @@ dist/
 bun.lockb
 *.tgz
 .turbo/
+.DS_Store
+examples/.DS_Store
+examples/generationux/.DS_Store
