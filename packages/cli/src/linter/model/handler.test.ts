@@ -506,4 +506,58 @@ describe('ModelHandler', () => {
       expect(btn?.properties.get('fontWeight')).toBe(600);
     });
   });
+
+  // ── Fix #75: non-string YAML scalars crash model builder ────────────
+  describe('non-string component property values (Issue #75)', () => {
+    it('does not crash when a component property is a float (opacity: 0.9)', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#FF0000', 'on-primary': '#FFFFFF' },
+        components: {
+          button: {
+            backgroundColor: '{colors.primary}',
+            textColor: '{colors.on-primary}',
+            opacity: 0.9 as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('opacity')).toBe(0.9);
+    });
+
+    it('does not crash when a component property is a boolean (visible: true)', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          banner: {
+            visible: true as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const banner = result.designSystem.components.get('banner');
+      expect(banner?.properties.get('visible')).toBe(true);
+    });
+
+    it('handles mixed number, boolean, and string props without crashing', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        components: {
+          card: {
+            backgroundColor: '{colors.primary}',
+            borderRadius: '8px',
+            fontWeight: 500 as unknown as string,
+            opacity: 0.85 as unknown as string,
+            visible: true as unknown as string,
+            disabled: false as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const card = result.designSystem.components.get('card');
+      expect(card?.properties.get('fontWeight')).toBe(500);
+      expect(card?.properties.get('opacity')).toBe(0.85);
+      expect(card?.properties.get('visible')).toBe(true);
+      expect(card?.properties.get('disabled')).toBe(false);
+    });
+  });
 });
