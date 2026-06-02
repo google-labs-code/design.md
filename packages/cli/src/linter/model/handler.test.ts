@@ -460,7 +460,7 @@ describe('ModelHandler', () => {
       expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
       const btn = result.designSystem.components.get('button-primary');
       expect(btn).toBeDefined();
-      expect(btn?.properties.get('fontWeight')).toBe(600);
+      expect(btn?.properties.get('fontWeight') as unknown).toBe(600);
     });
 
     it('stores numeric fontWeight value as-is in component properties', () => {
@@ -472,7 +472,7 @@ describe('ModelHandler', () => {
         },
       }));
       const heading = result.designSystem.components.get('heading');
-      expect(heading?.properties.get('fontWeight')).toBe(700);
+      expect(heading?.properties.get('fontWeight') as unknown).toBe(700);
     });
 
     it('does not crash when borderWidth is a bare number', () => {
@@ -485,7 +485,7 @@ describe('ModelHandler', () => {
       }));
       expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
       const card = result.designSystem.components.get('card');
-      expect(card?.properties.get('borderWidth')).toBe(1);
+      expect(card?.properties.get('borderWidth') as unknown).toBe(1);
     });
 
     it('handles mixed numeric and string props in same component without crashing', () => {
@@ -503,7 +503,7 @@ describe('ModelHandler', () => {
       }));
       expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
       const btn = result.designSystem.components.get('button');
-      expect(btn?.properties.get('fontWeight')).toBe(600);
+      expect(btn?.properties.get('fontWeight') as unknown).toBe(600);
     });
   });
 
@@ -522,7 +522,7 @@ describe('ModelHandler', () => {
       }));
       expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
       const btn = result.designSystem.components.get('button');
-      expect(btn?.properties.get('opacity')).toBe(0.9);
+      expect(btn?.properties.get('opacity') as unknown).toBe(0.9);
     });
 
     it('does not crash when a component property is a boolean (visible: true)', () => {
@@ -535,7 +535,7 @@ describe('ModelHandler', () => {
       }));
       expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
       const banner = result.designSystem.components.get('banner');
-      expect(banner?.properties.get('visible')).toBe(true);
+      expect(banner?.properties.get('visible') as unknown).toBe(true);
     });
 
     it('handles mixed number, boolean, and string props without crashing', () => {
@@ -554,10 +554,10 @@ describe('ModelHandler', () => {
       }));
       expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
       const card = result.designSystem.components.get('card');
-      expect(card?.properties.get('fontWeight')).toBe(500);
-      expect(card?.properties.get('opacity')).toBe(0.85);
-      expect(card?.properties.get('visible')).toBe(true);
-      expect(card?.properties.get('disabled')).toBe(false);
+      expect(card?.properties.get('fontWeight') as unknown).toBe(500);
+      expect(card?.properties.get('opacity') as unknown).toBe(0.85);
+      expect(card?.properties.get('visible') as unknown).toBe(true);
+      expect(card?.properties.get('disabled') as unknown).toBe(false);
     });
   });
 });
