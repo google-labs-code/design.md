@@ -52,25 +52,72 @@ export function formatOutput(data: unknown, args: { format?: string }): string {
 }
 
 function formatAsMarkdown(data: unknown): string {
-  if (typeof data === 'object' && data !== null) {
-    const obj = data as Record<string, unknown>;
-    let result = '';
-    if (obj.summary) {
-      result += `# ${obj.summary}\n\n`;
-    }
-    if (obj.details) {
-      result += `## Details\n\n`;
-      result += formatAsText(obj.details);
-      result += '\n';
-    }
-    if (obj.patches && Array.isArray(obj.patches) && obj.patches.length > 0) {
-      result += `## Patches\n\n`;
-      result += formatAsText(obj.patches);
-      result += '\n';
-    }
-    return result || formatAsText(data);
+  if (typeof data !== 'object' || data === null) {
+    return String(data);
   }
-  return String(data);
+
+  const obj = data as Record<string, unknown>;
+
+  // Lint output: { findings: [...], summary: { errors, warnings, infos } }
+  if (isLintOutput(obj)) {
+    return formatLintAsMarkdown(obj);
+  }
+
+  // Legacy fixer/diff shape: { summary: string, details?, patches? }
+  let result = '';
+  if (typeof obj.summary === 'string') {
+    result += `# ${obj.summary}\n\n`;
+  }
+  if (obj.details) {
+    result += `## Details\n\n`;
+    result += formatAsText(obj.details);
+    result += '\n';
+  }
+  if (obj.patches && Array.isArray(obj.patches) && obj.patches.length > 0) {
+    result += `## Patches\n\n`;
+    result += formatAsText(obj.patches);
+    result += '\n';
+  }
+  return result || formatAsText(data);
+}
+
+interface LintSummary {
+  errors: number;
+  warnings: number;
+  infos: number;
+}
+
+interface LintFinding {
+  severity: string;
+  message: string;
+  path?: string;
+}
+
+function isLintOutput(obj: Record<string, unknown>): boolean {
+  if (!Array.isArray(obj.findings)) return false;
+  if (typeof obj.summary !== 'object' || obj.summary === null) return false;
+  const s = obj.summary as Record<string, unknown>;
+  return typeof s.errors === 'number'
+    && typeof s.warnings === 'number'
+    && typeof s.infos === 'number';
+}
+
+function formatLintAsMarkdown(obj: Record<string, unknown>): string {
+  const summary = obj.summary as LintSummary;
+  const findings = obj.findings as LintFinding[];
+
+  let result = '# Lint Report\n\n';
+  result += `**${summary.errors} errors**, **${summary.warnings} warnings**, **${summary.infos} infos**\n`;
+
+  if (findings.length > 0) {
+    result += '\n## Findings\n\n';
+    for (const f of findings) {
+      const location = f.path ? ` \`${f.path}\`:` : ':';
+      result += `- **${f.severity}**${location} ${f.message}\n`;
+    }
+  }
+
+  return result;
 }
 
 function formatAsText(data: unknown, indent = 0): string {
