@@ -51,8 +51,8 @@ export class ModelHandler implements ModelSpec {
       // ── Phase 1: Resolve primitive tokens ──────────────────────────
       // Colors
       if (input.colors) {
-        for (const [name, raw] of Object.entries(input.colors)) {
-          if (isTokenReference(raw)) {
+        forEachLeaf(input.colors, (name, raw) => {
+          if (typeof raw === 'string' && isTokenReference(raw)) {
             // Store raw reference for later resolution
             symbolTable.set(`colors.${name}`, raw);
           } else if (isValidColor(raw)) {
@@ -68,7 +68,7 @@ export class ModelHandler implements ModelSpec {
             // Store as-is for fallback
             symbolTable.set(`colors.${name}`, raw);
           }
-        }
+        });
       }
 
       // Typography
@@ -82,7 +82,7 @@ export class ModelHandler implements ModelSpec {
 
       // Rounded
       if (input.rounded) {
-        for (const [name, raw] of Object.entries(input.rounded)) {
+        forEachLeaf(input.rounded, (name, raw) => {
           if (typeof raw === 'string') {
             if (isParseableDimension(raw)) {
               const resolved = parseDimension(raw);
@@ -106,12 +106,12 @@ export class ModelHandler implements ModelSpec {
               symbolTable.set(`rounded.${name}`, raw);
             }
           }
-        }
+        });
       }
 
       // Spacing
       if (input.spacing) {
-        for (const [name, raw] of Object.entries(input.spacing)) {
+        forEachLeaf(input.spacing, (name, raw) => {
           if (isParseableDimension(raw)) {
             const resolved = parseDimension(raw);
             spacing.set(name, resolved);
@@ -119,26 +119,26 @@ export class ModelHandler implements ModelSpec {
           } else {
             symbolTable.set(`spacing.${name}`, raw);
           }
-        }
+        });
       }
 
       // ── Phase 2: Resolve chained color references ──────────────────
       // Iterate color entries that are still raw references and resolve them
       if (input.colors) {
-        for (const [name, raw] of Object.entries(input.colors)) {
-          if (isTokenReference(raw)) {
+        forEachLeaf(input.colors, (name, raw) => {
+          if (typeof raw === 'string' && isTokenReference(raw)) {
             const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
             if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
               colors.set(name, resolved as ResolvedColor);
               symbolTable.set(`colors.${name}`, resolved);
             }
           }
-        }
+        });
       }
 
       // Resolve chained rounded references
       if (input.rounded) {
-        for (const [name, raw] of Object.entries(input.rounded)) {
+        forEachLeaf(input.rounded, (name, raw) => {
           if (typeof raw === 'string' && isTokenReference(raw)) {
             const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
             if (
@@ -151,12 +151,12 @@ export class ModelHandler implements ModelSpec {
               symbolTable.set(`rounded.${name}`, resolved);
             }
           }
-        }
+        });
       }
 
       // Resolve chained spacing references
       if (input.spacing) {
-        for (const [name, raw] of Object.entries(input.spacing)) {
+        forEachLeaf(input.spacing, (name, raw) => {
           if (typeof raw === 'string' && isTokenReference(raw)) {
             const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
             if (
@@ -169,7 +169,7 @@ export class ModelHandler implements ModelSpec {
               symbolTable.set(`spacing.${name}`, resolved);
             }
           }
-        }
+        });
       }
 
       // ── Phase 3: Build components ──────────────────────────────────
@@ -390,4 +390,19 @@ export function contrastRatio(a: ResolvedColor, b: ResolvedColor): number {
   const L1 = Math.max(a.luminance, b.luminance);
   const L2 = Math.min(a.luminance, b.luminance);
   return (L1 + 0.05) / (L2 + 0.05);
+}
+
+/**
+ * Recursively iterate over an object and call a function for each leaf node.
+ * Leaf node paths are dot-separated (e.g. "background.light").
+ */
+function forEachLeaf(obj: Record<string, any>, fn: (path: string, value: any) => void, prefix = '') {
+  for (const [key, value] of Object.entries(obj)) {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      forEachLeaf(value, fn, fullPath);
+    } else {
+      fn(fullPath, value);
+    }
+  }
 }

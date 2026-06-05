@@ -42,11 +42,11 @@ export interface ParsedDesignSystem {
   version?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
-  colors?: Record<string, string> | undefined;
-  typography?: Record<string, Record<string, string | number>> | undefined;
-  rounded?: Record<string, string> | undefined;
-  spacing?: Record<string, string> | undefined;
-  components?: Record<string, Record<string, string>> | undefined;
+  colors?: Record<string, any> | undefined;
+  typography?: Record<string, Record<string, any>> | undefined;
+  rounded?: Record<string, any> | undefined;
+  spacing?: Record<string, any> | undefined;
+  components?: Record<string, Record<string, any>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;
