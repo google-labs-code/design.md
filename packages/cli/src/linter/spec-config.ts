@@ -40,6 +40,10 @@ const PropertyDefSchema = z.object({
 
 const ConfigSchema = z.object({
   version: z.string(),
+  limits: z.object({
+    max_token_nesting_depth: z.number().default(20),
+    max_reference_depth: z.number().default(10),
+  }).default({}),
   units: z.array(z.string()).min(1),
   sections: z.array(z.object({
     canonical: z.string(),
@@ -117,6 +121,10 @@ const config = getSpecConfig();
 /** Current spec version. Appears in the schema and the front matter example. */
 export const SPEC_VERSION = config.version;
 
+/** Performance and safety limits for the model handler. */
+export const MAX_TOKEN_NESTING_DEPTH = config.limits.max_token_nesting_depth;
+export const MAX_REFERENCE_DEPTH = config.limits.max_reference_depth;
+
 /** Units the spec formally supports for Dimension values. */
 export const STANDARD_UNITS = config.units;
 export type StandardUnit = (typeof STANDARD_UNITS)[number];
@@ -164,6 +172,8 @@ export const VALID_COMPONENT_SUB_TOKENS = COMPONENT_SUB_TOKENS.map(p => p.name);
 /** All config values bundled as a single object for renderer injection. */
 export interface SpecConfig {
   SPEC_VERSION: typeof SPEC_VERSION;
+  MAX_TOKEN_NESTING_DEPTH: typeof MAX_TOKEN_NESTING_DEPTH;
+  MAX_REFERENCE_DEPTH: typeof MAX_REFERENCE_DEPTH;
   STANDARD_UNITS: typeof STANDARD_UNITS;
   SECTIONS: typeof SECTIONS;
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
@@ -176,6 +186,8 @@ export interface SpecConfig {
 /** Build a SpecConfig from the module's exports. */
 export const SPEC_CONFIG: SpecConfig = {
   SPEC_VERSION,
+  MAX_TOKEN_NESTING_DEPTH,
+  MAX_REFERENCE_DEPTH,
   STANDARD_UNITS,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,

@@ -61,7 +61,7 @@ export interface ResolvedTypography {
   fontVariation?: string | undefined;
 }
 
-export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string;
+export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string | number | boolean;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
@@ -98,6 +98,7 @@ export const ModelErrorCode = z.enum([
   'UNRESOLVED_REFERENCE',
   'CIRCULAR_REFERENCE',
   'REFERENCE_TO_NON_PRIMITIVE',
+  'NESTING_DEPTH_EXCEEDED',
   'UNKNOWN_ERROR',
 ]);
 

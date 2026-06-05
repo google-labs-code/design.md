@@ -18,6 +18,11 @@
 
 version: alpha
 
+# Performance and safety limits for the model handler.
+limits:
+  max_token_nesting_depth: 20
+  max_reference_depth: 10
+
 units:
   - px
   - em

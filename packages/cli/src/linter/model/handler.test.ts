@@ -631,4 +631,38 @@ describe('ModelHandler', () => {
       expect(card?.properties.get('disabled') as unknown).toBe(false);
     });
   });
+
+  describe('token nesting depth limit', () => {
+    it('emits error when token nesting depth exceeds 20', () => {
+      // 22 levels: Level 1..21 are objects, Level 22 is a leaf.
+      // forEachLeaf will be called for Level 22 with depth 21.
+      let obj: any = '#ffffff';
+      for (let i = 22; i >= 1; i--) {
+        obj = { [`level${i}`]: obj };
+      }
+
+      const result = handler.execute(makeParsed({
+        colors: obj,
+      }));
+      expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(true);
+      expect(result.findings.find((f) => f.message.includes('nesting depth'))?.path).toBe('colors');
+    });
+
+    it('allows nesting up to depth 20', () => {
+      // 21 levels: Level 1..20 are objects, Level 21 is a leaf.
+      // forEachLeaf will be called for Level 21 with depth 20.
+      let obj: any = '#ffffff';
+      for (let i = 21; i >= 1; i--) {
+        obj = { [`level${i}`]: obj };
+      }
+
+      const result = handler.execute(makeParsed({
+        colors: obj,
+      }));
+      expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(false);
+      // Construct the expected path: level1.level2...level21
+      const path = Array.from({ length: 21 }, (_, i) => `level${i + 1}`).join('.');
+      expect(result.designSystem.colors.has(path)).toBe(true);
+    });
+  });
 });
