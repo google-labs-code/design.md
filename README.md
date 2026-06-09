@@ -191,6 +191,19 @@ Or run directly (always resolves from the public npm registry):
 npx @google/design.md lint DESIGN.md
 ```
 
+On **Windows/PowerShell**, this direct form can produce no output (or open
+`DESIGN.md` in your Markdown editor) because the `.md` suffix in the `design.md`
+bin name collides with the Windows Markdown file association during command
+resolution. Run the dot-free `designmd` alias instead — point `npx` at the
+package with `-p`, then invoke `designmd`:
+
+```bash
+npx -p @google/design.md designmd lint DESIGN.md
+```
+
+The `designmd` shim resolves to the same entrypoint and works identically across
+all platforms.
+
 #### `npm error ENOVERSIONS` (“No versions available for @google/design.md”)
 
 The CLI is published as [`@google/design.md` on npm](https://www.npmjs.com/package/@google/design.md). `ENOVERSIONS` almost always means npm is not querying the public registry (custom `registry=` in `.npmrc`, a corporate mirror that has not synced this package, or a misconfigured `@google:registry` for the `@google` scope).
