@@ -66,7 +66,7 @@ export async function scoreVision(
   return parseJudgeResponse(text);
 }
 
-function parseJudgeResponse(text: string): { score: number; rationale: string } {
+export function parseJudgeResponse(text: string): { score: number; rationale: string } {
   const cleaned = text.replace(/```json\s*/i, '').replace(/```\s*$/i, '').trim();
   try {
     const parsed = JSON.parse(cleaned);
