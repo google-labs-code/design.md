@@ -216,6 +216,15 @@ export class ModelHandler implements ModelSpec {
         key => !SCHEMA_KEY_SET.has(key)
       );
 
+      const unknownKeyValues: Record<string, unknown> = {};
+      if (input.rawValues) {
+        for (const key of unknownKeys) {
+          if (Object.prototype.hasOwnProperty.call(input.rawValues, key)) {
+            unknownKeyValues[key] = input.rawValues[key];
+          }
+        }
+      }
+
       return {
         designSystem: {
           name: input.name,
@@ -228,6 +237,7 @@ export class ModelHandler implements ModelSpec {
           symbolTable,
           sections: input.sections,
           unknownKeys,
+          unknownKeyValues,
         },
         findings,
       };

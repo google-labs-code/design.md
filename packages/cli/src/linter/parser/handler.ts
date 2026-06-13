@@ -202,6 +202,7 @@ export class ParserHandler implements ParserSpec {
       sourceMap,
       sections,
       documentSections,
+      rawValues: raw,
     };
   }
 

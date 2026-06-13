@@ -52,6 +52,8 @@ export interface ParsedDesignSystem {
   sections?: string[] | undefined;
   /** Full content of each section, including heading and body. */
   documentSections?: Array<{ heading: string; content: string }> | undefined;
+  /** Raw YAML values for all top-level keys (known and unknown), used by lint rules. */
+  rawValues?: Record<string, unknown> | undefined;
 }
 
 /** Canonical top-level YAML keys per the DESIGN.md schema. */
