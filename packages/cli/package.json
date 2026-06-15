@@ -1,6 +1,6 @@
 {
   "name": "@google/design.md",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Bridging design systems and code: a linter and exporter for the DESIGN.md format",
   "keywords": [
     "design.md"
