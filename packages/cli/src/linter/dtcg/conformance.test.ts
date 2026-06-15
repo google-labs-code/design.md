@@ -81,7 +81,7 @@ export default defineConfig({
 
       // Install dependencies in temp dir so they can be imported in config
       // Using bun add should be fast if cached
-      const customPath = `${process.env.PATH || ''}:/Users/dalmaer/.bun/bin`;
+      const customPath = process.env.PATH || '';
       const installProc = spawnSync('bun', ['add', '@terrazzo/cli', '@terrazzo/plugin-css'], {
         cwd: tmpDir,
         env: { ...process.env, PATH: customPath },
