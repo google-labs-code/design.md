@@ -272,8 +272,22 @@ export function parseColor(raw: string): ResolvedColor {
 /**
  * Parse a dimension string like "42px" or "1.5rem".
  */
-function parseDimension(raw: string): ResolvedDimension {
-  const parts = parseDimensionParts(raw);
+function parseDimension(raw: any): ResolvedDimension {
+  // Defensive type guard – prevents "raw.match is not a function" crash
+  // and provides a clear error message for unexpected input types.
+  if (typeof raw !== 'string') {
+    throw new Error(
+      `parseDimension expected a string, got ${typeof raw}. ` +
+      `This usually indicates a malformed token in your design file.`,
+    );
+  }
+  const value = raw.trim();
+  if (value === '') {
+    throw new Error(
+      'parseDimension received an empty string. Please provide a valid dimension (e.g., "16px", "1.5rem").',
+    );
+  }
+  const parts = parseDimensionParts(value);
   if (!parts) {
     throw new Error(`Invalid dimension: ${raw}`);
   }
