@@ -13,17 +13,17 @@
 // limitations under the License.
 
 import { defineCommand } from 'citty';
-import { lint, TailwindEmitterHandler, TailwindV4EmitterHandler, serializeTailwindV4 } from '../linter/index.js';
+import { lint, TailwindEmitterHandler, TailwindV4EmitterHandler, serializeTailwindV4, CssVarsEmitterHandler, serializeCssVars } from '../linter/index.js';
 import { DtcgEmitterHandler } from '../linter/dtcg/handler.js';
 import { readInput } from '../utils.js';
 
-const FORMATS = ['css-tailwind', 'json-tailwind', 'tailwind', 'dtcg'] as const;
+const FORMATS = ['css-tailwind', 'json-tailwind', 'tailwind', 'dtcg', 'css-vars'] as const;
 type ExportFormat = typeof FORMATS[number];
 
 export default defineCommand({
   meta: {
     name: 'export',
-    description: 'Export DESIGN.md tokens to other formats. `css-tailwind` emits Tailwind v4 CSS @theme; `json-tailwind` emits Tailwind v3 theme.extend JSON; `tailwind` is an alias for `json-tailwind`; `dtcg` emits W3C Design Tokens.',
+    description: 'Export DESIGN.md tokens to other formats. `css-tailwind` emits Tailwind v4 CSS @theme; `json-tailwind` emits Tailwind v3 theme.extend JSON; `tailwind` is an alias for `json-tailwind`; `dtcg` emits W3C Design Tokens; `css-vars` emits CSS custom properties.',
   },
   args: {
     file: {
@@ -36,9 +36,15 @@ export default defineCommand({
       description: `Output format: ${FORMATS.join(', ')}`,
       required: true,
     },
+    prefix: {
+      type: 'string',
+      description: 'Optional CSS custom property prefix for css-vars output.',
+      required: false,
+    },
   },
   async run({ args }) {
     const format = args.format as string;
+    const prefix = typeof args.prefix === 'string' ? args.prefix : undefined;
 
     // Validate --format against closed enum
     if (!FORMATS.includes(format as ExportFormat)) {
@@ -85,6 +91,17 @@ export default defineCommand({
       }
 
       console.log(JSON.stringify(result.data, null, 2));
+    } else if (format === 'css-vars') {
+      const handler = new CssVarsEmitterHandler();
+      const result = handler.execute(report.designSystem);
+
+      if (!result.success) {
+        console.error(JSON.stringify({ error: result.error.message }));
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(serializeCssVars(result.data.declarations, { prefix }));
     }
 
     process.exitCode = report.summary.errors > 0 ? 1 : 0;
