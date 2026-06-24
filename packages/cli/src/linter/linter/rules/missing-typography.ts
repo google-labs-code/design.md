@@ -21,6 +21,11 @@ import type { RuleDescriptor, RuleFinding } from './types.js';
  * reducing the author's control over the design system's typographic identity.
  */
 export function missingTypography(state: DesignSystemState): RuleFinding[] {
+  const omitted = new Set((state.omitted ?? []).map(section => section.toLowerCase()));
+  if (omitted.has('typography')) {
+    return [];
+  }
+
   if (state.typography.size === 0 && state.colors.size > 0) {
     return [{
       path: 'typography',

@@ -194,6 +194,7 @@ export class ParserHandler implements ParserSpec {
       version: typeof raw['version'] === 'string' ? raw['version'] : undefined,
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
+      omitted: Array.isArray(raw['omitted']) ? raw['omitted'].filter(v => typeof v === 'string') : undefined,
       colors: raw['colors'] as Record<string, string> | undefined,
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,

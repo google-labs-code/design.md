@@ -229,6 +229,7 @@ export class ModelHandler implements ModelSpec {
         designSystem: {
           name: input.name,
           description: input.description,
+          omitted: input.omitted,
           colors,
           typography,
           rounded,
