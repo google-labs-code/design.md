@@ -99,6 +99,20 @@ describe('TailwindV4EmitterHandler', () => {
       if (!result.success) throw new Error('Expected success');
       expect(result.data.theme.fontFamily?.['fancy']).toBe('"Fancy \\"Font\\""');
     });
+
+    it('escapes line terminators in font-family values', () => {
+      const state = buildState({
+        typography: {
+          multi: { fontFamily: 'Evil\nFamily', fontSize: '16px' },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const value = result.data.theme.fontFamily?.['multi'];
+      // A raw newline must not survive into the emitted CSS string.
+      expect(value).not.toContain('\n');
+      expect(value).toBe('"Evil\\a Family"');
+    });
   });
 
   describe('dimensions mapping', () => {
