@@ -366,6 +366,20 @@ describe('ModelHandler', () => {
       const headline = result.designSystem.typography.get('headline');
       expect(headline?.fontWeight).toBe(700);
     });
+
+    it('warns about unrecognized typography sub-properties that are silently dropped', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'headline': { fontFamily: 'Inter', textTransform: 'uppercase' },
+        },
+      }));
+      const warning = result.findings.find(f => f.path === 'typography.headline.textTransform');
+      expect(warning).toBeDefined();
+      expect(warning?.severity).toBe('warning');
+      // The recognized property is still resolved, and known props never warn.
+      expect(result.designSystem.typography.get('headline')?.fontFamily).toBe('Inter');
+      expect(result.findings.some(f => f.path === 'typography.headline.fontFamily')).toBe(false);
+    });
   });
 
   describe('rounded validation', () => {

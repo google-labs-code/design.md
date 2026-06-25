@@ -25,7 +25,7 @@ import type {
   Finding,
 } from './spec.js';
 
-import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
+import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts, VALID_TYPOGRAPHY_PROPS } from './spec.js';
 import { parseCssColor } from './color-parser.js';
 
 import {
@@ -34,6 +34,7 @@ import {
 } from '../spec-config.js';
 
 const SCHEMA_KEY_SET: ReadonlySet<string> = new Set(SCHEMA_KEYS);
+const TYPOGRAPHY_PROP_SET: ReadonlySet<string> = new Set(VALID_TYPOGRAPHY_PROPS);
 
 /**
  * Builds a resolved DesignSystemState from parsed YAML tokens.
@@ -364,6 +365,19 @@ function parseTypography(props: Record<string, string | number>, path: string, f
           message: `'${raw}' is not a valid dimension.`,
         });
       }
+    }
+  }
+
+  // Surface typography sub-properties that aren't part of the schema: they are
+  // silently dropped (never resolved or emitted), so warn rather than ignore —
+  // mirroring how unknown component sub-tokens are reported.
+  for (const key of Object.keys(props)) {
+    if (!TYPOGRAPHY_PROP_SET.has(key)) {
+      findings.push({
+        severity: 'warning',
+        path: `${path}.${key}`,
+        message: `'${key}' is not a recognized typography property. Valid properties: ${VALID_TYPOGRAPHY_PROPS.join(', ')}.`,
+      });
     }
   }
 
