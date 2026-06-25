@@ -218,6 +218,25 @@ describe('ModelHandler', () => {
       expect(mix2?.g).toBe(128);
       expect(mix2?.b).toBe(128);
     });
+
+    it('parses grad hue units correctly (100grad === 90deg)', () => {
+      const result = handler.execute(makeParsed({
+        colors: { grad: 'hsl(100grad 100% 50%)', deg: 'hsl(90deg 100% 50%)' },
+      }));
+      expect(result.findings.length).toBe(0);
+      const grad = result.designSystem.colors.get('grad');
+      expect(grad?.hex).toBe('#80ff00');
+      expect(grad?.hex).toBe(result.designSystem.colors.get('deg')?.hex);
+    });
+
+    it('rejects color-mix with bare-number (non-percentage) weights', () => {
+      const result = handler.execute(makeParsed({
+        colors: { bad: 'color-mix(in srgb, red 20, blue)' },
+      }));
+      // CSS color-mix weights are percentages only; a bare number is invalid.
+      expect(result.designSystem.colors.has('bad')).toBe(false);
+      expect(result.findings.some(f => f.path === 'colors.bad' && f.severity === 'error')).toBe(true);
+    });
   });
 
   // ── Cycle 10: Resolve single-level token reference ────────────────
