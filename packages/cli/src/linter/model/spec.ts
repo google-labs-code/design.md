@@ -142,12 +142,20 @@ const CSS_UNITS = new Set([
 ]);
 
 /**
+ * Upper bound on a dimension string's length. Real CSS dimensions are a handful
+ * of characters; capping the length keeps validation linear and prevents
+ * pathological regex backtracking on oversized, attacker-supplied values.
+ */
+const MAX_DIMENSION_LENGTH = 64;
+
+/**
  * Parse a dimension string into its numeric value and unit suffix.
  * Accepts an optional leading sign and optional decimal (`.5rem` is valid).
  * Returns null for non-dimension strings (bare numbers, keywords like `auto`).
  */
 export function parseDimensionParts(raw: string): { value: number; unit: string } | null {
   if (typeof raw !== 'string') return null;
+  if (raw.length > MAX_DIMENSION_LENGTH) return null;
   const match = raw.match(/^(-?\d*\.?\d+)([a-zA-Z%]+)$/);
   if (!match) return null;
   const value = parseFloat(match[1]!);

@@ -665,4 +665,20 @@ describe('ModelHandler', () => {
       expect(result.designSystem.colors.has(path)).toBe(true);
     });
   });
+
+  describe('color-mix nesting depth limit', () => {
+    it('rejects pathologically nested color-mix as an invalid color without collapsing the model', () => {
+      let nested = 'red';
+      for (let i = 0; i < 50; i++) nested = `color-mix(in srgb, ${nested}, blue)`;
+      const result = handler.execute(makeParsed({
+        colors: { ok: '#ffffff', deep: nested },
+      }));
+      // The over-deep color resolves to "invalid" (a precise per-token error),
+      // not a thrown RangeError that collapses the whole model build.
+      expect(result.designSystem.colors.has('deep')).toBe(false);
+      expect(result.findings.some(f => f.path === 'colors.deep' && f.severity === 'error')).toBe(true);
+      // Other valid tokens are unaffected.
+      expect(result.designSystem.colors.get('ok')?.hex).toBe('#ffffff');
+    });
+  });
 });

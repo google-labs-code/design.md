@@ -79,6 +79,15 @@ describe('parseDimensionParts', () => {
     expect(parseDimensionParts('auto')).toBeNull();
     expect(parseDimensionParts('inherit')).toBeNull();
   });
+
+  it('returns null for oversized values without pathological backtracking', () => {
+    // Length-capped: an absurdly long value is rejected immediately rather than
+    // triggering quadratic regex backtracking.
+    expect(parseDimensionParts('1'.repeat(100000))).toBeNull();
+    expect(parseDimensionParts('1'.repeat(100000) + 'px')).toBeNull();
+    // Legitimate dimensions well under the cap still parse.
+    expect(parseDimensionParts('999999.999999px')).toEqual({ value: 999999.999999, unit: 'px' });
+  });
 });
 
 describe('isTokenReference', () => {

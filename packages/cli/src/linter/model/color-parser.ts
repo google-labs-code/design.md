@@ -56,11 +56,18 @@ const CSS_NAMED_COLORS: Record<string, string> = {
 };
 
 /**
+ * Maximum nesting depth for recursive color-mix() resolution. Guards against
+ * stack exhaustion from pathologically nested, attacker-supplied color values.
+ */
+const MAX_COLOR_MIX_DEPTH = 32;
+
+/**
  * Parse a CSS color string into its sRGB representation + WCAG relative luminance.
  * Returns null if the color is invalid.
  */
-export function parseCssColor(colorStr: string): ParsedColorResult | null {
+export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | null {
   if (typeof colorStr !== 'string') return null;
+  if (depth > MAX_COLOR_MIX_DEPTH) return null;
   const clean = colorStr.trim().toLowerCase();
   if (!clean) return null;
 
@@ -202,8 +209,8 @@ export function parseCssColor(colorStr: string): ParsedColorResult | null {
       const parsed2 = parseColorWithWeight(subArgs[2]!);
       if (!parsed1 || !parsed2) return null;
 
-      const c1 = parseCssColor(parsed1.colorStr);
-      const c2 = parseCssColor(parsed2.colorStr);
+      const c1 = parseCssColor(parsed1.colorStr, depth + 1);
+      const c2 = parseCssColor(parsed2.colorStr, depth + 1);
       if (!c1 || !c2) return null;
 
       // Normalize weights
