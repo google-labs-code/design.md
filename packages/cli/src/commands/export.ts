@@ -87,6 +87,8 @@ export default defineCommand({
       console.log(JSON.stringify(result.data, null, 2));
     }
 
-    process.exitCode = report.summary.errors > 0 ? 1 : 0;
+    // A successful export exits 0 even if the source has lint findings; those
+    // are surfaced by `lint`, not by whether the export itself produced output.
+    // The error branches above set a non-zero code and return before this point.
   },
 });
