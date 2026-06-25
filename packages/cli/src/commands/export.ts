@@ -43,7 +43,8 @@ export default defineCommand({
     // Validate --format against closed enum
     if (!FORMATS.includes(format as ExportFormat)) {
       console.error(JSON.stringify({
-        error: `Invalid format "${format}". Valid formats: ${FORMATS.join(', ')}`,
+        error: 'INVALID_FORMAT',
+        message: `Invalid format "${format}". Valid formats: ${FORMATS.join(', ')}`,
       }));
       process.exitCode = 1;
       return;
@@ -67,7 +68,7 @@ export default defineCommand({
       const result = handler.execute(report.designSystem);
 
       if (!result.success) {
-        console.error(JSON.stringify({ error: result.error.message }));
+        console.error(JSON.stringify({ error: result.error.code, message: result.error.message }));
         process.exitCode = 1;
         return;
       }
@@ -78,7 +79,7 @@ export default defineCommand({
       const result = handler.execute(report.designSystem);
 
       if (!result.success) {
-        console.error(JSON.stringify({ error: result.error.message }));
+        console.error(JSON.stringify({ error: result.error.code, message: result.error.message }));
         process.exitCode = 1;
         return;
       }
@@ -89,7 +90,7 @@ export default defineCommand({
       const result = handler.execute(report.designSystem);
 
       if (!result.success) {
-        console.error(JSON.stringify({ error: result.error.message }));
+        console.error(JSON.stringify({ error: result.error.code, message: result.error.message }));
         process.exitCode = 1;
         return;
       }
