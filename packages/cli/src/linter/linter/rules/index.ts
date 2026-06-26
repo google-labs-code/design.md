@@ -57,6 +57,7 @@ export const DEFAULT_RULES: LintRule[] = DEFAULT_RULE_DESCRIPTORS.map(toLintRule
 export { brokenRef } from './broken-ref.js';
 export { missingPrimary } from './missing-primary.js';
 export { contrastCheck } from './contrast-ratio.js';
+export { colorBlindContrastCheck, colorBlindContrastRule } from './color-blind-contrast.js';
 export { orphanedTokens } from './orphaned-tokens.js';
 export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
