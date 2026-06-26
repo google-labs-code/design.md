@@ -59,17 +59,23 @@ components:
 
 The `<scale-level>` placeholder represents a named level in a sizing or spacing scale. Common level names include `xs`, `sm`, `md`, `lg`, `xl`, and `full`. Any descriptive string key is valid.
 
-**Color**: A color value is any valid CSS color string. Supported formats include:
+**Color**: A color value is any valid CSS color string.
 
-* Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
-* Named colors: `red`, `cornflowerblue`, `transparent`
-* Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`
-* Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`
-* Mixing: `color-mix(in srgb, ...)`
+Supported formats include:
+
+- Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
+- Named colors: `red`, `cornflowerblue`, `transparent`
+- Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`
+- Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`
+- Mixing: `color-mix(in srgb, ...)`
 
 All color values are internally converted to sRGB for WCAG contrast checking. The original format is preserved for display and export.
 
 Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broad tooling support.
+
+**Dimension**: A dimension value is a string with a unit suffix.
+
+Valid units are: px, em, rem.
 
 - `fontFamily` (string)
 - `fontSize` (Dimension)
@@ -80,8 +86,6 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
   [`font-feature-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-feature-settings).
 - `fontVariation` (string) - configures
   [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings).
-
-**Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
 
 **Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
 

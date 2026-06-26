@@ -19,7 +19,7 @@
  * Each function returns a ready-to-embed markdown string.
  */
 
-import type { SpecConfig, TypographyPropertyDef, SectionDef, ComponentSubTokenDef } from '../spec-config.js';
+import type { SpecConfig, TypographyPropertyDef, SectionDef, ComponentSubTokenDef, TypeDef } from '../spec-config.js';
 
 // ── YAML code block helpers ─────────────────────────────────────
 
@@ -93,6 +93,36 @@ export function typographyPropertyList(config: SpecConfig): string {
       ? `- \`${p.name}\` (${p.type}) - ${p.description}`
       : `- \`${p.name}\` (${p.type})`
   ).join('\n');
+}
+
+/** Primitive type definitions for the schema section. */
+export function typeDefinitions(config: SpecConfig): string {
+  return Object.entries(config.SPEC_TYPES)
+    .map(([name, typeDef]) => typeDefinition(name, typeDef))
+    .join('\n\n');
+}
+
+function typeDefinition(name: string, typeDef: TypeDef): string {
+  const lines = [`**${name}**: ${typeDef.description}`];
+
+  if (typeDef.formats?.length) {
+    lines.push('', 'Supported formats include:', '');
+    lines.push(...typeDef.formats.map(format => `- ${format}`));
+  }
+
+  if (typeDef.units?.length) {
+    lines.push('', `Valid units are: ${typeDef.units.join(', ')}.`);
+  }
+
+  if (typeDef.note) {
+    lines.push('', typeDef.note);
+  }
+
+  if (typeDef.recommendation) {
+    lines.push('', typeDef.recommendation);
+  }
+
+  return lines.join('\n');
 }
 
 /** Numbered section order list with aliases. */

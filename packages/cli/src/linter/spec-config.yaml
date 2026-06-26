@@ -28,6 +28,24 @@ units:
   - em
   - rem
 
+types:
+  Color:
+    description: A color value is any valid CSS color string.
+    formats:
+      - "Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`"
+      - "Named colors: `red`, `cornflowerblue`, `transparent`"
+      - "Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`"
+      - "Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`"
+      - "Mixing: `color-mix(in srgb, ...)`"
+    note: All color values are internally converted to sRGB for WCAG contrast checking. The original format is preserved for display and export.
+    recommendation: Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broad tooling support.
+  Dimension:
+    description: A dimension value is a string with a unit suffix.
+    units:
+      - px
+      - em
+      - rem
+
 sections:
   - canonical: Overview
     aliases:

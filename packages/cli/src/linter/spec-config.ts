@@ -38,6 +38,14 @@ const PropertyDefSchema = z.object({
   description: z.string().optional(),
 });
 
+const TypeDefSchema = z.object({
+  description: z.string(),
+  formats: z.array(z.string()).optional(),
+  units: z.array(z.string()).optional(),
+  note: z.string().optional(),
+  recommendation: z.string().optional(),
+});
+
 const ConfigSchema = z.object({
   version: z.string(),
   limits: z.object({
@@ -45,6 +53,7 @@ const ConfigSchema = z.object({
     max_reference_depth: z.number().default(10),
   }).default({}),
   units: z.array(z.string()).min(1),
+  types: z.record(z.string(), TypeDefSchema),
   sections: z.array(z.object({
     canonical: z.string(),
     aliases: z.array(z.string()).optional(),
@@ -112,6 +121,19 @@ export interface ComponentSubTokenDef {
   description?: string | undefined;
 }
 
+export interface TypeDef {
+  /** One-sentence definition for the type. */
+  description: string;
+  /** Accepted formats rendered as a bullet list in the generated spec. */
+  formats?: readonly string[] | undefined;
+  /** Accepted units for dimensional types. */
+  units?: readonly string[] | undefined;
+  /** Additional normative or implementation note. */
+  note?: string | undefined;
+  /** Non-normative authoring recommendation. */
+  recommendation?: string | undefined;
+}
+
 // ── Constant exports ─────────────────────────────────────────────────
 // These are eagerly initialized from the lazy singleton on first import.
 // The singleton cache ensures the YAML file is read exactly once.
@@ -128,6 +150,9 @@ export const MAX_REFERENCE_DEPTH = config.limits.max_reference_depth;
 /** Units the spec formally supports for Dimension values. */
 export const STANDARD_UNITS = config.units;
 export type StandardUnit = (typeof STANDARD_UNITS)[number];
+
+/** Primitive type definitions rendered into the generated spec. */
+export const SPEC_TYPES: Record<string, TypeDef> = config.types;
 
 export const SECTIONS = config.sections;
 
@@ -175,6 +200,7 @@ export interface SpecConfig {
   MAX_TOKEN_NESTING_DEPTH: typeof MAX_TOKEN_NESTING_DEPTH;
   MAX_REFERENCE_DEPTH: typeof MAX_REFERENCE_DEPTH;
   STANDARD_UNITS: typeof STANDARD_UNITS;
+  SPEC_TYPES: typeof SPEC_TYPES;
   SECTIONS: typeof SECTIONS;
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
@@ -189,6 +215,7 @@ export const SPEC_CONFIG: SpecConfig = {
   MAX_TOKEN_NESTING_DEPTH,
   MAX_REFERENCE_DEPTH,
   STANDARD_UNITS,
+  SPEC_TYPES,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,

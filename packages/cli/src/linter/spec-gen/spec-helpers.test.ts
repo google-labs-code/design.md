@@ -58,6 +58,12 @@ describe('getSpecContent', () => {
     expect(content.length).toBeGreaterThan(1000);
   });
 
+  it('renders primitive type definitions from spec config', () => {
+    const content = getSpecContent();
+    expect(content).toContain('**Color**: A color value is any valid CSS color string.');
+    expect(content).toContain('**Dimension**: A dimension value is a string with a unit suffix.');
+  });
+
   it('accepts an explicit specPath override', () => {
     // This tests the explicit-path contract. If someone passes a path,
     // it should use that path exactly — no guessing.

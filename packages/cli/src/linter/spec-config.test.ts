@@ -18,6 +18,7 @@ import {
   loadSpecConfig,
   getSpecConfig,
   STANDARD_UNITS,
+  SPEC_TYPES,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,
@@ -157,6 +158,14 @@ describe('spec-config structural invariants', () => {
   it('units are non-empty and unique', () => {
     expect(STANDARD_UNITS.length).toBeGreaterThan(0);
     expect(new Set(STANDARD_UNITS).size).toBe(STANDARD_UNITS.length);
+  });
+
+  it('primitive type definitions are non-empty', () => {
+    expect(Object.keys(SPEC_TYPES).length).toBeGreaterThan(0);
+    for (const [name, typeDef] of Object.entries(SPEC_TYPES)) {
+      expect(name.length).toBeGreaterThan(0);
+      expect(typeDef.description.length).toBeGreaterThan(0);
+    }
   });
 
   it('recommended token categories are non-empty', () => {
