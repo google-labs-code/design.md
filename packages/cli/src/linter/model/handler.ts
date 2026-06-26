@@ -23,9 +23,18 @@ import type {
   ResolvedValue,
   ComponentDef,
   Finding,
+  ThemeModeState,
+  TailwindV4ModeCategory,
 } from './spec.js';
 
-import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts } from './spec.js';
+import {
+  isValidColor,
+  isParseableDimension,
+  isTokenReference,
+  parseDimensionParts,
+  resetTailwindV4ModeRegistry,
+  registerTailwindV4ModeRegistry,
+} from './spec.js';
 import { parseCssColor } from './color-parser.js';
 
 import {
@@ -34,6 +43,22 @@ import {
 } from '../spec-config.js';
 
 const SCHEMA_KEY_SET: ReadonlySet<string> = new Set(SCHEMA_KEYS);
+
+type PrimitiveCategory = 'colors' | 'rounded' | 'spacing';
+
+interface RawModeEntry {
+  value: unknown;
+  path: string;
+  reportFindings: boolean;
+}
+
+interface RawModeBucket {
+  colors: Map<string, RawModeEntry>;
+  rounded: Map<string, RawModeEntry>;
+  spacing: Map<string, RawModeEntry>;
+}
+
+type ModeTokenNames = Record<PrimitiveCategory, Set<string>>;
 
 /**
  * Builds a resolved DesignSystemState from parsed YAML tokens.
@@ -50,26 +75,21 @@ export class ModelHandler implements ModelSpec {
       const typography = new Map<string, ResolvedTypography>();
       const rounded = new Map<string, ResolvedDimension>();
       const spacing = new Map<string, ResolvedDimension>();
+      const themes = normalizeThemes(input.themes);
+      const defaultTheme = normalizeDefaultTheme(input.defaultTheme, themes, findings);
+      const modeRaw = createRawModeBuckets(themes);
+      const modeTokenNames = createModeTokenNames();
+      resetTailwindV4ModeRegistry();
 
       // ── Phase 1: Resolve primitive tokens ──────────────────────────
       // Colors
       if (input.colors) {
-        forEachLeaf(input.colors, (name, raw) => {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            // Store raw reference for later resolution
-            symbolTable.set(`colors.${name}`, raw);
-          } else if (isValidColor(raw)) {
-            const resolved = parseColor(raw);
-            colors.set(name, resolved);
-            symbolTable.set(`colors.${name}`, resolved);
+        forEachTokenValue(input.colors, themes, (name, raw) => {
+          if (isModeValueObject(raw, themes)) {
+            processColorModeValue(name, raw, themes, defaultTheme, colors, symbolTable, modeRaw, modeTokenNames, findings);
           } else {
-            findings.push({
-              severity: 'error',
-              path: `colors.${name}`,
-              message: `'${raw}' is not a valid color. Expected a CSS color value (e.g., #ffffff, rgb(0 0 0), oklch(0.5 0.2 240)).`,
-            });
-            // Store as-is for fallback
-            symbolTable.set(`colors.${name}`, raw);
+            processColorScalar(name, raw, `colors.${name}`, colors, symbolTable, findings);
+            recordScalarModeValue(modeRaw, 'colors', name, raw, `colors.${name}`);
           }
         }, '', 0, findings, 'colors');
       }
@@ -85,42 +105,24 @@ export class ModelHandler implements ModelSpec {
 
       // Rounded
       if (input.rounded) {
-        forEachLeaf(input.rounded, (name, raw) => {
-          if (typeof raw === 'string') {
-            if (isParseableDimension(raw)) {
-              const resolved = parseDimension(raw);
-              if (resolved.unit !== 'px' && resolved.unit !== 'rem' && resolved.unit !== 'em') {
-                findings.push({
-                  severity: 'error',
-                  path: `rounded.${name}`,
-                  message: `'${raw}' has an invalid unit '${resolved.unit}'. Only px, rem, and em are allowed.`,
-                });
-              }
-              rounded.set(name, resolved);
-              symbolTable.set(`rounded.${name}`, resolved);
-            } else if (!isTokenReference(raw)) {
-              findings.push({
-                severity: 'error',
-                path: `rounded.${name}`,
-                message: `'${raw}' is not a valid dimension.`,
-              });
-              symbolTable.set(`rounded.${name}`, raw);
-            } else {
-              symbolTable.set(`rounded.${name}`, raw);
-            }
+        forEachTokenValue(input.rounded, themes, (name, raw) => {
+          if (isModeValueObject(raw, themes)) {
+            processDimensionModeValue('rounded', name, raw, themes, defaultTheme, rounded, symbolTable, modeRaw, modeTokenNames, findings);
+          } else {
+            processRoundedScalar(name, raw, `rounded.${name}`, rounded, symbolTable, findings);
+            recordScalarModeValue(modeRaw, 'rounded', name, raw, `rounded.${name}`);
           }
         }, '', 0, findings, 'rounded');
       }
 
       // Spacing
       if (input.spacing) {
-        forEachLeaf(input.spacing, (name, raw) => {
-          if (isParseableDimension(raw)) {
-            const resolved = parseDimension(raw);
-            spacing.set(name, resolved);
-            symbolTable.set(`spacing.${name}`, resolved);
+        forEachTokenValue(input.spacing, themes, (name, raw) => {
+          if (isModeValueObject(raw, themes)) {
+            processDimensionModeValue('spacing', name, raw, themes, defaultTheme, spacing, symbolTable, modeRaw, modeTokenNames, findings);
           } else {
-            symbolTable.set(`spacing.${name}`, raw);
+            processSpacingScalar(name, raw, `spacing.${name}`, spacing, symbolTable);
+            recordScalarModeValue(modeRaw, 'spacing', name, raw, `spacing.${name}`);
           }
         }, '', 0, findings, 'spacing');
       }
@@ -128,9 +130,10 @@ export class ModelHandler implements ModelSpec {
       // ── Phase 2: Resolve chained color references ──────────────────
       // Iterate color entries that are still raw references and resolve them
       if (input.colors) {
-        forEachLeaf(input.colors, (name, raw) => {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+        forEachTokenValue(input.colors, themes, (name, raw) => {
+          const reference = getDefaultReference(raw, themes, defaultTheme);
+          if (reference) {
+            const resolved = resolveReference(symbolTable, reference.slice(1, -1), new Set());
             if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
               colors.set(name, resolved as ResolvedColor);
               symbolTable.set(`colors.${name}`, resolved);
@@ -141,9 +144,10 @@ export class ModelHandler implements ModelSpec {
 
       // Resolve chained rounded references
       if (input.rounded) {
-        forEachLeaf(input.rounded, (name, raw) => {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+        forEachTokenValue(input.rounded, themes, (name, raw) => {
+          const reference = getDefaultReference(raw, themes, defaultTheme);
+          if (reference) {
+            const resolved = resolveReference(symbolTable, reference.slice(1, -1), new Set());
             if (
               resolved !== null &&
               typeof resolved === 'object' &&
@@ -159,9 +163,10 @@ export class ModelHandler implements ModelSpec {
 
       // Resolve chained spacing references
       if (input.spacing) {
-        forEachLeaf(input.spacing, (name, raw) => {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
+        forEachTokenValue(input.spacing, themes, (name, raw) => {
+          const reference = getDefaultReference(raw, themes, defaultTheme);
+          if (reference) {
+            const resolved = resolveReference(symbolTable, reference.slice(1, -1), new Set());
             if (
               resolved !== null &&
               typeof resolved === 'object' &&
@@ -174,6 +179,9 @@ export class ModelHandler implements ModelSpec {
           }
         });
       }
+
+      const modes = resolveModeStates(themes, modeRaw, findings);
+      registerModeRegistry(modes, defaultTheme, modeTokenNames);
 
       // ── Phase 3: Build components ──────────────────────────────────
       const components = new Map<string, ComponentDef>();
@@ -229,11 +237,14 @@ export class ModelHandler implements ModelSpec {
         designSystem: {
           name: input.name,
           description: input.description,
+          themes: themes.length > 0 ? themes : undefined,
+          defaultTheme,
           colors,
           typography,
           rounded,
           spacing,
           components,
+          modes: modes.size > 0 ? modes : undefined,
           symbolTable,
           sections: input.sections,
           unknownKeys,
@@ -264,6 +275,411 @@ export class ModelHandler implements ModelSpec {
 }
 
 // ── Pure utility functions ─────────────────────────────────────────
+
+function normalizeThemes(themes: string[] | undefined): string[] {
+  const normalized: string[] = [];
+  for (const theme of themes ?? []) {
+    const trimmed = theme.trim();
+    if (trimmed && !normalized.includes(trimmed)) {
+      normalized.push(trimmed);
+    }
+  }
+  return normalized;
+}
+
+function normalizeDefaultTheme(defaultTheme: string | undefined, themes: string[], findings: Finding[]): string | undefined {
+  if (themes.length === 0) return defaultTheme;
+
+  const normalizedDefault = defaultTheme?.trim() || themes[0];
+  if (defaultTheme && !themes.includes(defaultTheme)) {
+    findings.push({
+      severity: 'error',
+      path: 'default-theme',
+      message: `default-theme '${defaultTheme}' is not listed in themes.`,
+    });
+  }
+
+  return normalizedDefault && themes.includes(normalizedDefault) ? normalizedDefault : themes[0];
+}
+
+function createRawModeBuckets(themes: string[]): Map<string, RawModeBucket> {
+  const buckets = new Map<string, RawModeBucket>();
+  for (const theme of themes) {
+    buckets.set(theme, {
+      colors: new Map(),
+      rounded: new Map(),
+      spacing: new Map(),
+    });
+  }
+  return buckets;
+}
+
+function createModeTokenNames(): ModeTokenNames {
+  return {
+    colors: new Set(),
+    rounded: new Set(),
+    spacing: new Set(),
+  };
+}
+
+function processColorScalar(
+  name: string,
+  raw: unknown,
+  path: string,
+  colors: Map<string, ResolvedColor>,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+  reportFindings = true,
+): void {
+  if (typeof raw === 'string' && isTokenReference(raw)) {
+    symbolTable.set(`colors.${name}`, raw);
+  } else if (isValidColor(raw as string)) {
+    const resolved = parseColor(raw as string);
+    colors.set(name, resolved);
+    symbolTable.set(`colors.${name}`, resolved);
+  } else {
+    if (reportFindings) {
+      findings.push({
+        severity: 'error',
+        path,
+        message: `'${raw}' is not a valid color. Expected a CSS color value (e.g., #ffffff, rgb(0 0 0), oklch(0.5 0.2 240)).`,
+      });
+    }
+    symbolTable.set(`colors.${name}`, raw as ResolvedValue);
+  }
+}
+
+function processRoundedScalar(
+  name: string,
+  raw: unknown,
+  path: string,
+  rounded: Map<string, ResolvedDimension>,
+  symbolTable: Map<string, ResolvedValue>,
+  findings: Finding[],
+  reportFindings = true,
+): void {
+  if (typeof raw !== 'string') {
+    return;
+  }
+
+  if (isParseableDimension(raw)) {
+    const resolved = parseDimension(raw);
+    if (resolved.unit !== 'px' && resolved.unit !== 'rem' && resolved.unit !== 'em') {
+      findings.push({
+        severity: 'error',
+        path,
+        message: `'${raw}' has an invalid unit '${resolved.unit}'. Only px, rem, and em are allowed.`,
+      });
+    }
+    rounded.set(name, resolved);
+    symbolTable.set(`rounded.${name}`, resolved);
+  } else if (!isTokenReference(raw)) {
+    if (reportFindings) {
+      findings.push({
+        severity: 'error',
+        path,
+        message: `'${raw}' is not a valid dimension.`,
+      });
+    }
+    symbolTable.set(`rounded.${name}`, raw);
+  } else {
+    symbolTable.set(`rounded.${name}`, raw);
+  }
+}
+
+function processSpacingScalar(
+  name: string,
+  raw: unknown,
+  path: string,
+  spacing: Map<string, ResolvedDimension>,
+  symbolTable: Map<string, ResolvedValue>,
+  findings?: Finding[],
+  reportFindings = false,
+): void {
+  if (isParseableDimension(raw as string)) {
+    const resolved = parseDimension(raw as string);
+    spacing.set(name, resolved);
+    symbolTable.set(`spacing.${name}`, resolved);
+  } else {
+    if (reportFindings && findings) {
+      findings.push({
+        severity: 'error',
+        path,
+        message: `'${raw}' is not a valid dimension.`,
+      });
+    }
+    symbolTable.set(`spacing.${name}`, raw as ResolvedValue);
+  }
+}
+
+function processColorModeValue(
+  name: string,
+  raw: Record<string, unknown>,
+  themes: string[],
+  defaultTheme: string | undefined,
+  colors: Map<string, ResolvedColor>,
+  symbolTable: Map<string, ResolvedValue>,
+  modeRaw: Map<string, RawModeBucket>,
+  modeTokenNames: ModeTokenNames,
+  findings: Finding[],
+): void {
+  validateModeObject('colors', name, raw, themes, defaultTheme, findings);
+  modeTokenNames.colors.add(name);
+
+  const defaultRaw = defaultTheme && Object.prototype.hasOwnProperty.call(raw, defaultTheme)
+    ? raw[defaultTheme]
+    : undefined;
+  if (defaultTheme && defaultRaw !== undefined && isScalarModeValue(defaultRaw)) {
+    processColorScalar(name, defaultRaw, `colors.${name}.${defaultTheme}`, colors, symbolTable, findings);
+  }
+
+  recordModeObjectValues(modeRaw, 'colors', name, raw, themes, defaultTheme);
+}
+
+function processDimensionModeValue(
+  category: 'rounded' | 'spacing',
+  name: string,
+  raw: Record<string, unknown>,
+  themes: string[],
+  defaultTheme: string | undefined,
+  target: Map<string, ResolvedDimension>,
+  symbolTable: Map<string, ResolvedValue>,
+  modeRaw: Map<string, RawModeBucket>,
+  modeTokenNames: ModeTokenNames,
+  findings: Finding[],
+): void {
+  validateModeObject(category, name, raw, themes, defaultTheme, findings);
+  modeTokenNames[category].add(name);
+
+  const defaultRaw = defaultTheme && Object.prototype.hasOwnProperty.call(raw, defaultTheme)
+    ? raw[defaultTheme]
+    : undefined;
+  if (defaultTheme && defaultRaw !== undefined && isScalarModeValue(defaultRaw)) {
+    if (category === 'rounded') {
+      processRoundedScalar(name, defaultRaw, `${category}.${name}.${defaultTheme}`, target, symbolTable, findings);
+    } else {
+      processSpacingScalar(name, defaultRaw, `${category}.${name}.${defaultTheme}`, target, symbolTable, findings, true);
+    }
+  }
+
+  recordModeObjectValues(modeRaw, category, name, raw, themes, defaultTheme);
+}
+
+function validateModeObject(
+  category: PrimitiveCategory,
+  name: string,
+  raw: Record<string, unknown>,
+  themes: string[],
+  defaultTheme: string | undefined,
+  findings: Finding[],
+): void {
+  const themeSet = new Set(themes);
+  for (const [mode, value] of Object.entries(raw)) {
+    const path = `${category}.${name}.${mode}`;
+    if (!themeSet.has(mode)) {
+      findings.push({
+        severity: 'error',
+        path,
+        message: `Unknown theme mode '${mode}'. Expected one of: ${themes.join(', ')}.`,
+      });
+    } else if (!isScalarModeValue(value)) {
+      findings.push({
+        severity: 'error',
+        path,
+        message: `Theme mode '${mode}' must be a scalar value.`,
+      });
+    }
+  }
+
+  if (defaultTheme && !Object.prototype.hasOwnProperty.call(raw, defaultTheme)) {
+    findings.push({
+      severity: 'error',
+      path: `${category}.${name}`,
+      message: `Theme mode object is missing the default-theme key '${defaultTheme}'.`,
+    });
+  }
+}
+
+function recordScalarModeValue(
+  modeRaw: Map<string, RawModeBucket>,
+  category: PrimitiveCategory,
+  name: string,
+  value: unknown,
+  path: string,
+): void {
+  for (const bucket of modeRaw.values()) {
+    bucket[category].set(name, { value, path, reportFindings: false });
+  }
+}
+
+function recordModeObjectValues(
+  modeRaw: Map<string, RawModeBucket>,
+  category: PrimitiveCategory,
+  name: string,
+  raw: Record<string, unknown>,
+  themes: string[],
+  defaultTheme: string | undefined,
+): void {
+  const defaultRaw = defaultTheme && Object.prototype.hasOwnProperty.call(raw, defaultTheme) && isScalarModeValue(raw[defaultTheme])
+    ? raw[defaultTheme]
+    : undefined;
+
+  for (const theme of themes) {
+    const bucket = modeRaw.get(theme);
+    if (!bucket) continue;
+
+    const hasThemeValue = Object.prototype.hasOwnProperty.call(raw, theme);
+    const themeValue = hasThemeValue ? raw[theme] : defaultRaw;
+    if (themeValue === undefined || !isScalarModeValue(themeValue)) continue;
+
+    bucket[category].set(name, {
+      value: themeValue,
+      path: `${category}.${name}.${hasThemeValue ? theme : defaultTheme}`,
+      reportFindings: hasThemeValue && theme !== defaultTheme,
+    });
+  }
+}
+
+function getDefaultReference(raw: unknown, themes: string[], defaultTheme: string | undefined): string | undefined {
+  if (typeof raw === 'string' && isTokenReference(raw)) return raw;
+  if (!isModeValueObject(raw, themes) || !defaultTheme) return undefined;
+  const value = raw[defaultTheme];
+  return typeof value === 'string' && isTokenReference(value) ? value : undefined;
+}
+
+function resolveModeStates(
+  themes: string[],
+  modeRaw: Map<string, RawModeBucket>,
+  findings: Finding[],
+): Map<string, ThemeModeState> {
+  const modes = new Map<string, ThemeModeState>();
+
+  for (const theme of themes) {
+    const bucket = modeRaw.get(theme);
+    if (!bucket) continue;
+
+    const modeState: ThemeModeState = {
+      colors: new Map(),
+      rounded: new Map(),
+      spacing: new Map(),
+      symbolTable: new Map(),
+    };
+
+    for (const [name, entry] of bucket.colors) {
+      processColorScalar(name, entry.value, entry.path, modeState.colors, modeState.symbolTable, findings, entry.reportFindings);
+    }
+    for (const [name, entry] of bucket.rounded) {
+      processRoundedScalar(name, entry.value, entry.path, modeState.rounded, modeState.symbolTable, findings, entry.reportFindings);
+    }
+    for (const [name, entry] of bucket.spacing) {
+      processSpacingScalar(name, entry.value, entry.path, modeState.spacing, modeState.symbolTable, findings, entry.reportFindings);
+    }
+
+    modes.set(theme, modeState);
+  }
+
+  for (const modeState of modes.values()) {
+    resolveModeReferences(modeState);
+  }
+
+  return modes;
+}
+
+function resolveModeReferences(modeState: ThemeModeState): void {
+  for (const [path, raw] of modeState.symbolTable) {
+    if (typeof raw !== 'string' || !isTokenReference(raw)) continue;
+
+    const resolved = resolveReference(modeState.symbolTable, raw.slice(1, -1), new Set());
+    if (resolved === null || typeof resolved !== 'object' || !('type' in resolved)) continue;
+
+    if (path.startsWith('colors.') && resolved.type === 'color') {
+      const name = path.slice('colors.'.length);
+      modeState.colors.set(name, resolved as ResolvedColor);
+      modeState.symbolTable.set(path, resolved);
+    } else if (path.startsWith('rounded.') && resolved.type === 'dimension') {
+      const name = path.slice('rounded.'.length);
+      modeState.rounded.set(name, resolved as ResolvedDimension);
+      modeState.symbolTable.set(path, resolved);
+    } else if (path.startsWith('spacing.') && resolved.type === 'dimension') {
+      const name = path.slice('spacing.'.length);
+      modeState.spacing.set(name, resolved as ResolvedDimension);
+      modeState.symbolTable.set(path, resolved);
+    }
+  }
+}
+
+function registerModeRegistry(
+  modes: Map<string, ThemeModeState>,
+  defaultTheme: string | undefined,
+  modeTokenNames: ModeTokenNames,
+): void {
+  if (!defaultTheme || modes.size === 0) return;
+  const defaultMode = modes.get(defaultTheme);
+  if (!defaultMode) return;
+
+  const tokens: Partial<Record<TailwindV4ModeCategory, Record<string, { defaultValue: string; modes: Record<string, string> }>>> = {};
+
+  registerCategoryModeTokens(tokens, 'colors', modeTokenNames.colors, modes, defaultTheme, defaultMode, valueToCss);
+  registerCategoryModeTokens(tokens, 'borderRadius', modeTokenNames.rounded, modes, defaultTheme, defaultMode, valueToCss);
+  registerCategoryModeTokens(tokens, 'spacing', modeTokenNames.spacing, modes, defaultTheme, defaultMode, valueToCss);
+
+  if (Object.keys(tokens).length > 0) {
+    registerTailwindV4ModeRegistry({ defaultTheme, tokens });
+  }
+}
+
+function registerCategoryModeTokens(
+  tokens: Partial<Record<TailwindV4ModeCategory, Record<string, { defaultValue: string; modes: Record<string, string> }>>>,
+  outputCategory: TailwindV4ModeCategory,
+  names: Set<string>,
+  modes: Map<string, ThemeModeState>,
+  defaultTheme: string,
+  defaultMode: ThemeModeState,
+  serialize: (category: TailwindV4ModeCategory, state: ThemeModeState, name: string) => string | undefined,
+): void {
+  for (const name of names) {
+    const defaultValue = serialize(outputCategory, defaultMode, name);
+    if (!defaultValue) continue;
+
+    const modeValues: Record<string, string> = {};
+    for (const [mode, modeState] of modes) {
+      if (mode === defaultTheme) continue;
+      const modeValue = serialize(outputCategory, modeState, name);
+      if (modeValue && modeValue !== defaultValue) {
+        modeValues[mode] = modeValue;
+      }
+    }
+
+    if (Object.keys(modeValues).length > 0) {
+      tokens[outputCategory] ??= {};
+      tokens[outputCategory]![name] = { defaultValue, modes: modeValues };
+    }
+  }
+}
+
+function valueToCss(category: TailwindV4ModeCategory, state: ThemeModeState, name: string): string | undefined {
+  if (category === 'colors') {
+    return state.colors.get(name)?.hex;
+  }
+
+  const value = category === 'borderRadius'
+    ? state.rounded.get(name)
+    : state.spacing.get(name);
+  return value ? `${value.value}${value.unit}` : undefined;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isScalarModeValue(value: unknown): boolean {
+  return value === null || typeof value !== 'object';
+}
+
+function isModeValueObject(value: unknown, themes: string[]): value is Record<string, unknown> {
+  if (themes.length === 0 || !isPlainRecord(value)) return false;
+  return Object.keys(value).some(key => themes.includes(key));
+}
 
 /**
  * Parse a CSS color string into a ResolvedColor with RGB + WCAG luminance.
@@ -406,11 +822,14 @@ export function contrastRatio(a: ResolvedColor, b: ResolvedColor): number {
 }
 
 /**
- * Recursively iterate over an object and call a function for each leaf node.
- * Leaf node paths are dot-separated (e.g. "background.light").
+ * Recursively iterate over a token object and call a function for each scalar
+ * token or mode object. Leaf node paths are dot-separated (e.g.
+ * "background.light"). When themes are declared, an object with a declared
+ * theme key is treated as one mode-aware token rather than nested tokens.
  */
-function forEachLeaf(
+function forEachTokenValue(
   obj: Record<string, any>,
+  themes: string[],
   fn: (path: string, value: any) => void,
   prefix = '',
   depth = 0,
@@ -432,8 +851,10 @@ function forEachLeaf(
   }
   for (const [key, value] of Object.entries(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      forEachLeaf(value, fn, fullPath, depth + 1, findings, rootPath);
+    if (isModeValueObject(value, themes)) {
+      fn(fullPath, value);
+    } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      forEachTokenValue(value, themes, fn, fullPath, depth + 1, findings, rootPath);
     } else {
       fn(fullPath, value);
     }

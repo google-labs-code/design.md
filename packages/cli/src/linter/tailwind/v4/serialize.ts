@@ -13,6 +13,8 @@
 // limitations under the License.
 
 import type { TailwindV4ThemeData } from './spec.js';
+import { getTailwindV4ModeRegistry } from '../../model/spec.js';
+import type { TailwindV4ModeCategory, TailwindV4ModeRegistry } from '../../model/spec.js';
 
 // Category → CSS-variable prefix. Iteration order of this array is the output order.
 const CATEGORIES: ReadonlyArray<readonly [keyof TailwindV4ThemeData, string]> = [
@@ -32,6 +34,13 @@ const CATEGORIES: ReadonlyArray<readonly [keyof TailwindV4ThemeData, string]> = 
  * be done by the handler before calling this).
  */
 export function serializeToCss(data: TailwindV4ThemeData): string {
+  const lines = collectThemeLines(data);
+  const themeCss = lines.length === 0 ? '@theme {\n}\n' : `@theme {\n${lines.join('\n')}\n}\n`;
+  const modeCss = serializeModeOverrides(data, getTailwindV4ModeRegistry());
+  return modeCss ? `${themeCss}\n${modeCss}` : themeCss;
+}
+
+function collectThemeLines(data: TailwindV4ThemeData): string[] {
   const lines: string[] = [];
   for (const [category, prefix] of CATEGORIES) {
     const entries = data[category];
@@ -40,6 +49,65 @@ export function serializeToCss(data: TailwindV4ThemeData): string {
       lines.push(`  ${prefix}${name}: ${value};`);
     }
   }
-  if (lines.length === 0) return '@theme {\n}\n';
-  return `@theme {\n${lines.join('\n')}\n}\n`;
+  return lines;
+}
+
+function serializeModeOverrides(data: TailwindV4ThemeData, registry: TailwindV4ModeRegistry): string {
+  const defaultLines = collectRegisteredModeLines(data, registry);
+  if (defaultLines.length === 0) return '';
+
+  const blocks = [`:root {\n${defaultLines.join('\n')}\n}\n`];
+  for (const mode of collectRegisteredModes(data, registry)) {
+    const modeLines = collectRegisteredModeLines(data, registry, mode);
+    if (modeLines.length === 0) continue;
+
+    if (mode === 'dark') {
+      blocks.push(`@media (prefers-color-scheme: dark) {\n  :root:not([data-theme]) {\n${modeLines.map(line => `  ${line}`).join('\n')}\n  }\n}\n`);
+    }
+
+    blocks.push(`[data-theme="${escapeAttributeValue(mode)}"] {\n${modeLines.join('\n')}\n}\n`);
+  }
+
+  return blocks.join('\n');
+}
+
+function collectRegisteredModes(data: TailwindV4ThemeData, registry: TailwindV4ModeRegistry): string[] {
+  const modes = new Set<string>();
+  for (const [category] of CATEGORIES) {
+    const entries = data[category];
+    const tokens = registry.tokens[category as TailwindV4ModeCategory];
+    if (!entries || !tokens) continue;
+
+    for (const [name, value] of Object.entries(entries)) {
+      const token = tokens[name];
+      if (!token || token.defaultValue !== value) continue;
+      for (const mode of Object.keys(token.modes)) {
+        modes.add(mode);
+      }
+    }
+  }
+  return [...modes];
+}
+
+function collectRegisteredModeLines(data: TailwindV4ThemeData, registry: TailwindV4ModeRegistry, mode?: string): string[] {
+  const lines: string[] = [];
+  for (const [category, prefix] of CATEGORIES) {
+    const entries = data[category];
+    const tokens = registry.tokens[category as TailwindV4ModeCategory];
+    if (!entries || !tokens) continue;
+
+    for (const [name, value] of Object.entries(entries)) {
+      const token = tokens[name];
+      if (!token || token.defaultValue !== value) continue;
+      const modeValue = mode ? token.modes[mode] : token.defaultValue;
+      if (modeValue) {
+        lines.push(`  ${prefix}${name}: ${modeValue};`);
+      }
+    }
+  }
+  return lines;
+}
+
+function escapeAttributeValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }

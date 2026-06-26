@@ -220,6 +220,131 @@ describe('ModelHandler', () => {
     });
   });
 
+  describe('theme mode values', () => {
+    it('resolves color mode objects and keeps default-theme in the existing color map', () => {
+      const result = handler.execute(makeParsed({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        colors: {
+          surface: {
+            light: '#ffffff',
+            dark: '#111111',
+          },
+        },
+      }));
+
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      expect(result.designSystem.colors.get('surface')?.hex).toBe('#ffffff');
+      expect(result.designSystem.colors.has('surface.light')).toBe(false);
+      expect(result.designSystem.modes?.get('light')?.colors.get('surface')?.hex).toBe('#ffffff');
+      expect(result.designSystem.modes?.get('dark')?.colors.get('surface')?.hex).toBe('#111111');
+      expect(result.designSystem.symbolTable.get('colors.surface')).toBe(result.designSystem.colors.get('surface'));
+    });
+
+    it('resolves references against each theme mode', () => {
+      const result = handler.execute(makeParsed({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        colors: {
+          brand: {
+            light: '#eeeeee',
+            dark: '#111111',
+          },
+          surface: {
+            light: '{colors.brand}',
+            dark: '{colors.brand}',
+          },
+        },
+      }));
+
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      expect(result.designSystem.colors.get('surface')?.hex).toBe('#eeeeee');
+      expect(result.designSystem.modes?.get('dark')?.colors.get('surface')?.hex).toBe('#111111');
+    });
+
+    it('resolves dimension mode objects', () => {
+      const result = handler.execute(makeParsed({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        rounded: {
+          card: {
+            light: '4px',
+            dark: '8px',
+          },
+        },
+        spacing: {
+          gutter: {
+            light: '16px',
+            dark: '20px',
+          },
+        },
+      }));
+
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      expect(result.designSystem.rounded.get('card')?.value).toBe(4);
+      expect(result.designSystem.modes?.get('dark')?.rounded.get('card')?.value).toBe(8);
+      expect(result.designSystem.spacing.get('gutter')?.value).toBe(16);
+      expect(result.designSystem.modes?.get('dark')?.spacing.get('gutter')?.value).toBe(20);
+    });
+
+    it('emits a finding when a mode object is missing the default-theme key', () => {
+      const result = handler.execute(makeParsed({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        colors: {
+          surface: {
+            dark: '#111111',
+          },
+        },
+      }));
+
+      expect(result.findings.some(f => (
+        f.severity === 'error' &&
+        f.path === 'colors.surface' &&
+        f.message.includes("default-theme key 'light'")
+      ))).toBe(true);
+    });
+
+    it('emits a finding for unknown mode keys', () => {
+      const result = handler.execute(makeParsed({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        colors: {
+          surface: {
+            light: '#ffffff',
+            sepia: '#f4ecd8',
+          },
+        },
+      }));
+
+      expect(result.findings.some(f => (
+        f.severity === 'error' &&
+        f.path === 'colors.surface.sepia' &&
+        f.message.includes("Unknown theme mode 'sepia'")
+      ))).toBe(true);
+    });
+
+    it('emits a structured finding for non-scalar mode values', () => {
+      const result = handler.execute(makeParsed({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        colors: {
+          surface: {
+            light: '#ffffff',
+            dark: { value: '#111111' },
+          },
+        },
+      }));
+
+      expect(result.findings.some(f => (
+        f.severity === 'error' &&
+        f.path === 'colors.surface.dark' &&
+        f.message.includes('must be a scalar value')
+      ))).toBe(true);
+      expect(result.designSystem.colors.get('surface')?.hex).toBe('#ffffff');
+    });
+  });
+
   // ── Cycle 10: Resolve single-level token reference ────────────────
   describe('single-level token reference resolution', () => {
     it('resolves a direct {section.token} reference in components', () => {
