@@ -194,6 +194,10 @@ export class ParserHandler implements ParserSpec {
       version: typeof raw['version'] === 'string' ? raw['version'] : undefined,
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
+      themes: Array.isArray(raw['themes']) && raw['themes'].every(theme => typeof theme === 'string')
+        ? raw['themes'] as string[]
+        : undefined,
+      defaultTheme: typeof raw['default-theme'] === 'string' ? raw['default-theme'] : undefined,
       colors: raw['colors'] as Record<string, string> | undefined,
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,

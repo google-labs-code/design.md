@@ -63,6 +63,13 @@ export interface ResolvedTypography {
 
 export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string | number | boolean;
 
+export interface ThemeModeState {
+  colors: Map<string, ResolvedColor>;
+  rounded: Map<string, ResolvedDimension>;
+  spacing: Map<string, ResolvedDimension>;
+  symbolTable: Map<string, ResolvedValue>;
+}
+
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
 export const VALID_COMPONENT_SUB_TOKENS = _VALID_COMPONENT_SUB_TOKENS;
@@ -71,11 +78,15 @@ export const VALID_COMPONENT_SUB_TOKENS = _VALID_COMPONENT_SUB_TOKENS;
 export interface DesignSystemState {
   name?: string | undefined;
   description?: string | undefined;
+  themes?: string[] | undefined;
+  defaultTheme?: string | undefined;
   colors: Map<string, ResolvedColor>;
   typography: Map<string, ResolvedTypography>;
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
   components: Map<string, ComponentDef>;
+  /** Per-theme resolved primitive tokens. Includes the default theme when themes are declared. */
+  modes?: Map<string, ThemeModeState> | undefined;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
@@ -90,6 +101,34 @@ export interface ComponentDef {
   properties: Map<string, ResolvedValue>;
   /** Unresolved references that failed to resolve */
   unresolvedRefs: string[];
+}
+
+export type TailwindV4ModeCategory = 'colors' | 'borderRadius' | 'spacing';
+
+export interface TailwindV4ModeToken {
+  defaultValue: string;
+  modes: Record<string, string>;
+}
+
+export type TailwindV4ModeTokens = Partial<Record<TailwindV4ModeCategory, Record<string, TailwindV4ModeToken>>>;
+
+export interface TailwindV4ModeRegistry {
+  defaultTheme?: string | undefined;
+  tokens: TailwindV4ModeTokens;
+}
+
+let tailwindV4ModeRegistry: TailwindV4ModeRegistry = { tokens: {} };
+
+export function resetTailwindV4ModeRegistry(): void {
+  tailwindV4ModeRegistry = { tokens: {} };
+}
+
+export function registerTailwindV4ModeRegistry(registry: TailwindV4ModeRegistry): void {
+  tailwindV4ModeRegistry = registry;
+}
+
+export function getTailwindV4ModeRegistry(): TailwindV4ModeRegistry {
+  return tailwindV4ModeRegistry;
 }
 
 // ── ERROR CODES ────────────────────────────────────────────────────

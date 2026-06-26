@@ -167,6 +167,9 @@ export const VALID_TYPOGRAPHY_PROPS = TYPOGRAPHY_PROPERTIES.map(p => p.name);
 /** Valid component sub-token names (for linter validation). */
 export const VALID_COMPONENT_SUB_TOKENS = COMPONENT_SUB_TOKENS.map(p => p.name);
 
+/** Top-level keys for theme mode declarations. */
+export const THEME_MODE_KEYS = ['themes', 'default-theme'] as const;
+
 // ── Aggregate type ────────────────────────────────────────────────────
 
 /** All config values bundled as a single object for renderer injection. */

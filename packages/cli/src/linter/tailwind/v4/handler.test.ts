@@ -14,6 +14,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { TailwindV4EmitterHandler } from './handler.js';
+import { serializeToCss } from './serialize.js';
 import { ModelHandler } from '../../model/handler.js';
 import type { ParsedDesignSystem } from '../../parser/spec.js';
 
@@ -40,6 +41,38 @@ describe('TailwindV4EmitterHandler', () => {
       if (!result.success) throw new Error('Expected success');
       expect(result.data.theme.colors?.['primary']).toBe('#647d66');
       expect(result.data.theme.colors?.['secondary']).toBe('#ff0000');
+    });
+
+    it('serializes scalar-only themes identically to the previous Tailwind v4 output', () => {
+      const state = buildState({
+        colors: { primary: '#647D66' },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      expect(serializeToCss(result.data.theme)).toBe('@theme {\n  --color-primary: #647d66;\n}\n');
+    });
+
+    it('serializes default and alternate color modes to CSS variable overrides', () => {
+      const state = buildState({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        colors: {
+          surface: {
+            light: '#ffffff',
+            dark: '#111111',
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const css = serializeToCss(result.data.theme);
+
+      expect(result.data.theme.colors?.['surface']).toBe('#ffffff');
+      expect(css).toContain('@theme {\n  --color-surface: #ffffff;\n}\n');
+      expect(css).toContain(':root {\n  --color-surface: #ffffff;\n}\n');
+      expect(css).toContain('@media (prefers-color-scheme: dark)');
+      expect(css).toContain(':root:not([data-theme])');
+      expect(css).toContain('[data-theme="dark"] {\n  --color-surface: #111111;\n}\n');
     });
   });
 
@@ -116,6 +149,31 @@ describe('TailwindV4EmitterHandler', () => {
       expect(theme.borderRadius?.['full']).toBe('9999px');
       expect(theme.spacing?.['gutter-s']).toBe('8px');
       expect(theme.spacing?.['gutter-l']).toBe('16px');
+    });
+
+    it('serializes alternate dimension modes to CSS variable overrides', () => {
+      const state = buildState({
+        themes: ['light', 'dark'],
+        defaultTheme: 'light',
+        rounded: {
+          card: {
+            light: '4px',
+            dark: '8px',
+          },
+        },
+        spacing: {
+          gutter: {
+            light: '16px',
+            dark: '20px',
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const css = serializeToCss(result.data.theme);
+
+      expect(css).toContain(':root {\n  --radius-card: 4px;\n  --spacing-gutter: 16px;\n}\n');
+      expect(css).toContain('[data-theme="dark"] {\n  --radius-card: 8px;\n  --spacing-gutter: 20px;\n}\n');
     });
   });
 

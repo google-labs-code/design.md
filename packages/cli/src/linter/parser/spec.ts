@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { z } from 'zod';
+import { THEME_MODE_KEYS } from '../spec-config.js';
 
 // ── INPUT ──────────────────────────────────────────────────────────
 export const ParserInputSchema = z.object({
@@ -42,6 +43,8 @@ export interface ParsedDesignSystem {
   version?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
+  themes?: string[] | undefined;
+  defaultTheme?: string | undefined;
   colors?: Record<string, any> | undefined;
   typography?: Record<string, Record<string, any>> | undefined;
   rounded?: Record<string, any> | undefined;
@@ -61,6 +64,7 @@ export const SCHEMA_KEYS = [
   'version',
   'name',
   'description',
+  ...THEME_MODE_KEYS,
   'colors',
   'typography',
   'rounded',
