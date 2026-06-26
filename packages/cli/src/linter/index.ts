@@ -33,13 +33,15 @@ export type { DtcgEmitterResult, DtcgTokenFile } from './dtcg/spec.js';
 
 // ── Advanced linting ───────────────────────────────────────────────
 export { runLinter, preEvaluate } from './linter/runner.js';
-export { DEFAULT_RULES } from './linter/rules/index.js';
+export { DEFAULT_RULES, DEFAULT_RULE_DESCRIPTORS } from './linter/rules/index.js';
 export type { LintRule } from './linter/rules/types.js';
 export type { GradedTokenEdits, TokenEditEntry } from './linter/spec.js';
 export {
   brokenRef,
   missingPrimary,
   contrastCheck,
+  colorBlindContrastCheck,
+  colorBlindContrastRule,
   orphanedTokens,
   tokenSummary,
   missingSections,
