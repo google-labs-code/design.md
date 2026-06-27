@@ -62,7 +62,8 @@ export default defineCommand({
         return;
       }
 
-      console.log(serializeTailwindV4(result.data.theme));
+      // serializeTailwindV4 already ends with a single trailing newline; avoid console.log's extra newline.
+      process.stdout.write(serializeTailwindV4(result.data.theme));
     } else if (format === 'json-tailwind' || format === 'tailwind') {
       const handler = new TailwindEmitterHandler();
       const result = handler.execute(report.designSystem);

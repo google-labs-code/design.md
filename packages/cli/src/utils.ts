@@ -31,13 +31,16 @@ export async function readInput(filePath: string): Promise<string> {
   try {
     return readFileSync(filePath, 'utf-8');
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const hint = message.includes('ENOENT')
+      ? `Design file not found: ${filePath}. Create a DESIGN.md or pass an existing path.`
+      : message;
     console.error(JSON.stringify({
       error: 'FILE_READ_ERROR',
-      message: error instanceof Error ? error.message : String(error),
+      message: hint,
       path: filePath,
     }));
-    process.exitCode = 2;
-    throw error; // bubbles up, but process will exit with code 2 if uncaught
+    process.exit(2);
   }
 }
 
