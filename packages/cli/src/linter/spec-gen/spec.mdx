@@ -256,6 +256,10 @@ Each component has a set of properties that are themselves design tokens:
 
 {componentSubTokenList()}
 
+**Focus indicators.** `focusRingColor`, `focusRingWidth`, and `focusRingOffset` are optional. When omitted, consumers must preserve the browser default focus indicator — never remove focus styling for aesthetics. Custom focus rings must meet WCAG 2.4.11 Focus Appearance (minimum 3:1 contrast against adjacent colors; minimum 2 CSS pixels along the perimeter).
+
+**Foreground/background pairs.** When a background color role is defined (e.g., `primary`, `surface`), define a matching `on-*` foreground token (e.g., `on-primary`, `on-surface`) so agents do not guess text colors at implementation time.
+
 ## Do's and Don'ts
 
 This section provides practical guidelines and common pitfalls. These act as guardrails when creating designs.

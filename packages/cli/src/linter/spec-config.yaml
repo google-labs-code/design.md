@@ -81,6 +81,15 @@ component_sub_tokens:
     type: Dimension
   - name: width
     type: Dimension
+  - name: focusRingColor
+    type: Color
+    description: "Focus indicator color. Must meet WCAG 2.4.11 (3:1 against adjacent colors). Omit to preserve the browser default."
+  - name: focusRingWidth
+    type: Dimension
+    description: "Focus ring stroke width. Minimum 2px recommended for WCAG 2.4.11 focus appearance."
+  - name: focusRingOffset
+    type: Dimension
+    description: "Gap between the component edge and the focus ring."
 
 color_roles:
   - primary
@@ -95,8 +104,11 @@ recommended_tokens:
     - tertiary
     - neutral
     - surface
+    - on-primary
+    - on-secondary
     - on-surface
     - error
+    - on-error
   typography:
     - headline-display
     - headline-lg
@@ -143,6 +155,9 @@ examples:
     button-primary:
       backgroundColor: "{colors.primary-60}"
       textColor: "{colors.primary-20}"
+      focusRingColor: "{colors.primary-20}"
+      focusRingWidth: 2px
+      focusRingOffset: 2px
       rounded: "{rounded.md}"
       padding: 12px
     button-primary-hover:

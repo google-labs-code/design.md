@@ -309,6 +309,9 @@ components:
   button-primary:
     backgroundColor: "{colors.primary-60}"
     textColor: "{colors.primary-20}"
+    focusRingColor: "{colors.primary-20}"
+    focusRingWidth: 2px
+    focusRingOffset: 2px
     rounded: "{rounded.md}"
     padding: 12px
   button-primary-hover:
@@ -327,6 +330,13 @@ Each component has a set of properties that are themselves design tokens:
 - size: \<Dimension\>
 - height: \<Dimension\>
 - width: \<Dimension\>
+- focusRingColor: \<Color\>
+- focusRingWidth: \<Dimension\>
+- focusRingOffset: \<Dimension\>
+
+**Focus indicators.** `focusRingColor`, `focusRingWidth`, and `focusRingOffset` are optional. When omitted, consumers must preserve the browser default focus indicator — never remove focus styling for aesthetics. Custom focus rings must meet WCAG 2.4.11 Focus Appearance (minimum 3:1 contrast against adjacent colors; minimum 2 CSS pixels along the perimeter).
+
+**Foreground/background pairs.** When a background color role is defined (e.g., `primary`, `surface`), define a matching `on-*` foreground token (e.g., `on-primary`, `on-surface`) so agents do not guess text colors at implementation time.
 
 ## Do's and Don'ts
 
@@ -345,7 +355,7 @@ This section provides practical guidelines and common pitfalls. These act as gua
 
 The following names are commonly used across design systems. They are not required but are provided as guidance for consistency.
 
-**Colors:** `primary`, `secondary`, `tertiary`, `neutral`, `surface`, `on-surface`, `error`
+**Colors:** `primary`, `secondary`, `tertiary`, `neutral`, `surface`, `on-primary`, `on-secondary`, `on-surface`, `error`, `on-error`
 
 **Typography:** `headline-display`, `headline-lg`, `headline-md`, `body-lg`, `body-md`, `body-sm`, `label-lg`, `label-md`, `label-sm`
 
