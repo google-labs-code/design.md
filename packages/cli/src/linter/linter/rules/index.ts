@@ -18,6 +18,10 @@ import type { Finding } from '../spec.js';
 import { brokenRefRule } from './broken-ref.js';
 import { missingPrimaryRule } from './missing-primary.js';
 import { contrastCheckRule } from './contrast-ratio.js';
+import { nonTextContrastCheckRule } from './non-text-contrast.js';
+import { wideGamutPaletteCheckRule } from './wide-gamut-palette.js';
+import { missingForcedColorsGuidanceRule } from './missing-forced-colors-guidance.js';
+import { interactiveStateTokensCheckRule } from './interactive-state-tokens.js';
 import { orphanedTokensRule } from './orphaned-tokens.js';
 import { tokenSummaryRule } from './token-summary.js';
 import { missingSectionsRule } from './missing-sections.js';
@@ -31,6 +35,10 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   brokenRefRule,
   missingPrimaryRule,
   contrastCheckRule,
+  nonTextContrastCheckRule,
+  wideGamutPaletteCheckRule,
+  missingForcedColorsGuidanceRule,
+  interactiveStateTokensCheckRule,
   orphanedTokensRule,
   tokenSummaryRule,
   missingSectionsRule,
@@ -57,6 +65,10 @@ export const DEFAULT_RULES: LintRule[] = DEFAULT_RULE_DESCRIPTORS.map(toLintRule
 export { brokenRef } from './broken-ref.js';
 export { missingPrimary } from './missing-primary.js';
 export { contrastCheck } from './contrast-ratio.js';
+export { nonTextContrastCheck } from './non-text-contrast.js';
+export { wideGamutPaletteCheck } from './wide-gamut-palette.js';
+export { missingForcedColorsGuidance } from './missing-forced-colors-guidance.js';
+export { interactiveStateTokensCheck } from './interactive-state-tokens.js';
 export { orphanedTokens } from './orphaned-tokens.js';
 export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';

@@ -47,6 +47,7 @@ export class ModelHandler implements ModelSpec {
       const findings: Finding[] = [];
       const symbolTable = new Map<string, ResolvedValue>();
       const colors = new Map<string, ResolvedColor>();
+      const colorSources = new Map<string, string>();
       const typography = new Map<string, ResolvedTypography>();
       const rounded = new Map<string, ResolvedDimension>();
       const spacing = new Map<string, ResolvedDimension>();
@@ -61,6 +62,7 @@ export class ModelHandler implements ModelSpec {
           } else if (isValidColor(raw)) {
             const resolved = parseColor(raw);
             colors.set(name, resolved);
+            colorSources.set(name, raw);
             symbolTable.set(`colors.${name}`, resolved);
           } else {
             findings.push({
@@ -134,6 +136,9 @@ export class ModelHandler implements ModelSpec {
             if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
               colors.set(name, resolved as ResolvedColor);
               symbolTable.set(`colors.${name}`, resolved);
+              const refPath = raw.slice(1, -1).replace(/^colors\./, '');
+              const inherited = colorSources.get(refPath);
+              colorSources.set(name, inherited ?? raw);
             }
           }
         });
@@ -236,6 +241,8 @@ export class ModelHandler implements ModelSpec {
           components,
           symbolTable,
           sections: input.sections,
+          documentSections: input.documentSections,
+          colorSources: colorSources.size > 0 ? colorSources : undefined,
           unknownKeys,
           unknownKeyValues,
         },
