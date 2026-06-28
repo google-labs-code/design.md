@@ -15,7 +15,7 @@
 import { defineCommand } from 'citty';
 import { lint, TailwindEmitterHandler, TailwindV4EmitterHandler, serializeTailwindV4 } from '../linter/index.js';
 import { DtcgEmitterHandler } from '../linter/dtcg/handler.js';
-import { readInput } from '../utils.js';
+import { readInput, FileReadError } from '../utils.js';
 
 const FORMATS = ['css-tailwind', 'json-tailwind', 'tailwind', 'dtcg'] as const;
 type ExportFormat = typeof FORMATS[number];
@@ -49,7 +49,17 @@ export default defineCommand({
       return;
     }
 
-    const content = await readInput(args.file);
+    let content: string;
+    try {
+      content = await readInput(args.file);
+    } catch (error) {
+      if (error instanceof FileReadError) {
+        process.stderr.write(`Error: "${error.filePath}" not found.\nCreate a DESIGN.md file or pass "-" to read from stdin.\n`);
+        process.exitCode = 2;
+        return;
+      }
+      throw error;
+    }
     const report = lint(content);
 
     if (format === 'css-tailwind') {

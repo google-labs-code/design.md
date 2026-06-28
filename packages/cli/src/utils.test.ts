@@ -13,7 +13,24 @@
 // limitations under the License.
 
 import { describe, it, expect } from 'bun:test';
-import { formatOutput } from './utils.js';
+import { readInput, FileReadError, formatOutput } from './utils.js';
+
+describe('readInput', () => {
+  it('throws FileReadError when file does not exist', async () => {
+    const err = await readInput('/nonexistent-path/DESIGN.md').catch(e => e);
+    expect(err).toBeInstanceOf(FileReadError);
+  });
+
+  it('FileReadError carries the missing file path', async () => {
+    const err = await readInput('/nonexistent-path/DESIGN.md').catch(e => e);
+    expect((err as FileReadError).filePath).toBe('/nonexistent-path/DESIGN.md');
+  });
+
+  it('FileReadError carries the underlying OS error message', async () => {
+    const err = await readInput('/nonexistent-path/DESIGN.md').catch(e => e);
+    expect((err as FileReadError).message).toContain('ENOENT');
+  });
+});
 
 describe('formatOutput', () => {
   describe('--format markdown', () => {

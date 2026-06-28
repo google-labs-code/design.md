@@ -14,7 +14,7 @@
 
 import { defineCommand } from 'citty';
 import { lint } from '../linter/index.js';
-import { readInput, formatOutput, diffMaps } from '../utils.js';
+import { readInput, formatOutput, diffMaps, FileReadError } from '../utils.js';
 import type { ComponentDef } from '../linter/model/spec.js';
 
 export default defineCommand({
@@ -40,8 +40,18 @@ export default defineCommand({
     },
   },
   async run({ args }) {
-    const beforeContent = await readInput(args.before);
-    const afterContent = await readInput(args.after);
+    let beforeContent: string, afterContent: string;
+    try {
+      beforeContent = await readInput(args.before);
+      afterContent = await readInput(args.after);
+    } catch (error) {
+      if (error instanceof FileReadError) {
+        process.stderr.write(`Error: "${error.filePath}" not found.\nCreate a DESIGN.md file or pass "-" to read from stdin.\n`);
+        process.exitCode = 2;
+        return;
+      }
+      throw error;
+    }
 
     const beforeReport = lint(beforeContent);
     const afterReport = lint(afterContent);
