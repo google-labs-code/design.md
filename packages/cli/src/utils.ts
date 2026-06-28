@@ -20,6 +20,17 @@ export class FileReadError extends Error {
     super(cause instanceof Error ? cause.message : String(cause), { cause });
     this.name = 'FileReadError';
   }
+
+  get friendlyMessage(): string {
+    const errCode = (this.cause as { code?: string })?.code;
+    if (errCode === 'ENOENT') {
+      return `"${this.filePath}" not found. Create a DESIGN.md file or pass "-" to read from stdin.`;
+    }
+    if (errCode === 'EACCES') {
+      return `"${this.filePath}" could not be read: permission denied.`;
+    }
+    return `"${this.filePath}" could not be read: ${this.message}`;
+  }
 }
 
 /**

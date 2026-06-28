@@ -39,7 +39,7 @@ export default defineCommand({
       content = await readInput(args.file);
     } catch (error) {
       if (error instanceof FileReadError) {
-        process.stderr.write(`Error: "${error.filePath}" not found.\nCreate a DESIGN.md file or pass "-" to read from stdin.\n`);
+        process.stderr.write(`Error: ${error.friendlyMessage}\n`);
         process.exitCode = 2;
         return;
       }

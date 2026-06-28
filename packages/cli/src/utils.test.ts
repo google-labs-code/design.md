@@ -30,6 +30,24 @@ describe('readInput', () => {
     const err = await readInput('/nonexistent-path/DESIGN.md').catch(e => e);
     expect((err as FileReadError).message).toContain('ENOENT');
   });
+
+  it('friendlyMessage says "not found" for ENOENT', async () => {
+    const err = await readInput('/nonexistent-path/DESIGN.md').catch(e => e);
+    expect((err as FileReadError).friendlyMessage).toContain('not found');
+  });
+
+  it('friendlyMessage says "permission denied" for EACCES', () => {
+    const cause = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+    const err = new FileReadError('/some/file.md', cause);
+    expect(err.friendlyMessage).toContain('permission denied');
+    expect(err.friendlyMessage).not.toContain('not found');
+  });
+
+  it('friendlyMessage falls back to the raw message for unknown errors', () => {
+    const cause = Object.assign(new Error('ENOMEM: out of memory'), { code: 'ENOMEM' });
+    const err = new FileReadError('/some/file.md', cause);
+    expect(err.friendlyMessage).toContain('ENOMEM');
+  });
 });
 
 describe('formatOutput', () => {
