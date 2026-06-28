@@ -42,4 +42,25 @@ describe('missingSections', () => {
     const state = buildState({});
     expect(missingSections(state)).toEqual([]);
   });
+
+  it('suppresses spacing warning when spacing is declared omitted', () => {
+    const state = buildState({
+      colors: { primary: '#ff0000' },
+      rounded: { regular: '4px' },
+      // no spacing — but declared omitted
+      omitted: ['spacing'],
+    });
+    const findings = missingSections(state);
+    expect(findings.length).toBe(0);
+  });
+
+  it('suppresses rounded warning when rounded is declared omitted', () => {
+    const state = buildState({
+      colors: { primary: '#ff0000' },
+      spacing: { unit: '8px' },
+      omitted: ['rounded'],
+    });
+    const findings = missingSections(state);
+    expect(findings.length).toBe(0);
+  });
 });

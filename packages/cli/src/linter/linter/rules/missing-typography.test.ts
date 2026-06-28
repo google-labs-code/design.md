@@ -45,4 +45,12 @@ describe('missingTypography', () => {
     const state = buildState({});
     expect(missingTypography(state)).toEqual([]);
   });
+
+  it('suppresses warning when typography is declared omitted', () => {
+    const state = buildState({
+      colors: { primary: '#ff0000' },
+      omitted: ['typography'],
+    });
+    expect(missingTypography(state)).toEqual([]);
+  });
 });

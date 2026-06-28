@@ -19,9 +19,13 @@ import type { RuleDescriptor, RuleFinding } from './types.js';
  * Missing typography — warns when colors are defined but no typography tokens exist.
  * Without typography tokens, agents will fall back to their own font choices,
  * reducing the author's control over the design system's typographic identity.
+ * Suppressed when typography is declared in the `omitted` key.
  */
 export function missingTypography(state: DesignSystemState): RuleFinding[] {
-  if (state.typography.size === 0 && state.colors.size > 0) {
+  const typographyOmitted = state.omitted?.some(
+    e => (typeof e === 'string' ? e : e.section) === 'typography'
+  );
+  if (state.typography.size === 0 && state.colors.size > 0 && !typographyOmitted) {
     return [{
       path: 'typography',
       message: "No typography tokens defined. Agents will use default font choices, reducing your control over the design system's typographic identity.",

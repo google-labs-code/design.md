@@ -37,6 +37,9 @@ export interface SourceLocation {
   block: 'frontmatter' | number;
 }
 
+/** A single entry in the `omitted` list — either a bare section name or an object with reason. */
+export type OmittedEntry = string | { section: string; reason?: string };
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   version?: string | undefined;
@@ -47,6 +50,8 @@ export interface ParsedDesignSystem {
   rounded?: Record<string, any> | undefined;
   spacing?: Record<string, any> | undefined;
   components?: Record<string, Record<string, any>> | undefined;
+  /** Sections intentionally omitted (linter hint — suppresses missing-section warnings). */
+  omitted?: OmittedEntry[] | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
   sections?: string[] | undefined;
