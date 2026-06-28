@@ -62,7 +62,7 @@ export default defineCommand({
         return;
       }
 
-      console.log(serializeTailwindV4(result.data.theme));
+      process.stdout.write(serializeTailwindV4(result.data.theme));
     } else if (format === 'json-tailwind' || format === 'tailwind') {
       const handler = new TailwindEmitterHandler();
       const result = handler.execute(report.designSystem);
