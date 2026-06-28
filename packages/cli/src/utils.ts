@@ -14,6 +14,8 @@
 
 import { readFileSync } from 'node:fs';
 
+export type StdinStream = AsyncIterable<Buffer | string> & { isTTY?: boolean };
+
 export class FileReadError extends Error {
   readonly code = 'FILE_READ_ERROR' as const;
   constructor(public readonly filePath: string, cause: unknown) {
@@ -37,11 +39,14 @@ export class FileReadError extends Error {
  * Read input from a file path or stdin ("-").
  * Throws FileReadError if the file cannot be read.
  */
-export async function readInput(filePath: string): Promise<string> {
+export async function readInput(filePath: string, stdin: StdinStream = process.stdin): Promise<string> {
   if (filePath === '-') {
+    if (stdin.isTTY) {
+      process.stderr.write('Reading from stdin… Press Ctrl+D when done.\n');
+    }
     const chunks: Buffer[] = [];
-    for await (const chunk of process.stdin) {
-      chunks.push(chunk as Buffer);
+    for await (const chunk of stdin) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     }
     return Buffer.concat(chunks).toString('utf-8');
   }

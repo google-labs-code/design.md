@@ -12,8 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, spyOn } from 'bun:test';
 import { readInput, FileReadError, formatOutput } from './utils.js';
+import type { StdinStream } from './utils.js';
+
+function makeStdin(content: string, isTTY: boolean): StdinStream {
+  async function* gen() { yield Buffer.from(content); }
+  return Object.assign(gen(), { isTTY });
+}
 
 describe('readInput', () => {
   it('throws FileReadError when file does not exist', async () => {
@@ -47,6 +53,41 @@ describe('readInput', () => {
     const cause = Object.assign(new Error('ENOMEM: out of memory'), { code: 'ENOMEM' });
     const err = new FileReadError('/some/file.md', cause);
     expect(err.friendlyMessage).toContain('ENOMEM');
+  });
+});
+
+describe('readInput stdin ("-")', () => {
+  it('reads content from a piped stream', async () => {
+    const result = await readInput('-', makeStdin('hello world', false));
+    expect(result).toBe('hello world');
+  });
+
+  it('returns empty string for an empty piped stream', async () => {
+    async function* empty() {}
+    const result = await readInput('-', Object.assign(empty(), { isTTY: false }));
+    expect(result).toBe('');
+  });
+
+  it('writes a hint to stderr when stdin is a TTY', async () => {
+    const stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      await readInput('-', makeStdin('some content', true));
+      expect(stderrSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Press Ctrl+D')
+      );
+    } finally {
+      stderrSpy.mockRestore();
+    }
+  });
+
+  it('does not write a hint when stdin is not a TTY', async () => {
+    const stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      await readInput('-', makeStdin('piped content', false));
+      expect(stderrSpy).not.toHaveBeenCalled();
+    } finally {
+      stderrSpy.mockRestore();
+    }
   });
 });
 
