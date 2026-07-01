@@ -14,13 +14,31 @@
 
 import { readFileSync } from 'node:fs';
 
+export class FileReadError extends Error {
+  readonly code = 'FILE_READ_ERROR' as const;
+  constructor(public readonly filePath: string, cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause), { cause });
+    this.name = 'FileReadError';
+  }
+
+  get friendlyMessage(): string {
+    const errCode = (this.cause as { code?: string })?.code;
+    if (errCode === 'ENOENT') {
+      return `"${this.filePath}" not found. Create a DESIGN.md file or pass "-" to read from stdin.`;
+    }
+    if (errCode === 'EACCES') {
+      return `"${this.filePath}" could not be read: permission denied.`;
+    }
+    return `"${this.filePath}" could not be read: ${this.message}`;
+  }
+}
+
 /**
  * Read input from a file path or stdin ("-").
- * Never throws — returns the content string or exits with error JSON.
+ * Throws FileReadError if the file cannot be read.
  */
 export async function readInput(filePath: string): Promise<string> {
   if (filePath === '-') {
-    // Read from stdin
     const chunks: Buffer[] = [];
     for await (const chunk of process.stdin) {
       chunks.push(chunk as Buffer);
@@ -31,13 +49,7 @@ export async function readInput(filePath: string): Promise<string> {
   try {
     return readFileSync(filePath, 'utf-8');
   } catch (error) {
-    console.error(JSON.stringify({
-      error: 'FILE_READ_ERROR',
-      message: error instanceof Error ? error.message : String(error),
-      path: filePath,
-    }));
-    process.exitCode = 2;
-    throw error; // bubbles up, but process will exit with code 2 if uncaught
+    throw new FileReadError(filePath, error);
   }
 }
 
