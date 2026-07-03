@@ -65,6 +65,7 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
 * Named colors: `red`, `cornflowerblue`, `transparent`
 * Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`
 * Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`
+* Color spaces: `color(display-p3 ...)`, `color(srgb ...)`, `color(rec2020 ...)`
 * Mixing: `color-mix(in srgb, ...)`
 
 All color values are internally converted to sRGB for WCAG contrast checking. The original format is preserved for display and export.
@@ -245,6 +246,8 @@ Also known as "Elevation".
 
 This section describes how visual hierarchy is conveyed based on the design style. If elevation is used, it defines the required styling (spread, blur, color). For flat designs, this section explains the alternative methods used to convey visual hierarchy (e.g., borders, color contrast).
 
+When depth relies on shadows or tonal layering alone, document a **forced-colors fallback**: borders, outlines, or high-contrast separators that preserve hierarchy in Windows High Contrast Mode and other environments where `@media (forced-colors: active)` disables box shadows. Agents should treat shadow-only elevation as incomplete without an explicit non-shadow fallback.
+
 Example:
 
 ```markdown
@@ -304,6 +307,8 @@ The components section defines a collection of design tokens used to ensure cons
 
 **Variants**. A component may have a variant for different UI states such as active, hover, pressed, etc. Those variant components may be defined under a different but related key, for example, "button-primary", "button-primary-hover", "button-primary-active". The agent will consider all variants and make the appropriate styling decisions.
 
+**Interactive states**. For interactive components (buttons, inputs, chips, checkboxes), define explicit variants for hover, focus (see focus-ring tokens), and disabled states using suffix conventions such as `-hover`, `-active`, `-disabled`, `-selected`, or `-pressed`. Disabled states must not rely on reduced opacity alone — change `backgroundColor`, `textColor`, and/or `borderColor` so non-text boundaries remain perceivable (WCAG 1.4.11). Semantic ARIA states (`aria-selected`, `aria-expanded`, `aria-pressed`) should map to distinct visual variants where possible.
+
 ```yaml
 components:
   button-primary:
@@ -321,6 +326,7 @@ Each component has a set of properties that are themselves design tokens:
 
 - backgroundColor: \<Color\>
 - textColor: \<Color\>
+- borderColor: \<Color\>
 - typography: \<Typography\>
 - rounded: \<Dimension\>
 - padding: \<Dimension\>

@@ -69,6 +69,9 @@ component_sub_tokens:
     type: Color
   - name: textColor
     type: Color
+  - name: borderColor
+    type: Color
+    description: "Border or outline color for UI boundaries (WCAG 1.4.11 non-text contrast)."
   - name: typography
     type: Typography
   - name: rounded

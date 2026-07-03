@@ -191,6 +191,36 @@ export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | 
       const rgb = oklchToRgb(l, c, h);
       return makeResult(rgb.r, rgb.g, rgb.b, a);
     }
+    case 'color': {
+      if (args.length < 4) return null;
+      const space = args[0]!.toLowerCase();
+      const a = args.length >= 5 ? parseAlpha(args[4]!) : 1;
+      if (isNaN(a)) return null;
+
+      if (space === 'display-p3') {
+        const r = parseFloat(args[1]!);
+        const g = parseFloat(args[2]!);
+        const b = parseFloat(args[3]!);
+        if ([r, g, b].some(v => isNaN(v))) return null;
+        const rgb = displayP3ToSrgb(r, g, b);
+        return makeResult(rgb.r, rgb.g, rgb.b, a);
+      }
+
+      if (space === 'srgb') {
+        const r = parsePercentOrNumber(args[1]!, 255);
+        const g = parsePercentOrNumber(args[2]!, 255);
+        const b = parsePercentOrNumber(args[3]!, 255);
+        if ([r, g, b].some(v => isNaN(v))) return null;
+        return makeResult(
+          Math.max(0, Math.min(255, Math.round(r))),
+          Math.max(0, Math.min(255, Math.round(g))),
+          Math.max(0, Math.min(255, Math.round(b))),
+          a,
+        );
+      }
+
+      return null;
+    }
     case 'color-mix': {
       // color-mix(in srgb, color1 percentage, color2 percentage)
       // Let's split the inner tokens by comma at depth 0
@@ -592,4 +622,28 @@ function oklchToRgb(l: number, c: number, h: number): { r: number; g: number; b:
   const a = c * Math.cos(hRad);
   const b = c * Math.sin(hRad);
   return oklabToRgb(l, a, b);
+}
+
+/** Convert display-p3 (0–1) channel values to sRGB 0–255. */
+function displayP3ToSrgb(r: number, g: number, b: number): { r: number; g: number; b: number } {
+  const linearize = (v: number) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const rl = linearize(r);
+  const gl = linearize(g);
+  const bl = linearize(b);
+
+  const x = 0.4865709 * rl + 0.2656677 * gl + 0.1982173 * bl;
+  const y = 0.2289746 * rl + 0.6917385 * gl + 0.0792669 * bl;
+  const z = 0.0000000 * rl + 0.0451134 * gl + 1.0439444 * bl;
+
+  const rLin = 3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
+  const gLin = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
+  const bLin = 0.0556434 * x - 0.2040259 * y + 1.0572252 * z;
+
+  const gamma = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+
+  return {
+    r: Math.max(0, Math.min(255, Math.round(gamma(rLin) * 255))),
+    g: Math.max(0, Math.min(255, Math.round(gamma(gLin) * 255))),
+    b: Math.max(0, Math.min(255, Math.round(gamma(bLin) * 255))),
+  };
 }
