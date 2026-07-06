@@ -66,7 +66,7 @@ describe('export command', () => {
     expect(logSpy.mock.calls.length).toBe(0);
     expect(errorSpy.mock.calls.length).toBe(1);
     const error = JSON.parse(errorSpy.mock.calls[0][0]);
-    expect(error.error).toContain('Invalid format "not-a-format"');
+    expect(error.message).toContain('Invalid format "not-a-format"');
     expect(process.exitCode).toBe(1);
   });
 });

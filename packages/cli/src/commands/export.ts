@@ -118,5 +118,6 @@ export default defineCommand({
     // A successful export exits 0 even if the source has lint findings; those
     // are surfaced by `lint`, not by whether the export itself produced output.
     // The error branches above set a non-zero code and return before this point.
+    process.exitCode = 0;
   },
 });
