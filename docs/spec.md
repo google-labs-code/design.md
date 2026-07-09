@@ -44,6 +44,7 @@ Below is the schema for the design tokens defined in the front matter:
 version: <string>          # optional, current version: "alpha"
 name: <string>
 description: <string>      # optional
+omitted: <string[]|OmittedSection[]> # optional
 colors:
   <token-name>: <Color>
 typography:
@@ -82,6 +83,17 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
   [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings).
 
 **Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
+
+**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, components). Each entry can be:
+
+* A string representing the section name (e.g., `spacing`)
+* An object of the form `{ section: string, reason?: string }` mapping a section to a documented reason for its omission:
+  ```yaml
+  omitted:
+    - spacing
+    - section: rounded
+      reason: "No rounded corners defined in brand book"
+  ```
 
 **Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
 
