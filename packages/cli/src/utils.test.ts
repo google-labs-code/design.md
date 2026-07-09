@@ -34,7 +34,9 @@ describe('readInput', () => {
 
   it('FileReadError carries the underlying OS error message', async () => {
     const err = await readInput('/nonexistent-path/DESIGN.md').catch(e => e);
-    expect((err as FileReadError).message).toContain('ENOENT');
+    const errMessage = (err as FileReadError).message;
+    const errCode = ((err as FileReadError).cause as any)?.code;
+    expect(errCode === 'ENOENT' || errMessage.includes('ENOENT')).toBe(true);
   });
 
   it('friendlyMessage says "not found" for ENOENT', async () => {
