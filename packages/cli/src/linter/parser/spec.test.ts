@@ -31,3 +31,76 @@ describe('ParserInputSchema', () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe('SCHEMA_KEYS', () => {
+  it('includes omitted as a known top-level key', () => {
+    const { SCHEMA_KEYS } = require('./spec.js');
+    expect(SCHEMA_KEYS).toContain('omitted');
+  });
+});
+
+describe('omitted frontmatter parsing', () => {
+  const { ParserHandler } = require('./handler.js');
+  const handler = new ParserHandler();
+
+  it('extracts omitted string arrays', () => {
+    const result = handler.execute({
+      content: `---
+omitted:
+  - spacing
+  - rounded
+colors:
+  primary: "#ff0000"
+---`,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.omitted).toEqual([
+        { section: 'spacing' },
+        { section: 'rounded' },
+      ]);
+    }
+  });
+
+  it('extracts omitted objects with reason', () => {
+    const result = handler.execute({
+      content: `---
+omitted:
+  - section: spacing
+    reason: "No spacing scale defined"
+  - section: rounded
+colors:
+  primary: "#ff0000"
+---`,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.omitted).toEqual([
+        { section: 'spacing', reason: 'No spacing scale defined' },
+        { section: 'rounded' },
+      ]);
+    }
+  });
+
+  it('filters non-string / non-object omitted entries', () => {
+    const result = handler.execute({
+      content: `---
+omitted:
+  - spacing
+  - 42
+  - true
+  - section: rounded
+---`,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.omitted).toEqual([
+        { section: 'spacing' },
+        { section: 'rounded' },
+      ]);
+    }
+  });
+});

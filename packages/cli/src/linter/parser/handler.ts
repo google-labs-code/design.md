@@ -190,10 +190,31 @@ export class ParserHandler implements ParserSpec {
    * Map a raw parsed object to the ParsedDesignSystem interface.
    */
   private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: Array<{ heading: string; content: string }>): ParsedDesignSystem {
+    const omittedRaw = raw['omitted'];
+    let omitted: ParsedDesignSystem['omitted'] = undefined;
+    if (Array.isArray(omittedRaw)) {
+      omitted = omittedRaw
+        .map(item => {
+          if (typeof item === 'string') {
+            return { section: item };
+          }
+          if (item && typeof item === 'object' && typeof (item as any).section === 'string') {
+            const entry: { section: string; reason?: string } = { section: (item as any).section };
+            if (typeof (item as any).reason === 'string') {
+              entry.reason = (item as any).reason;
+            }
+            return entry;
+          }
+          return null;
+        })
+        .filter((item): item is { section: string; reason?: string } => item !== null);
+    }
+
     return {
       version: typeof raw['version'] === 'string' ? raw['version'] : undefined,
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
+      omitted,
       colors: raw['colors'] as Record<string, string> | undefined,
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,

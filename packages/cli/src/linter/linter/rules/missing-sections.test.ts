@@ -38,6 +38,23 @@ describe('missingSections', () => {
     expect(missingSections(state)).toEqual([]);
   });
 
+  it('returns empty for missing sections listed as omitted', () => {
+    const state = buildState({
+      omitted: [{ section: 'spacing' }, { section: 'rounded' }],
+      colors: { primary: '#ff0000' },
+    });
+    expect(missingSections(state)).toEqual([]);
+  });
+
+  it('still reports sections not listed as omitted', () => {
+    const state = buildState({
+      omitted: [{ section: 'spacing' }],
+      colors: { primary: '#ff0000' },
+    });
+    const findings = missingSections(state);
+    expect(findings.map(d => d.path)).toEqual(['rounded']);
+  });
+
   it('returns empty when no colors exist (nothing to compare against)', () => {
     const state = buildState({});
     expect(missingSections(state)).toEqual([]);
