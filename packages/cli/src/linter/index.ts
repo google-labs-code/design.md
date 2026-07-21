@@ -47,6 +47,9 @@ export {
   missingTypography,
   unknownKey,
   tokenLikeIgnored,
+  unverifiedContrastCheck,
+  colorBlindContrastCheck,
+  colorBlindContrastRule,
 } from './linter/rules/index.js';
 export { contrastRatio } from './model/handler.js';
 export { TailwindEmitterHandler } from './tailwind/handler.js';
