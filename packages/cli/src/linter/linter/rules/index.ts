@@ -25,12 +25,18 @@ import { sectionOrderRule } from './section-order.js';
 import { missingTypographyRule } from './missing-typography.js';
 import { unknownKeyRule } from './unknown-key.js';
 import { tokenLikeIgnoredRule } from './token-like-ignored.js';
+import { focusRingContrastRule } from './focus-ring-contrast.js';
+import { missingOnColorRule } from './missing-on-color.js';
+import { onColorContrastRule } from './on-color-contrast.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   brokenRefRule,
   missingPrimaryRule,
   contrastCheckRule,
+  onColorContrastRule,
+  missingOnColorRule,
+  focusRingContrastRule,
   orphanedTokensRule,
   tokenSummaryRule,
   missingSectionsRule,
@@ -57,6 +63,9 @@ export const DEFAULT_RULES: LintRule[] = DEFAULT_RULE_DESCRIPTORS.map(toLintRule
 export { brokenRef } from './broken-ref.js';
 export { missingPrimary } from './missing-primary.js';
 export { contrastCheck } from './contrast-ratio.js';
+export { focusRingContrastCheck, focusRingContrastRule } from './focus-ring-contrast.js';
+export { missingOnColorCheck, missingOnColorRule } from './missing-on-color.js';
+export { onColorContrastCheck, onColorContrastRule } from './on-color-contrast.js';
 export { orphanedTokens } from './orphaned-tokens.js';
 export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
