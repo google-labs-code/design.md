@@ -221,6 +221,7 @@ export class ModelHandler implements ModelSpec {
           sections: input.sections,
           unknownKeys,
           unknownKeyValues,
+          omitted: input.omitted,
         },
         findings,
       };

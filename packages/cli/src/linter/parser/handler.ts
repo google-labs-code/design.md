@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import YAML from 'yaml';
-import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation } from './spec.js';
+import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation, OmittedEntry } from './spec.js';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
@@ -199,6 +199,7 @@ export class ParserHandler implements ParserSpec {
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
       components: raw['components'] as Record<string, Record<string, string>> | undefined,
+      omitted: parseOmitted(raw['omitted']),
       sourceMap,
       sections,
       documentSections,
@@ -212,4 +213,23 @@ export class ParserHandler implements ParserSpec {
       .join('')
       .trim();
   }
+}
+
+/**
+ * Parse the raw `omitted` YAML value into an array of OmittedEntry.
+ * Accepts both bare strings and objects with `section` and optional `reason`.
+ * Returns undefined when the value is absent, empty, or not an array.
+ */
+function parseOmitted(raw: unknown): OmittedEntry[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const entries: OmittedEntry[] = [];
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      entries.push(item);
+    } else if (typeof item === 'object' && item !== null && typeof (item as Record<string, unknown>).section === 'string') {
+      entries.push(item as { section: string; reason?: string });
+    }
+    // Silently skip invalid entries
+  }
+  return entries.length > 0 ? entries : undefined;
 }

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { z } from 'zod';
-import type { ParsedDesignSystem } from '../parser/spec.js';
+import type { ParsedDesignSystem, OmittedEntry } from '../parser/spec.js';
 import {
   STANDARD_UNITS as _STANDARD_UNITS,
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
@@ -84,6 +84,8 @@ export interface DesignSystemState {
   unknownKeys?: string[] | undefined;
   /** Raw YAML values for unknown top-level keys, keyed by the unknown key name */
   unknownKeyValues?: Record<string, unknown> | undefined;
+  /** Sections intentionally omitted — suppresses missing-section/typography warnings. */
+  omitted?: OmittedEntry[] | undefined;
 }
 
 export interface ComponentDef {

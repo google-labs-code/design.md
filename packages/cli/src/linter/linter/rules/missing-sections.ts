@@ -14,19 +14,21 @@
 
 import type { DesignSystemState } from '../../model/spec.js';
 import type { RuleDescriptor, RuleFinding } from './types.js';
+import { getOmittedSections } from './omitted-utils.js';
 
 /**
  * Missing sections — notes when optional sections (spacing, rounded) are absent.
  */
 export function missingSections(state: DesignSystemState): RuleFinding[] {
   const findings: RuleFinding[] = [];
+  const omittedSections = getOmittedSections(state);
   const sections = [
     { map: state.spacing, name: 'spacing', fallback: 'Layout spacing will fall back to agent defaults.' },
     { map: state.rounded, name: 'rounded', fallback: 'Corner rounding will fall back to agent defaults.' },
   ];
 
   for (const { map, name, fallback } of sections) {
-    if (map.size === 0 && state.colors.size > 0) {
+    if (map.size === 0 && state.colors.size > 0 && !omittedSections.has(name)) {
       findings.push({
         path: name,
         message: `No '${name}' section defined. ${fallback}`,

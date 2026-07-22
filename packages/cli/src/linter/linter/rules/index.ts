@@ -25,6 +25,9 @@ import { sectionOrderRule } from './section-order.js';
 import { missingTypographyRule } from './missing-typography.js';
 import { unknownKeyRule } from './unknown-key.js';
 import { tokenLikeIgnoredRule } from './token-like-ignored.js';
+import { declaredOmissionRule } from './declared-omission.js';
+import { redundantOmissionRule } from './redundant-omission.js';
+import { unknownOmissionRule } from './unknown-omission.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -38,6 +41,9 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   sectionOrderRule,
   unknownKeyRule,
   tokenLikeIgnoredRule,
+  declaredOmissionRule,
+  redundantOmissionRule,
+  unknownOmissionRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -64,4 +70,7 @@ export { missingTypography } from './missing-typography.js';
 export { unknownKey } from './unknown-key.js';
 export { sectionOrder } from './section-order.js';
 export { tokenLikeIgnored } from './token-like-ignored.js';
+export { declaredOmission } from './declared-omission.js';
+export { redundantOmission } from './redundant-omission.js';
+export { unknownOmission } from './unknown-omission.js';
 export type { LintRule } from './types.js';
