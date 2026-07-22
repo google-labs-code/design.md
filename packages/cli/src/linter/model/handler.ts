@@ -54,7 +54,10 @@ export class ModelHandler implements ModelSpec {
       // ── Phase 1: Resolve primitive tokens ──────────────────────────
       // Colors
       if (input.colors) {
+        const isCollision = buildCollisionGuard('colors', findings);
         forEachLeaf(input.colors, (name, raw) => {
+          if (isCollision(name)) return;
+
           if (typeof raw === 'string' && isTokenReference(raw)) {
             // Store raw reference for later resolution
             symbolTable.set(`colors.${name}`, raw);
@@ -85,7 +88,10 @@ export class ModelHandler implements ModelSpec {
 
       // Rounded
       if (input.rounded) {
+        const isCollision = buildCollisionGuard('rounded', findings);
         forEachLeaf(input.rounded, (name, raw) => {
+          if (isCollision(name)) return;
+
           if (typeof raw === 'string') {
             if (isParseableDimension(raw)) {
               const resolved = parseDimension(raw);
@@ -114,7 +120,10 @@ export class ModelHandler implements ModelSpec {
 
       // Spacing
       if (input.spacing) {
+        const isCollision = buildCollisionGuard('spacing', findings);
         forEachLeaf(input.spacing, (name, raw) => {
+          if (isCollision(name)) return;
+
           if (isParseableDimension(raw)) {
             const resolved = parseDimension(raw);
             spacing.set(name, resolved);
@@ -125,54 +134,27 @@ export class ModelHandler implements ModelSpec {
         }, '', 0, findings, 'spacing');
       }
 
-      // ── Phase 2: Resolve chained color references ──────────────────
-      // Iterate color entries that are still raw references and resolve them
-      if (input.colors) {
-        forEachLeaf(input.colors, (name, raw) => {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
-            if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
-              colors.set(name, resolved as ResolvedColor);
-              symbolTable.set(`colors.${name}`, resolved);
-            }
-          }
-        });
-      }
+      // ── Phase 2: Resolve chained token references ──────────────────
+      // Iterate the symbol table directly (not re-walking raw input) so that
+      // Phase 1 collision decisions are never overwritten.
+      for (const [key, value] of symbolTable) {
+        if (typeof value !== 'string' || !isTokenReference(value)) continue;
+        const resolved = resolveReference(symbolTable, value.slice(1, -1), new Set());
+        if (resolved === null || typeof resolved !== 'object' || !('type' in resolved)) continue;
 
-      // Resolve chained rounded references
-      if (input.rounded) {
-        forEachLeaf(input.rounded, (name, raw) => {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
-            if (
-              resolved !== null &&
-              typeof resolved === 'object' &&
-              'type' in resolved &&
-              resolved.type === 'dimension'
-            ) {
-              rounded.set(name, resolved as ResolvedDimension);
-              symbolTable.set(`rounded.${name}`, resolved);
-            }
-          }
-        });
-      }
-
-      // Resolve chained spacing references
-      if (input.spacing) {
-        forEachLeaf(input.spacing, (name, raw) => {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
-            if (
-              resolved !== null &&
-              typeof resolved === 'object' &&
-              'type' in resolved &&
-              resolved.type === 'dimension'
-            ) {
-              spacing.set(name, resolved as ResolvedDimension);
-              symbolTable.set(`spacing.${name}`, resolved);
-            }
-          }
-        });
+        if (key.startsWith('colors.') && resolved.type === 'color') {
+          const name = key.slice('colors.'.length);
+          colors.set(name, resolved as ResolvedColor);
+          symbolTable.set(key, resolved);
+        } else if (key.startsWith('rounded.') && resolved.type === 'dimension') {
+          const name = key.slice('rounded.'.length);
+          rounded.set(name, resolved as ResolvedDimension);
+          symbolTable.set(key, resolved);
+        } else if (key.startsWith('spacing.') && resolved.type === 'dimension') {
+          const name = key.slice('spacing.'.length);
+          spacing.set(name, resolved as ResolvedDimension);
+          symbolTable.set(key, resolved);
+        }
       }
 
       // ── Phase 3: Build components ──────────────────────────────────
@@ -264,6 +246,45 @@ export class ModelHandler implements ModelSpec {
 }
 
 // ── Pure utility functions ─────────────────────────────────────────
+
+/**
+ * Returns a predicate that detects token name collisions within a single
+ * token category (colors, rounded, spacing). Call once per category; the
+ * returned function tracks state via closure.
+ *
+ * Returns true (and pushes a finding) when the candidate name collides with
+ * an already-registered key, so callers can skip it with a simple `if
+ * (isCollision(name)) return;`.
+ */
+function buildCollisionGuard(
+  category: string,
+  findings: Finding[],
+): (name: string) => boolean {
+  const seenKeys = new Set<string>();
+  const seenNormalized = new Map<string, string>();
+  return (name: string): boolean => {
+    const normalized = name.replace(/\./g, '-');
+    if (seenKeys.has(name)) {
+      findings.push({
+        severity: 'error',
+        path: `${category}.${name}`,
+        message: `Duplicate token path '${category}.${name}' detected.`,
+      });
+      return true;
+    }
+    if (seenNormalized.has(normalized)) {
+      findings.push({
+        severity: 'error',
+        path: `${category}.${name}`,
+        message: `Grouped ${category} token flattens to '${normalized}', which is already defined.`,
+      });
+      return true;
+    }
+    seenKeys.add(name);
+    seenNormalized.set(normalized, name);
+    return false;
+  };
+}
 
 /**
  * Parse a CSS color string into a ResolvedColor with RGB + WCAG luminance.
