@@ -71,6 +71,7 @@ export const VALID_COMPONENT_SUB_TOKENS = _VALID_COMPONENT_SUB_TOKENS;
 export interface DesignSystemState {
   name?: string | undefined;
   description?: string | undefined;
+  omitted?: string[] | undefined;
   colors: Map<string, ResolvedColor>;
   typography: Map<string, ResolvedTypography>;
   rounded: Map<string, ResolvedDimension>;

@@ -14,6 +14,17 @@
 
 import { describe, it, expect } from 'bun:test';
 import { isValidColor, isStandardDimension, isParseableDimension, parseDimensionParts, isTokenReference } from './spec.js';
+import { ModelHandler } from './handler.js';
+import type { ParsedDesignSystem } from '../parser/spec.js';
+
+const handler = new ModelHandler();
+
+function makeParsed(overrides: Partial<ParsedDesignSystem> = {}): ParsedDesignSystem {
+  return {
+    sourceMap: new Map(),
+    ...overrides,
+  };
+}
 
 describe('isValidColor', () => {
   const validColors = ['#ff0000', '#FF0000', '#abc', '#ABC', '#647D66', '#000', '#fff', 'red', 'blue'];
@@ -102,5 +113,26 @@ describe('isTokenReference', () => {
     expect(isTokenReference('colors.primary')).toBe(false);
     expect(isTokenReference('{}')).toBe(false);
     expect(isTokenReference('{ colors.primary }')).toBe(false);
+  });
+});
+
+describe('omitted model metadata', () => {
+  it('passes omitted through to the design system state', () => {
+    const result = handler.execute(makeParsed({
+      omitted: ['spacing', 'rounded'],
+    }));
+
+    expect(result.designSystem.omitted).toEqual(['spacing', 'rounded']);
+  });
+
+  it('treats omitted as a known top-level key', () => {
+    const result = handler.execute(makeParsed({
+      omitted: ['typography'],
+      sourceMap: new Map([
+        ['omitted', { line: 1, column: 0, block: 'frontmatter' as const }],
+      ]),
+    }));
+
+    expect(result.designSystem.unknownKeys).toEqual([]);
   });
 });

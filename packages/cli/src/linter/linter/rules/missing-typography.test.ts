@@ -41,6 +41,33 @@ describe('missingTypography', () => {
     expect(missingTypography(state)).toEqual([]);
   });
 
+  it('returns empty when typography is listed as omitted', () => {
+    const state = buildState({
+      omitted: ['typography'],
+      colors: { primary: '#ff0000' },
+    });
+
+    expect(missingTypography(state)).toEqual([]);
+  });
+
+  it('matches omitted typography case-insensitively', () => {
+    const state = buildState({
+      omitted: ['Typography'],
+      colors: { primary: '#ff0000' },
+    });
+
+    expect(missingTypography(state)).toEqual([]);
+  });
+
+  it('treats empty omitted lists like no omitted key', () => {
+    const state = buildState({
+      omitted: [],
+      colors: { primary: '#ff0000' },
+    });
+
+    expect(missingTypography(state).map(d => d.path)).toEqual(['typography']);
+  });
+
   it('returns empty when no colors defined (nothing to compare against)', () => {
     const state = buildState({});
     expect(missingTypography(state)).toEqual([]);
