@@ -13,18 +13,18 @@
 // limitations under the License.
 
 import { defineCommand } from 'citty';
-import { lint, TailwindEmitterHandler } from '../linter/index.js';
+import { lint, TailwindEmitterHandler, CssVarsEmitterHandler, serializeCssVars } from '../linter/index.js';
 import { renderTailwindThemeCss } from '../linter/tailwind/css.js';
 import { DtcgEmitterHandler } from '../linter/dtcg/handler.js';
-import { readInput } from '../utils.js';
+import { readInput, FileReadError } from '../utils.js';
 
-const FORMATS = ['tailwind', 'dtcg'] as const;
+const FORMATS = ['css-tailwind', 'json-tailwind', 'tailwind', 'dtcg', 'css-vars'] as const;
 type ExportFormat = typeof FORMATS[number];
 
 export default defineCommand({
   meta: {
     name: 'export',
-    description: 'Export DESIGN.md tokens to other formats (tailwind, dtcg). The tailwind format emits a Tailwind v4 `@theme` CSS stylesheet.',
+    description: 'Export DESIGN.md tokens to other formats. `css-tailwind` emits a Tailwind v4 `@theme` CSS stylesheet (shadcn-style :root indirection); `tailwind` is an alias for `css-tailwind`; `json-tailwind` emits Tailwind v3 theme.extend JSON; `dtcg` emits W3C Design Tokens; `css-vars` emits CSS custom properties.',
   },
   args: {
     file: {
@@ -42,35 +42,74 @@ export default defineCommand({
       description: 'Include components in the export. Ignored by the tailwind CSS emitter; component styles should be authored alongside the @theme stylesheet.',
       default: false,
     },
+    prefix: {
+      type: 'string',
+      description: 'Optional CSS custom property prefix for css-vars output.',
+      required: false,
+    },
   },
   async run({ args }) {
     const format = args.format as string;
+    const prefix = typeof args.prefix === 'string' ? args.prefix : undefined;
 
     // Validate --format against closed enum
     if (!FORMATS.includes(format as ExportFormat)) {
       console.error(JSON.stringify({
-        error: `Invalid format "${format}". Valid formats: ${FORMATS.join(', ')}`,
+        error: 'INVALID_FORMAT',
+        message: `Invalid format "${format}". Valid formats: ${FORMATS.join(', ')}`,
       }));
       process.exitCode = 1;
       return;
     }
 
-    const content = await readInput(args.file);
+    let content: string;
+    try {
+      content = await readInput(args.file);
+    } catch (error) {
+      if (error instanceof FileReadError) {
+        process.stderr.write(`Error: ${error.friendlyMessage}\n`);
+        process.exitCode = 2;
+        return;
+      }
+      throw error;
+    }
     const report = lint(content);
 
-    if (format === 'tailwind') {
+    if (format === 'css-tailwind' || format === 'tailwind') {
       const handler = new TailwindEmitterHandler();
       const result = handler.execute(report.designSystem);
 
       if (!result.success) {
-        console.error(JSON.stringify({ error: result.error.message }));
+        console.error(JSON.stringify({ error: result.error.code, message: result.error.message }));
         process.exitCode = 1;
         return;
       }
 
       console.log(renderTailwindThemeCss(result));
+    } else if (format === 'json-tailwind') {
+      const handler = new TailwindEmitterHandler();
+      const result = handler.execute(report.designSystem);
+
+      if (!result.success) {
+        console.error(JSON.stringify({ error: result.error.code, message: result.error.message }));
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(JSON.stringify(result.data, null, 2));
     } else if (format === 'dtcg') {
       const handler = new DtcgEmitterHandler();
+      const result = handler.execute(report.designSystem);
+
+      if (!result.success) {
+        console.error(JSON.stringify({ error: result.error.code, message: result.error.message }));
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(JSON.stringify(result.data, null, 2));
+    } else if (format === 'css-vars') {
+      const handler = new CssVarsEmitterHandler();
       const result = handler.execute(report.designSystem);
 
       if (!result.success) {
@@ -79,9 +118,12 @@ export default defineCommand({
         return;
       }
 
-      console.log(JSON.stringify(result.data, null, 2));
+      console.log(serializeCssVars(result.data.declarations, { prefix }));
     }
 
-    process.exitCode = report.summary.errors > 0 ? 1 : 0;
+    // A successful export exits 0 even if the source has lint findings; those
+    // are surfaced by `lint`, not by whether the export itself produced output.
+    // The error branches above set a non-zero code and return before this point.
+    process.exitCode = 0;
   },
 });

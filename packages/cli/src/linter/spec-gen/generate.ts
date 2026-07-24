@@ -48,6 +48,7 @@ async function main() {
     motionExample: () => renderers.motionExample(cfg),
     iconographyExample: () => renderers.iconographyExample(cfg),
     typographyPropertyList: () => renderers.typographyPropertyList(cfg),
+    typeDefinitions: () => renderers.typeDefinitions(cfg),
     sectionOrderList: () => renderers.sectionOrderList(cfg),
     componentSubTokenList: () => renderers.componentSubTokenList(cfg),
     recommendedTokens: () => renderers.recommendedTokens(cfg),

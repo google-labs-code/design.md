@@ -223,6 +223,7 @@ export class ParserHandler implements ParserSpec {
   private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: DocumentSection[]): ParsedDesignSystem {
     const { components, componentRegistry } = normalizeComponents(raw['components']);
     return {
+      version: typeof raw['version'] === 'string' ? raw['version'] : undefined,
       name: typeof raw['name'] === 'string' ? raw['name'] : undefined,
       description: typeof raw['description'] === 'string' ? raw['description'] : undefined,
       colors: raw['colors'] as ParsedDesignSystem['colors'],
@@ -249,6 +250,7 @@ export class ParserHandler implements ParserSpec {
       sourceMap,
       sections,
       documentSections,
+      rawValues: raw,
     };
   }
 

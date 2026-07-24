@@ -43,8 +43,10 @@ describe('validateColor', () => {
   it('accepts token references', () => {
     expect(validateColor('{colors.primary}').ok).toBe(true);
   });
+  it('accepts CSS named colors', () => {
+    expect(validateColor('red').ok).toBe(true);
+  });
   it('rejects garbage', () => {
-    expect(validateColor('red').ok).toBe(false);
     expect(validateColor('not-a-color').ok).toBe(false);
     expect(validateColor('oklch()').ok).toBe(false);
   });
@@ -121,8 +123,11 @@ describe('validateBorder', () => {
   it('rejects bad width', () => {
     expect(validateBorder('thick solid #000').ok).toBe(false);
   });
+  it('accepts named border colors', () => {
+    expect(validateBorder('1px solid red').ok).toBe(true);
+  });
   it('rejects bad color', () => {
-    expect(validateBorder('1px solid red').ok).toBe(false);
+    expect(validateBorder('1px solid nocolor').ok).toBe(false);
   });
 });
 

@@ -45,7 +45,13 @@ export function getSpecContent(specPath?: string): string {
   try {
     return readFileSync(bundledPath, 'utf-8');
   } catch {
-    // Not a bundle context — fall through to dev path.
+    // Fallback: spec.md may be in ../linter/ instead (one level up).
+    const fallbackPath = resolve(currentDir, '../linter/spec.md');
+    try {
+      return readFileSync(fallbackPath, 'utf-8');
+    } catch {
+      // Not a bundle context — fall through to dev path.
+    }
   }
 
   // Strategy 2: Development — spec.md lives at <repo>/docs/spec.md.

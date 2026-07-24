@@ -58,6 +58,8 @@ import { unknownTemplateRule } from './unknown-template.js';
 import { missingRegionRule } from './missing-region.js';
 import { offGridDimensionRule } from './off-grid-dimension.js';
 import { templateRegionPurityRule } from './template-region-purity.js';
+import { unknownKeyRule } from './unknown-key.js';
+import { tokenLikeIgnoredRule } from './token-like-ignored.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -104,6 +106,8 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   missingRegionRule,
   offGridDimensionRule,
   templateRegionPurityRule,
+  unknownKeyRule,
+  tokenLikeIgnoredRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -127,6 +131,7 @@ export { orphanedTokens } from './orphaned-tokens.js';
 export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
 export { missingTypography } from './missing-typography.js';
+export { unknownKey } from './unknown-key.js';
 export { sectionOrder } from './section-order.js';
 export { unchangedState } from './unchanged-state.js';
 export { missingFocusVisible } from './missing-focus-visible.js';
@@ -163,4 +168,5 @@ export { unknownTemplate } from './unknown-template.js';
 export { missingRegion } from './missing-region.js';
 export { offGridDimension } from './off-grid-dimension.js';
 export { templateRegionPurity } from './template-region-purity.js';
+export { tokenLikeIgnored } from './token-like-ignored.js';
 export type { LintRule } from './types.js';

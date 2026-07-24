@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import type { ParsedDesignSystem, RawColorValue, RawRampDef, RawPairDef, RawMotionDef, RawIconographyDef, RawRegistryEntry, RawComponentValue, RawThemeDef, RawVoice, RawCopy, RawBreakpointsDef, RawGridDef, RawLayoutRulesDef, RawTemplateDef, RawPageDef } from '../parser/spec.js';
+import { SCHEMA_KEYS } from '../parser/spec.js';
 import type {
   ModelSpec,
   ModelResult,
@@ -52,13 +53,16 @@ import {
   parseDurationParts,
   isValidEasing,
   parseCubicBezier,
+  VALID_TYPOGRAPHY_PROPS,
 } from './spec.js';
 import { parseColorString } from './color.js';
+import { parseCssColor } from './color-parser.js';
 import { COMPONENT_SUB_TOKEN_VALIDATORS } from '../component-validators.js';
 import { generateRampSteps, DEFAULT_RAMP_STEPS } from './color-ramp.js';
-import { ICON_LIBRARIES, KIND_DEFAULTS, BASE_THEME_NAME, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES, BREAKPOINT_PHILOSOPHIES } from '../spec-config.js';
+import { ICON_LIBRARIES, KIND_DEFAULTS, BASE_THEME_NAME, VOICE_AXES, VOICE_PERSON, CASING_VALUES, CASING_SURFACES, BREAKPOINT_PHILOSOPHIES, MAX_REFERENCE_DEPTH, MAX_TOKEN_NESTING_DEPTH } from '../spec-config.js';
 
-const MAX_REFERENCE_DEPTH = 10;
+const SCHEMA_KEY_SET: ReadonlySet<string> = new Set(SCHEMA_KEYS);
+const TYPOGRAPHY_PROP_SET: ReadonlySet<string> = new Set(VALID_TYPOGRAPHY_PROPS);
 
 /**
  * Builds a resolved DesignSystemState from parsed YAML tokens.
@@ -87,26 +91,38 @@ export class ModelHandler implements ModelSpec {
       // ── Phase 1: Resolve primitive tokens ──────────────────────────
       // Colors
       if (input.colors) {
+        const isCollision = buildCollisionGuard('colors', findings);
+        const handleColorLeaf = (name: string, raw: unknown): void => {
+          if (isCollision(name)) return;
+          if (typeof raw === 'string' && isTokenReference(raw)) {
+            // Store raw reference for later resolution
+            symbolTable.set(`colors.${name}`, raw);
+          } else if (typeof raw === 'string' && isValidColor(raw)) {
+            const resolved = parseColor(raw);
+            colors.set(name, resolved);
+            symbolTable.set(`colors.${name}`, resolved);
+          } else {
+            findings.push({
+              severity: 'error',
+              path: `colors.${name}`,
+              message: `'${raw}' is not a valid color. Expected hex (e.g., #ffffff) or a CSS color function such as oklch(), oklab(), lab(), color(display-p3 …), hsl(), or rgb().`,
+            });
+            // Store as-is for fallback
+            symbolTable.set(`colors.${name}`, String(raw));
+          }
+        };
         for (const [name, raw] of Object.entries(input.colors)) {
           if (typeof raw === 'string') {
-            if (isTokenReference(raw)) {
-              // Store raw reference for later resolution
-              symbolTable.set(`colors.${name}`, raw);
-            } else if (isValidColor(raw)) {
-              const resolved = parseColor(raw);
-              colors.set(name, resolved);
-              symbolTable.set(`colors.${name}`, resolved);
-            } else {
-              findings.push({
-                severity: 'error',
-                path: `colors.${name}`,
-                message: `'${raw}' is not a valid color. Expected hex (e.g., #ffffff) or a CSS color function such as oklch(), oklab(), lab(), color(display-p3 …), hsl(), or rgb().`,
-              });
-              // Store as-is for fallback
-              symbolTable.set(`colors.${name}`, raw);
-            }
+            handleColorLeaf(name, raw);
           } else if (raw && typeof raw === 'object') {
-            expandObjectColor(name, raw, { colors, colorRamps, colorPairs, symbolTable, findings });
+            if ('type' in raw) {
+              // Ramp / pair (or a typo'd shape) — structured expansion.
+              if (isCollision(name)) continue;
+              expandObjectColor(name, raw, { colors, colorRamps, colorPairs, symbolTable, findings });
+            } else {
+              // Plain nested group — flatten leaves to dot-separated names.
+              forEachLeaf(raw as Record<string, unknown>, handleColorLeaf, name, 1, findings, 'colors');
+            }
           }
         }
       }
@@ -122,7 +138,9 @@ export class ModelHandler implements ModelSpec {
 
       // Rounded
       if (input.rounded) {
-        for (const [name, raw] of Object.entries(input.rounded)) {
+        const isCollision = buildCollisionGuard('rounded', findings);
+        forEachLeaf(input.rounded, (name, raw) => {
+          if (isCollision(name)) return;
           if (typeof raw === 'string') {
             if (isParseableDimension(raw)) {
               const resolved = parseDimension(raw);
@@ -146,20 +164,22 @@ export class ModelHandler implements ModelSpec {
               symbolTable.set(`rounded.${name}`, raw);
             }
           }
-        }
+        }, '', 0, findings, 'rounded');
       }
 
       // Spacing
       if (input.spacing) {
-        for (const [name, raw] of Object.entries(input.spacing)) {
+        const isCollision = buildCollisionGuard('spacing', findings);
+        forEachLeaf(input.spacing, (name, raw) => {
+          if (isCollision(name)) return;
           if (isParseableDimension(raw)) {
             const resolved = parseDimension(raw);
             spacing.set(name, resolved);
             symbolTable.set(`spacing.${name}`, resolved);
-          } else {
+          } else if (typeof raw === 'string') {
             symbolTable.set(`spacing.${name}`, raw);
           }
-        }
+        }, '', 0, findings, 'spacing');
       }
 
       // Elevation — semantic shadow tokens (resting / raised / overlay / modal).
@@ -209,71 +229,27 @@ export class ModelHandler implements ModelSpec {
         ? parsePages(input.pages, findings)
         : undefined;
 
-      // ── Phase 2: Resolve chained color references ──────────────────
-      // Iterate color entries that are still raw references and resolve them
-      if (input.colors) {
-        for (const [name, raw] of Object.entries(input.colors)) {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
-            if (resolved !== null && typeof resolved === 'object' && 'type' in resolved && resolved.type === 'color') {
-              colors.set(name, resolved as ResolvedColor);
-              symbolTable.set(`colors.${name}`, resolved);
-            }
-          }
-        }
-      }
+      // ── Phase 2: Resolve chained token references ──────────────────
+      // Iterate the symbol table directly (not re-walking raw input) so that
+      // Phase 1 collision decisions are never overwritten and nested token
+      // names resolve under their flattened dot paths.
+      for (const [key, value] of symbolTable) {
+        if (typeof value !== 'string' || !isTokenReference(value)) continue;
+        const resolved = resolveReference(symbolTable, value.slice(1, -1), new Set());
+        if (resolved === null || typeof resolved !== 'object' || !('type' in resolved)) continue;
 
-      // Resolve chained rounded references
-      if (input.rounded) {
-        for (const [name, raw] of Object.entries(input.rounded)) {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
-            if (
-              resolved !== null &&
-              typeof resolved === 'object' &&
-              'type' in resolved &&
-              resolved.type === 'dimension'
-            ) {
-              rounded.set(name, resolved as ResolvedDimension);
-              symbolTable.set(`rounded.${name}`, resolved);
-            }
-          }
-        }
-      }
-
-      // Resolve chained spacing references
-      if (input.spacing) {
-        for (const [name, raw] of Object.entries(input.spacing)) {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
-            if (
-              resolved !== null &&
-              typeof resolved === 'object' &&
-              'type' in resolved &&
-              resolved.type === 'dimension'
-            ) {
-              spacing.set(name, resolved as ResolvedDimension);
-              symbolTable.set(`spacing.${name}`, resolved);
-            }
-          }
-        }
-      }
-
-      // Resolve chained elevation references
-      if (input.elevation) {
-        for (const [name, raw] of Object.entries(input.elevation)) {
-          if (typeof raw === 'string' && isTokenReference(raw)) {
-            const resolved = resolveReference(symbolTable, raw.slice(1, -1), new Set());
-            if (
-              resolved !== null &&
-              typeof resolved === 'object' &&
-              'type' in resolved &&
-              resolved.type === 'shadow'
-            ) {
-              elevation.set(name, resolved as ResolvedShadow);
-              symbolTable.set(`elevation.${name}`, resolved);
-            }
-          }
+        if (key.startsWith('colors.') && resolved.type === 'color') {
+          colors.set(key.slice('colors.'.length), resolved as ResolvedColor);
+          symbolTable.set(key, resolved);
+        } else if (key.startsWith('rounded.') && resolved.type === 'dimension') {
+          rounded.set(key.slice('rounded.'.length), resolved as ResolvedDimension);
+          symbolTable.set(key, resolved);
+        } else if (key.startsWith('spacing.') && resolved.type === 'dimension') {
+          spacing.set(key.slice('spacing.'.length), resolved as ResolvedDimension);
+          symbolTable.set(key, resolved);
+        } else if (key.startsWith('elevation.') && resolved.type === 'shadow') {
+          elevation.set(key.slice('elevation.'.length), resolved as ResolvedShadow);
+          symbolTable.set(key, resolved);
         }
       }
 
@@ -446,6 +422,19 @@ export class ModelHandler implements ModelSpec {
         for (const [surface, value] of copy.casing) symbolTable.set(`copy.casing.${surface}`, value);
       }
 
+      const unknownKeys = [...input.sourceMap.keys()].filter(
+        key => !SCHEMA_KEY_SET.has(key)
+      );
+
+      const unknownKeyValues: Record<string, unknown> = {};
+      if (input.rawValues) {
+        for (const key of unknownKeys) {
+          if (Object.prototype.hasOwnProperty.call(input.rawValues, key)) {
+            unknownKeyValues[key] = input.rawValues[key];
+          }
+        }
+      }
+
       return {
         designSystem: {
           name: input.name,
@@ -474,6 +463,8 @@ export class ModelHandler implements ModelSpec {
           layoutRules,
           templates,
           pages,
+          unknownKeys,
+          unknownKeyValues,
         },
         findings,
       };
@@ -816,20 +807,37 @@ function resolveComponentValue(
 /**
  * Parse a CSS color string into a ResolvedColor with sRGB channels and
  * WCAG luminance. Supports hex, rgb/rgba, hsl/hsla, oklch, oklab, lab, and
- * color(display-p3 …). Throws if the input is not a recognized color —
- * call `isValidColor` first when validating user input.
+ * color(display-p3 …) natively, with a generic CSS fallback for named
+ * colors, hwb(), lch(), and color-mix(). Throws if the input is not a
+ * recognized color — call `isValidColor` first when validating user input.
  */
 export function parseColor(raw: string): ResolvedColor {
   const result = parseColorString(raw);
-  if (!result) throw new Error(`Invalid color: ${raw}`);
-  return result;
+  if (result) return result;
+  const viaCss = parseCssColor(raw);
+  if (!viaCss) throw new Error(`Invalid color: ${raw}`);
+  return { type: 'color', format: 'css', raw, ...viaCss };
 }
 
 /**
  * Parse a dimension string like "42px" or "1.5rem".
  */
-function parseDimension(raw: string): ResolvedDimension {
-  const parts = parseDimensionParts(raw);
+function parseDimension(raw: unknown): ResolvedDimension {
+  // Defensive type guard – prevents "raw.match is not a function" crash
+  // and provides a clear error message for unexpected input types.
+  if (typeof raw !== 'string') {
+    throw new Error(
+      `parseDimension expected a string, got ${typeof raw}. ` +
+      `This usually indicates a malformed token in your design file.`,
+    );
+  }
+  const value = raw.trim();
+  if (value === '') {
+    throw new Error(
+      'parseDimension received an empty string. Please provide a valid dimension (e.g., "16px", "1.5rem").',
+    );
+  }
+  const parts = parseDimensionParts(value);
   if (!parts) {
     throw new Error(`Invalid dimension: ${raw}`);
   }
@@ -913,7 +921,94 @@ function parseTypography(props: Record<string, string | number>, path: string, f
     }
   }
 
+  // Surface typography sub-properties that aren't part of the schema: they are
+  // silently dropped (never resolved or emitted), so warn rather than ignore —
+  // mirroring how unknown component sub-tokens are reported.
+  for (const key of Object.keys(props)) {
+    if (!TYPOGRAPHY_PROP_SET.has(key)) {
+      findings.push({
+        severity: 'warning',
+        path: `${path}.${key}`,
+        message: `'${key}' is not a recognized typography property. Valid properties: ${VALID_TYPOGRAPHY_PROPS.join(', ')}.`,
+      });
+    }
+  }
+
   return result;
+}
+
+/**
+ * Returns a predicate that detects token name collisions within a single
+ * token category (colors, rounded, spacing). Call once per category; the
+ * returned function tracks state via closure.
+ *
+ * Returns true (and pushes a finding) when the candidate name collides with
+ * an already-registered key, so callers can skip it with a simple `if
+ * (isCollision(name)) return;`.
+ */
+function buildCollisionGuard(
+  category: string,
+  findings: Finding[],
+): (name: string) => boolean {
+  const seenKeys = new Set<string>();
+  const seenNormalized = new Map<string, string>();
+  return (name: string): boolean => {
+    const normalized = name.replace(/\./g, '-');
+    if (seenKeys.has(name)) {
+      findings.push({
+        severity: 'error',
+        path: `${category}.${name}`,
+        message: `Duplicate token path '${category}.${name}' detected.`,
+      });
+      return true;
+    }
+    if (seenNormalized.has(normalized)) {
+      findings.push({
+        severity: 'error',
+        path: `${category}.${name}`,
+        message: `Grouped ${category} token flattens to '${normalized}', which is already defined.`,
+      });
+      return true;
+    }
+    seenKeys.add(name);
+    seenNormalized.set(normalized, name);
+    return false;
+  };
+}
+
+/**
+ * Recursively iterate over an object and call a function for each leaf node.
+ * Leaf node paths are dot-separated (e.g. "background.light").
+ */
+function forEachLeaf(
+  obj: Record<string, unknown>,
+  fn: (path: string, value: unknown) => void,
+  prefix = '',
+  depth = 0,
+  findings?: Finding[],
+  rootPath?: string,
+): void {
+  if (depth > MAX_TOKEN_NESTING_DEPTH) {
+    if (findings && rootPath) {
+      // Check if we've already reported this rootPath to avoid spamming
+      if (!findings.some((f) => f.path === rootPath && f.message.includes('nesting depth'))) {
+        findings.push({
+          severity: 'error',
+          path: rootPath,
+          message: `Token nesting depth exceeds maximum allowed depth of ${MAX_TOKEN_NESTING_DEPTH}.`,
+        });
+      }
+    }
+    return;
+  }
+  for (const [key, value] of Object.entries(obj)) {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      forEachLeaf(value as Record<string, unknown>, fn, fullPath, depth + 1, findings, rootPath);
+    } else {
+      fn(fullPath, value);
+    }
+  }
 }
 
 /**
@@ -1934,7 +2029,7 @@ function parsePages(
       continue;
     }
     const page: PageDef = { pattern, template: tpl };
-    const regionsRaw = (entry as Record<string, unknown>)['regions'];
+    const regionsRaw = (entry as unknown as Record<string, unknown>)['regions'];
     if (Array.isArray(regionsRaw)) {
       page.regions = regionsRaw.filter((s): s is string => typeof s === 'string');
     }

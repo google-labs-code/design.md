@@ -754,4 +754,168 @@ describe('ModelHandler', () => {
       expect(result.designSystem.symbolTable.get('voice.warmth')).toBe('4');
     });
   });
+  describe('numeric component property values', () => {
+    it('does not crash when fontWeight is a bare number', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#000000' },
+        components: {
+          'button-primary': {
+            backgroundColor: '{colors.primary}',
+            fontWeight: 600 as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button-primary');
+      expect(btn).toBeDefined();
+      expect(btn?.properties.get('fontWeight') as unknown).toBe('600');
+    });
+
+    it('stores numeric fontWeight value as-is in component properties', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'heading': {
+            fontWeight: 700 as unknown as string,
+          },
+        },
+      }));
+      const heading = result.designSystem.components.get('heading');
+      expect(heading?.properties.get('fontWeight') as unknown).toBe('700');
+    });
+
+    it('does not crash when borderWidth is a bare number', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          'card': {
+            borderWidth: 1 as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const card = result.designSystem.components.get('card');
+      expect(card?.properties.get('borderWidth') as unknown).toBe('1');
+    });
+
+    it('handles mixed numeric and string props in same component without crashing', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        spacing: { md: '16px' },
+        components: {
+          'button': {
+            fontWeight: 600 as unknown as string,
+            backgroundColor: '{colors.primary}',
+            padding: '{spacing.md}',
+            borderRadius: '4px',
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('fontWeight') as unknown).toBe('600');
+    });
+  });
+
+  describe('non-string component property values (Issue #75)', () => {
+    it('does not crash when a component property is a float (opacity: 0.9)', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#FF0000', 'on-primary': '#FFFFFF' },
+        components: {
+          button: {
+            backgroundColor: '{colors.primary}',
+            textColor: '{colors.on-primary}',
+            opacity: 0.9 as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const btn = result.designSystem.components.get('button');
+      expect(btn?.properties.get('opacity') as unknown).toBe('0.9');
+    });
+
+    it('does not crash when a component property is a boolean (visible: true)', () => {
+      const result = handler.execute(makeParsed({
+        components: {
+          banner: {
+            visible: true as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const banner = result.designSystem.components.get('banner');
+      expect(banner?.properties.get('visible') as unknown).toBe('true');
+    });
+
+    it('handles mixed number, boolean, and string props without crashing', () => {
+      const result = handler.execute(makeParsed({
+        colors: { primary: '#ff0000' },
+        components: {
+          card: {
+            backgroundColor: '{colors.primary}',
+            borderRadius: '8px',
+            fontWeight: 500 as unknown as string,
+            opacity: 0.85 as unknown as string,
+            visible: true as unknown as string,
+            disabled: false as unknown as string,
+          },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      const card = result.designSystem.components.get('card');
+      expect(card?.properties.get('fontWeight') as unknown).toBe('500');
+      expect(card?.properties.get('opacity') as unknown).toBe('0.85');
+      expect(card?.properties.get('visible') as unknown).toBe('true');
+      expect(card?.properties.get('disabled') as unknown).toBe('false');
+    });
+  });
+
+  describe('token nesting depth limit', () => {
+    it('emits error when token nesting depth exceeds 20', () => {
+      // 22 levels: Level 1..21 are objects, Level 22 is a leaf.
+      // forEachLeaf will be called for Level 22 with depth 21.
+      let obj: any = '#ffffff';
+      for (let i = 22; i >= 1; i--) {
+        obj = { [`level${i}`]: obj };
+      }
+
+      const result = handler.execute(makeParsed({
+        colors: obj,
+      }));
+      expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(true);
+      expect(result.findings.find((f) => f.message.includes('nesting depth'))?.path).toBe('colors');
+    });
+
+    it('allows nesting up to depth 20', () => {
+      // 21 levels: Level 1..20 are objects, Level 21 is a leaf.
+      // forEachLeaf will be called for Level 21 with depth 20.
+      let obj: any = '#ffffff';
+      for (let i = 21; i >= 1; i--) {
+        obj = { [`level${i}`]: obj };
+      }
+
+      const result = handler.execute(makeParsed({
+        colors: obj,
+      }));
+      expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(false);
+      // Construct the expected path: level1.level2...level21
+      const path = Array.from({ length: 21 }, (_, i) => `level${i + 1}`).join('.');
+      expect(result.designSystem.colors.has(path)).toBe(true);
+    });
+  });
+
+  describe('color-mix nesting depth limit', () => {
+    it('rejects pathologically nested color-mix as an invalid color without collapsing the model', () => {
+      let nested = 'red';
+      for (let i = 0; i < 50; i++) nested = `color-mix(in srgb, ${nested}, blue)`;
+      const result = handler.execute(makeParsed({
+        colors: { ok: '#ffffff', deep: nested },
+      }));
+      // The over-deep color resolves to "invalid" (a precise per-token error),
+      // not a thrown RangeError that collapses the whole model build.
+      expect(result.designSystem.colors.has('deep')).toBe(false);
+      expect(result.findings.some(f => f.path === 'colors.deep' && f.severity === 'error')).toBe(true);
+      // Other valid tokens are unaffected.
+      expect(result.designSystem.colors.get('ok')?.hex).toBe('#ffffff');
+    });
+  });
+
 });

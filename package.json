@@ -4,6 +4,7 @@
   "workspaces": [
     "packages/*"
   ],
+  "packageManager": "bun@1.3.9",
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",

@@ -116,7 +116,7 @@ components:
     const content = `---
 colors:
   primary: "#647D66"
-  bad-color: red
+  bad-color: not-a-color
 
 components:
   card:
@@ -128,5 +128,39 @@ components:
 
     // Should have errors: invalid color + broken reference
     expect(result.summary.errors).toBeGreaterThanOrEqual(2);
+  });
+
+  it('warns on a misspelled top-level key via the default rule set', () => {
+    const content = `---
+name: Example
+colours:
+  primary: "#647D66"
+---`;
+
+    const result = lint(content);
+
+    const finding = result.findings.find(
+      f => f.message === 'Unknown key "colours" — did you mean "colors"?'
+    );
+    expect(finding).toBeDefined();
+    expect(finding!.severity).toBe('warning');
+    expect(finding!.path).toBe('colours');
+  });
+
+  it('stays silent for custom extension keys that are not close to any known key', () => {
+    const content = `---
+name: Example
+icons:
+  search: "search-icon.svg"
+motion:
+  fast: "100ms"
+---`;
+
+    const result = lint(content);
+
+    const unknownKeyFindings = result.findings.filter(f =>
+      f.message.startsWith('Unknown key ')
+    );
+    expect(unknownKeyFindings).toEqual([]);
   });
 });

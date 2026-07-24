@@ -227,6 +227,7 @@ export interface RawCopy {
 
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
+  version?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
   colors?: Record<string, RawColorValue> | undefined;
@@ -286,6 +287,8 @@ export interface ParsedDesignSystem {
   sections?: string[] | undefined;
   /** Full content of each section, including heading and body. */
   documentSections?: DocumentSection[] | undefined;
+  /** Raw YAML values for all top-level keys (known and unknown), used by lint rules. */
+  rawValues?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -327,6 +330,32 @@ export interface DocumentSection {
    */
   codeBlockRanges: LineRange[];
 }
+
+/** Canonical top-level YAML keys per the DESIGN.md schema. */
+export const SCHEMA_KEYS = [
+  'version',
+  'name',
+  'description',
+  'colors',
+  'typography',
+  'rounded',
+  'spacing',
+  'elevation',
+  'motion',
+  'iconography',
+  'components',
+  'componentRegistry',
+  'voice',
+  'copy',
+  'themes',
+  'breakpoints',
+  'grid',
+  'layoutRules',
+  'templates',
+  'pages',
+] as const;
+
+export type SchemaKey = typeof SCHEMA_KEYS[number];
 
 // ── RESULT ─────────────────────────────────────────────────────────
 export type ParserResult =

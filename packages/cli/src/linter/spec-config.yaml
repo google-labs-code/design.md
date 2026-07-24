@@ -18,10 +18,33 @@
 
 version: alpha
 
+# Performance and safety limits for the model handler.
+limits:
+  max_token_nesting_depth: 20
+  max_reference_depth: 10
+
 units:
   - px
   - em
   - rem
+
+types:
+  Color:
+    description: A color value is any valid CSS color string.
+    formats:
+      - "Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`"
+      - "Named colors: `red`, `cornflowerblue`, `transparent`"
+      - "Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`"
+      - "Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`, `color(display-p3 ...)`"
+      - "Mixing: `color-mix(in srgb, ...)`"
+    note: All color values are internally converted to sRGB for WCAG contrast checking (wide-gamut inputs are clamped for that purpose). The original notation is preserved for display and export when the target supports it (e.g., Tailwind v4).
+    recommendation: Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broad tooling support.
+  Dimension:
+    description: A dimension value is a string with a unit suffix.
+    units:
+      - px
+      - em
+      - rem
 
 sections:
   - canonical: Overview

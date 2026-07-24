@@ -14,7 +14,8 @@
 
 import { defineCommand } from 'citty';
 import { lint } from '../linter/index.js';
-import { readInput, formatOutput, diffMaps, serializeDesignSystem } from '../utils.js';
+import { readInput, formatOutput, diffMaps, FileReadError } from '../utils.js';
+import type { ComponentDef } from '../linter/model/spec.js';
 
 export default defineCommand({
   meta: {
@@ -39,8 +40,18 @@ export default defineCommand({
     },
   },
   async run({ args }) {
-    const beforeContent = await readInput(args.before);
-    const afterContent = await readInput(args.after);
+    let beforeContent: string, afterContent: string;
+    try {
+      beforeContent = await readInput(args.before);
+      afterContent = await readInput(args.after);
+    } catch (error) {
+      if (error instanceof FileReadError) {
+        process.stderr.write(`Error: ${error.friendlyMessage}\n`);
+        process.exitCode = 2;
+        return;
+      }
+      throw error;
+    }
 
     const beforeReport = lint(beforeContent);
     const afterReport = lint(afterContent);
@@ -51,6 +62,10 @@ export default defineCommand({
         typography: diffMaps(beforeReport.designSystem.typography, afterReport.designSystem.typography),
         rounded: diffMaps(beforeReport.designSystem.rounded, afterReport.designSystem.rounded),
         spacing: diffMaps(beforeReport.designSystem.spacing, afterReport.designSystem.spacing),
+        components: diffMaps(
+          serializeComponents(beforeReport.designSystem.components),
+          serializeComponents(afterReport.designSystem.components),
+        ),
       },
       findings: {
         before: beforeReport.summary,
@@ -68,3 +83,11 @@ export default defineCommand({
     process.exitCode = diff.regression ? 1 : 0;
   },
 });
+
+function serializeComponents(components: Map<string, ComponentDef>): Map<string, Record<string, unknown>> {
+  const result = new Map<string, Record<string, unknown>>();
+  for (const [name, comp] of components) {
+    result.set(name, Object.fromEntries(comp.properties));
+  }
+  return result;
+}

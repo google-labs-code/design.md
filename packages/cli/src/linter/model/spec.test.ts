@@ -24,8 +24,12 @@ describe('isValidColor', () => {
     'oklab(0.5 0 0)',
     'lab(50 0 0)',
     'color(display-p3 1 0.5 0)',
+    'red', 'blue',
+    'hwb(120 0% 0%)',
+    'lch(50% 30 120)',
+    'color-mix(in srgb, red 50%, blue 50%)',
   ];
-  const invalidColors = ['red', 'blue', '#gg0000', '#12345', '647D66', '#1234567', '', '#', 'oklch()', 'lab(50)'];
+  const invalidColors = ['#gg0000', '#12345', '647D66', '#1234567', '', '#', 'oklch()', 'lab(50)'];
 
   it.each(validColors)('accepts valid color: %s', (color: string) => {
     expect(isValidColor(color)).toBe(true);
@@ -86,6 +90,15 @@ describe('parseDimensionParts', () => {
   it('returns null for CSS keywords', () => {
     expect(parseDimensionParts('auto')).toBeNull();
     expect(parseDimensionParts('inherit')).toBeNull();
+  });
+
+  it('returns null for oversized values without pathological backtracking', () => {
+    // Length-capped: an absurdly long value is rejected immediately rather than
+    // triggering quadratic regex backtracking.
+    expect(parseDimensionParts('1'.repeat(100000))).toBeNull();
+    expect(parseDimensionParts('1'.repeat(100000) + 'px')).toBeNull();
+    // Legitimate dimensions well under the cap still parse.
+    expect(parseDimensionParts('999999.999999px')).toEqual({ value: 999999.999999, unit: 'px' });
   });
 });
 

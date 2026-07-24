@@ -14,16 +14,39 @@
 
 import { readFileSync } from 'node:fs';
 
+export type StdinStream = AsyncIterable<Buffer | string> & { isTTY?: boolean };
+
+export class FileReadError extends Error {
+  readonly code = 'FILE_READ_ERROR' as const;
+  constructor(public readonly filePath: string, cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause), { cause });
+    this.name = 'FileReadError';
+  }
+
+  get friendlyMessage(): string {
+    const errCode = (this.cause as { code?: string })?.code;
+    if (errCode === 'ENOENT') {
+      return `"${this.filePath}" not found. Create a DESIGN.md file or pass "-" to read from stdin.`;
+    }
+    if (errCode === 'EACCES') {
+      return `"${this.filePath}" could not be read: permission denied.`;
+    }
+    return `"${this.filePath}" could not be read: ${this.message}`;
+  }
+}
+
 /**
  * Read input from a file path or stdin ("-").
- * Never throws — returns the content string or exits with error JSON.
+ * Throws FileReadError if the file cannot be read.
  */
-export async function readInput(filePath: string): Promise<string> {
+export async function readInput(filePath: string, stdin: StdinStream = process.stdin): Promise<string> {
   if (filePath === '-') {
-    // Read from stdin
+    if (stdin.isTTY) {
+      process.stderr.write('Reading from stdin… Press Ctrl+D when done.\n');
+    }
     const chunks: Buffer[] = [];
-    for await (const chunk of process.stdin) {
-      chunks.push(chunk as Buffer);
+    for await (const chunk of stdin) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     }
     return Buffer.concat(chunks).toString('utf-8');
   }
@@ -31,13 +54,7 @@ export async function readInput(filePath: string): Promise<string> {
   try {
     return readFileSync(filePath, 'utf-8');
   } catch (error) {
-    console.error(JSON.stringify({
-      error: 'FILE_READ_ERROR',
-      message: error instanceof Error ? error.message : String(error),
-      path: filePath,
-    }));
-    process.exitCode = 2;
-    throw error; // bubbles up, but process will exit with code 2 if uncaught
+    throw new FileReadError(filePath, error);
   }
 }
 
@@ -52,25 +69,72 @@ export function formatOutput(data: unknown, args: { format?: string }): string {
 }
 
 function formatAsMarkdown(data: unknown): string {
-  if (typeof data === 'object' && data !== null) {
-    const obj = data as Record<string, unknown>;
-    let result = '';
-    if (obj.summary) {
-      result += `# ${obj.summary}\n\n`;
-    }
-    if (obj.details) {
-      result += `## Details\n\n`;
-      result += formatAsText(obj.details);
-      result += '\n';
-    }
-    if (obj.patches && Array.isArray(obj.patches) && obj.patches.length > 0) {
-      result += `## Patches\n\n`;
-      result += formatAsText(obj.patches);
-      result += '\n';
-    }
-    return result || formatAsText(data);
+  if (typeof data !== 'object' || data === null) {
+    return String(data);
   }
-  return String(data);
+
+  const obj = data as Record<string, unknown>;
+
+  // Lint output: { findings: [...], summary: { errors, warnings, infos } }
+  if (isLintOutput(obj)) {
+    return formatLintAsMarkdown(obj);
+  }
+
+  // Legacy fixer/diff shape: { summary: string, details?, patches? }
+  let result = '';
+  if (typeof obj.summary === 'string') {
+    result += `# ${obj.summary}\n\n`;
+  }
+  if (obj.details) {
+    result += `## Details\n\n`;
+    result += formatAsText(obj.details);
+    result += '\n';
+  }
+  if (obj.patches && Array.isArray(obj.patches) && obj.patches.length > 0) {
+    result += `## Patches\n\n`;
+    result += formatAsText(obj.patches);
+    result += '\n';
+  }
+  return result || formatAsText(data);
+}
+
+interface LintSummary {
+  errors: number;
+  warnings: number;
+  infos: number;
+}
+
+interface LintFinding {
+  severity: string;
+  message: string;
+  path?: string;
+}
+
+function isLintOutput(obj: Record<string, unknown>): boolean {
+  if (!Array.isArray(obj.findings)) return false;
+  if (typeof obj.summary !== 'object' || obj.summary === null) return false;
+  const s = obj.summary as Record<string, unknown>;
+  return typeof s.errors === 'number'
+    && typeof s.warnings === 'number'
+    && typeof s.infos === 'number';
+}
+
+function formatLintAsMarkdown(obj: Record<string, unknown>): string {
+  const summary = obj.summary as LintSummary;
+  const findings = obj.findings as LintFinding[];
+
+  let result = '# Lint Report\n\n';
+  result += `**${summary.errors} errors**, **${summary.warnings} warnings**, **${summary.infos} infos**\n`;
+
+  if (findings.length > 0) {
+    result += '\n## Findings\n\n';
+    for (const f of findings) {
+      const location = f.path ? ` \`${f.path}\`:` : ':';
+      result += `- **${f.severity}**${location} ${f.message}\n`;
+    }
+  }
+
+  return result;
 }
 
 function formatAsText(data: unknown, indent = 0): string {

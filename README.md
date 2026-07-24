@@ -136,7 +136,7 @@ components:
 
 | Type | Format | Example |
 |:-----|:-------|:--------|
-| Color | hex (sRGB) or any CSS color function: `rgb()`, `hsl()`, `oklch()`, `oklab()`, `lab()`, `color(display-p3 …)` | `"#1A1C1E"`, `"oklch(70% 0.15 200)"` |
+| Color | any CSS color: hex, named colors, `rgb()`, `hsl()`, `hwb()`, `oklch()`, `oklab()`, `lab()`, `lch()`, `color(display-p3 …)`, `color-mix()` | `"#1A1C1E"`, `"oklch(70% 0.15 200)"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
 | Token Reference | `{path.to.token}` | `{colors.primary}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
@@ -203,7 +203,47 @@ Then run the CLI from the repo root via the `cli` script defined in `package.jso
 bun run cli lint DESIGN.md
 ```
 
+On **Windows/PowerShell**, this direct form can produce no output (or open
+`DESIGN.md` in your Markdown editor) because the `.md` suffix in the `design.md`
+bin name collides with the Windows Markdown file association during command
+resolution. Run the dot-free `designmd` alias instead — point `npx` at the
+package with `-p`, then invoke `designmd`:
+
+```bash
+npx -p @google/design.md designmd lint DESIGN.md
+```
+
+The `designmd` shim resolves to the same entrypoint and works identically across
+all platforms.
+
+#### `npm error ENOVERSIONS` (“No versions available for @google/design.md”)
+
+The CLI is published as [`@google/design.md` on npm](https://www.npmjs.com/package/@google/design.md). `ENOVERSIONS` almost always means npm is not querying the public registry (custom `registry=` in `.npmrc`, a corporate mirror that has not synced this package, or a misconfigured `@google:registry` for the `@google` scope).
+
+Check your effective registry:
+
+```bash
+npm config get registry
+```
+
+For a normal install from the internet it should be `https://registry.npmjs.org/`. After fixing config, retry with `npm cache clean --force` if a stale 404 was cached.
+
 All commands accept a file path or `-` for stdin. Output defaults to JSON.
+
+> **Windows tip**: when invoking the CLI directly from a `package.json` script
+> (rather than through `npx`), use the `designmd` alias instead of `design.md`.
+> The `.md` suffix in the original bin name confuses Windows command resolution
+> with the file association for Markdown files. The `designmd` shim resolves to
+> the same entrypoint and works identically across all platforms.
+>
+> ```jsonc
+> // package.json
+> {
+>   "scripts": {
+>     "design:lint": "designmd lint DESIGN.md"
+>   }
+> }
+> ```
 
 ### `lint`
 
@@ -257,11 +297,13 @@ Exit code `1` if regressions are detected (more errors or warnings in the "after
 
 ### `export`
 
-Export DESIGN.md tokens to other formats (tailwind, dtcg).
+Export DESIGN.md tokens to other formats.
 
 ```bash
-bun run cli export --format tailwind DESIGN.md > theme.css
+bun run cli export --format css-tailwind DESIGN.md > theme.css
+bun run cli export --format json-tailwind DESIGN.md > tailwind.theme.json
 bun run cli export --format dtcg DESIGN.md > tokens.json
+bun run cli export --format css-vars DESIGN.md > tokens.css
 ```
 
 The `tailwind` format emits a Tailwind v4 `@theme` stylesheet — Tailwind v4 deprecates `tailwind.config.js` in favor of CSS-first configuration via `@theme { --color-*; --font-*; ... }`. Import the generated file from your app's main stylesheet alongside `@import "tailwindcss";`.
@@ -269,7 +311,16 @@ The `tailwind` format emits a Tailwind v4 `@theme` stylesheet — Tailwind v4 de
 | Option | Type | Default | Description |
 |:-------|:-----|:--------|:------------|
 | `file` | positional | required | Path to DESIGN.md (or `-` for stdin) |
-| `--format` | `tailwind` \| `dtcg` | required | Output format |
+| `--format` | `json-tailwind` \| `css-tailwind` \| `tailwind` \| `dtcg` | required | Output format |
+
+| Format | Output | Description |
+|:-------|:-------|:------------|
+| `json-tailwind` | JSON | Tailwind v3 `theme.extend` config object |
+| `css-tailwind` | CSS | Tailwind v4 `@theme { ... }` block with CSS custom properties |
+| `tailwind` | JSON | Alias for `json-tailwind` |
+| `dtcg` | JSON | W3C Design Tokens Format Module |
+
+Exit code `0` on a successful export (regardless of any lint findings in the source — run `lint` to gate on those), `1` on an invalid `--format` or an emitter error, and `2` if the input file cannot be read.
 
 ### `spec`
 
@@ -289,7 +340,7 @@ bun run cli spec --rules-only --format json
 
 ## Linting Rules
 
-The linter runs seven rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
+The linter runs nine rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
 
 | Rule | Severity | What it checks |
 |:-----|:---------|:---------------|
@@ -301,6 +352,7 @@ The linter runs seven rules against a parsed DESIGN.md. Each rule produces findi
 | `missing-sections` | info | Optional sections (spacing, rounded) absent when other tokens exist |
 | `missing-typography` | warning | Colors are defined but no typography tokens exist — agents will use default fonts |
 | `section-order` | warning | Sections appear out of the canonical order defined by the spec |
+| `unknown-key` | warning | A top-level YAML key looks like a typo of a known schema key (e.g. `colours:` → `colors:`); custom extension keys stay silent |
 
 ### Programmatic API
 
@@ -320,7 +372,9 @@ console.log(report.designSystem);   // Parsed DesignSystemState
 
 DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.designtokens.org/). The `export` command converts tokens to other formats:
 
-- **Tailwind v4 `@theme` CSS** — `bun run cli export --format tailwind DESIGN.md`
+- **Tailwind v4 theme (CSS)** — `bun run cli export --format css-tailwind DESIGN.md` — emits a shadcn-style `:root` + `@theme inline` stylesheet. `--format tailwind` is a backwards-compatible alias.
+- **Tailwind v3 config (JSON)** — `bun run cli export --format json-tailwind DESIGN.md` — emits a `theme.extend` JSON object for `tailwind.config.js`.
+- **CSS custom properties** — `bun run cli export --format css-vars DESIGN.md` — emits a plain `:root { --token: value }` stylesheet.
 - **DTCG tokens.json** ([W3C Design Tokens Format Module](https://tr.designtokens.org/format/)) — `bun run cli export --format dtcg DESIGN.md`
 
 ## Status

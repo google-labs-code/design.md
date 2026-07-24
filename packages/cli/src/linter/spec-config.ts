@@ -84,9 +84,22 @@ const ComponentExampleValueSchema: z.ZodType<unknown> = z.lazy(() =>
   ])
 );
 
+const TypeDefSchema = z.object({
+  description: z.string(),
+  formats: z.array(z.string()).optional(),
+  units: z.array(z.string()).optional(),
+  note: z.string().optional(),
+  recommendation: z.string().optional(),
+});
+
 const ConfigSchema = z.object({
   version: z.string(),
+  limits: z.object({
+    max_token_nesting_depth: z.number().default(20),
+    max_reference_depth: z.number().default(10),
+  }).default({}),
   units: z.array(z.string()).min(1),
+  types: z.record(z.string(), TypeDefSchema),
   sections: z.array(z.object({
     canonical: z.string(),
     aliases: z.array(z.string()).optional(),
@@ -205,6 +218,19 @@ export interface ComponentStateDef {
   description?: string | undefined;
 }
 
+export interface TypeDef {
+  /** One-sentence definition for the type. */
+  description: string;
+  /** Accepted formats rendered as a bullet list in the generated spec. */
+  formats?: readonly string[] | undefined;
+  /** Accepted units for dimensional types. */
+  units?: readonly string[] | undefined;
+  /** Additional normative or implementation note. */
+  note?: string | undefined;
+  /** Non-normative authoring recommendation. */
+  recommendation?: string | undefined;
+}
+
 // ── Constant exports ─────────────────────────────────────────────────
 // These are eagerly initialized from the lazy singleton on first import.
 // The singleton cache ensures the YAML file is read exactly once.
@@ -214,9 +240,16 @@ const config = getSpecConfig();
 /** Current spec version. Appears in the schema and the front matter example. */
 export const SPEC_VERSION = config.version;
 
+/** Performance and safety limits for the model handler. */
+export const MAX_TOKEN_NESTING_DEPTH = config.limits.max_token_nesting_depth;
+export const MAX_REFERENCE_DEPTH = config.limits.max_reference_depth;
+
 /** Units the spec formally supports for Dimension values. */
 export const STANDARD_UNITS = config.units;
 export type StandardUnit = (typeof STANDARD_UNITS)[number];
+
+/** Primitive type definitions rendered into the generated spec. */
+export const SPEC_TYPES: Record<string, TypeDef> = config.types;
 
 export const SECTIONS = config.sections;
 
@@ -338,7 +371,10 @@ export const VALID_COMPONENT_STATES = COMPONENT_STATES.map(s => s.name);
 /** All config values bundled as a single object for renderer injection. */
 export interface SpecConfig {
   SPEC_VERSION: typeof SPEC_VERSION;
+  MAX_TOKEN_NESTING_DEPTH: typeof MAX_TOKEN_NESTING_DEPTH;
+  MAX_REFERENCE_DEPTH: typeof MAX_REFERENCE_DEPTH;
   STANDARD_UNITS: typeof STANDARD_UNITS;
+  SPEC_TYPES: typeof SPEC_TYPES;
   SECTIONS: typeof SECTIONS;
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
@@ -362,7 +398,10 @@ export interface SpecConfig {
 /** Build a SpecConfig from the module's exports. */
 export const SPEC_CONFIG: SpecConfig = {
   SPEC_VERSION,
+  MAX_TOKEN_NESTING_DEPTH,
+  MAX_REFERENCE_DEPTH,
   STANDARD_UNITS,
+  SPEC_TYPES,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,

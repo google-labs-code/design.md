@@ -20,6 +20,7 @@ import {
   VALID_COMPONENT_SUB_TOKENS as _VALID_COMPONENT_SUB_TOKENS,
 } from '../spec-config.js';
 import { isParseableColor } from './color.js';
+import { parseCssColor } from './color-parser.js';
 
 export const SeveritySchema = z.enum(['error', 'warning', 'info']);
 export type Severity = z.infer<typeof SeveritySchema>;
@@ -32,8 +33,12 @@ export interface Finding {
 
 // ── RESOLVED VALUE TYPES ───────────────────────────────────────────
 
-/** The CSS color notation a token was authored in. */
-export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch' | 'oklab' | 'lab' | 'p3';
+/**
+ * The CSS color notation a token was authored in. `'css'` covers notations
+ * parsed via the generic CSS color fallback (named colors, hwb(), lch(),
+ * color-mix()) where the specific function is not tracked.
+ */
+export type ColorFormat = 'hex' | 'rgb' | 'hsl' | 'oklch' | 'oklab' | 'lab' | 'p3' | 'css';
 
 export interface ResolvedColor {
   type: 'color';
@@ -430,6 +435,10 @@ export interface DesignSystemState {
   templates?: Map<string, TemplateDef> | undefined;
   /** Page → template assignments. Keys are route patterns. */
   pages?: Map<string, PageDef> | undefined;
+  /** Top-level YAML keys that are not part of the known schema */
+  unknownKeys?: string[] | undefined;
+  /** Raw YAML values for unknown top-level keys, keyed by the unknown key name */
+  unknownKeyValues?: Record<string, unknown> | undefined;
 }
 
 export interface ColorIndexEntry {
@@ -512,6 +521,7 @@ export const ModelErrorCode = z.enum([
   'UNRESOLVED_REFERENCE',
   'CIRCULAR_REFERENCE',
   'REFERENCE_TO_NON_PRIMITIVE',
+  'NESTING_DEPTH_EXCEEDED',
   'UNKNOWN_ERROR',
 ]);
 
@@ -553,6 +563,13 @@ const CSS_UNITS = new Set([
 ]);
 
 /**
+ * Upper bound on a dimension string's length. Real CSS dimensions are a handful
+ * of characters; capping the length keeps validation linear and prevents
+ * pathological regex backtracking on oversized, attacker-supplied values.
+ */
+const MAX_DIMENSION_LENGTH = 64;
+
+/**
  * Parse a dimension string into its numeric value and unit suffix.
  * Accepts an optional leading sign and optional decimal (`.5rem` is valid).
  * Returns null for non-dimension strings (bare numbers, keywords like `auto`)
@@ -560,6 +577,7 @@ const CSS_UNITS = new Set([
  */
 export function parseDimensionParts(raw: unknown): { value: number; unit: string } | null {
   if (typeof raw !== 'string') return null;
+  if (raw.length > MAX_DIMENSION_LENGTH) return null;
   const match = raw.match(/^(-?\d*\.?\d+)([a-zA-Z%]+)$/);
   if (!match) return null;
   const value = parseFloat(match[1]!);
@@ -569,10 +587,12 @@ export function parseDimensionParts(raw: unknown): { value: number; unit: string
 /**
  * Validate a CSS color string. Accepts hex (`#RGB`, `#RGBA`, `#RRGGBB`,
  * `#RRGGBBAA`), `rgb()`/`rgba()`, `hsl()`/`hsla()`, `oklch()`, `oklab()`,
- * `lab()`, and `color(display-p3 …)`. Non-strings safely return false.
+ * `lab()`, `lch()`, `hwb()`, `color(display-p3 …)`, `color-mix()`, and CSS
+ * named colors. Non-strings safely return false.
  */
 export function isValidColor(raw: unknown): boolean {
-  return isParseableColor(raw);
+  if (isParseableColor(raw)) return true;
+  return typeof raw === 'string' && parseCssColor(raw) !== null;
 }
 
 /**

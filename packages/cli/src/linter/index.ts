@@ -30,7 +30,9 @@ export type {
 export type { DocumentSection, LineRange, SuppressionDirective } from './parser/spec.js';
 export type { Finding, Severity } from './linter/spec.js';
 export type { TailwindEmitterResult, TailwindThemeExtend } from './tailwind/spec.js';
+export type { TailwindV4EmitterResult, TailwindV4ThemeData } from './tailwind/v4/spec.js';
 export type { DtcgEmitterResult, DtcgTokenFile } from './dtcg/spec.js';
+export type { CssVarsEmitterResult, CssVarDeclaration } from './css-vars/spec.js';
 
 // ── Advanced linting ───────────────────────────────────────────────
 export { runLinter, preEvaluate } from './linter/runner.js';
@@ -70,11 +72,17 @@ export {
   casingMismatchRule,
   reservedNameForm,
   reservedNameFormRule,
+  unknownKey,
+  tokenLikeIgnored,
 } from './linter/rules/index.js';
 export type { RuleDescriptor, RuleFinding } from './linter/rules/types.js';
 export { contrastRatio } from './model/handler.js';
 export { TailwindEmitterHandler } from './tailwind/handler.js';
 export { renderTailwindThemeCss } from './tailwind/css.js';
+export { TailwindV4EmitterHandler } from './tailwind/v4/handler.js';
+export { serializeToCss as serializeTailwindV4 } from './tailwind/v4/serialize.js';
 export { DtcgEmitterHandler } from './dtcg/handler.js';
+export { CssVarsEmitterHandler } from './css-vars/handler.js';
+export { serializeCssVars } from './css-vars/serialize.js';
 export { fixSectionOrder } from './fixer/handler.js';
 export type { FixerInput, FixerResult } from './fixer/spec.js';
