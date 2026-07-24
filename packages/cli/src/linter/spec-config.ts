@@ -169,6 +169,9 @@ export const RECOMMENDED_TOKENS = config.recommended_tokens;
 /** Canonical examples that appear in the generated spec document. */
 export const EXAMPLES = config.examples;
 
+/** Primitive type definitions (Color, Dimension, etc.) for the spec document. */
+export const PRIMITIVE_TYPES: Record<string, TypeDef> = config.types;
+
 // ── Derived constants ─────────────────────────────────────────────────
 
 /** Ordered list of canonical section names. */
@@ -207,6 +210,7 @@ export interface SpecConfig {
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
   EXAMPLES: typeof EXAMPLES;
+  PRIMITIVE_TYPES: typeof PRIMITIVE_TYPES;
 }
 
 /** Build a SpecConfig from the module's exports. */
@@ -222,4 +226,5 @@ export const SPEC_CONFIG: SpecConfig = {
   CORE_COLOR_ROLES,
   RECOMMENDED_TOKENS,
   EXAMPLES,
+  PRIMITIVE_TYPES,
 };

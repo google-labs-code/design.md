@@ -151,3 +151,26 @@ export function recommendedTokens(config: SpecConfig): string {
     })
     .join('\n\n');
 }
+
+/** Primitive type definitions (Color, Dimension, etc.) for the schema section. */
+export function typeDefinitions(config: SpecConfig, typeName?: string): string {
+  const entries = typeName
+    ? Object.entries(config.PRIMITIVE_TYPES).filter(([n]) => n === typeName)
+    : Object.entries(config.PRIMITIVE_TYPES);
+  return entries.map(([name, def]: [string, TypeDef]) => {
+    let block = `**${name}**: ${def.description}`;
+    if (def.formats?.length) {
+      block += '\n\n' + def.formats.map((f: string) => `- ${f}`).join('\n');
+    }
+    if (name === 'Dimension') {
+      block += ` Valid units are: ${config.STANDARD_UNITS.join(', ')}.`;
+    }
+    if (def.note) {
+      block += '\n\n' + def.note.trim();
+    }
+    if (def.recommendation) {
+      block += '\n\n' + def.recommendation.trim();
+    }
+    return block;
+  }).join('\n\n');
+}

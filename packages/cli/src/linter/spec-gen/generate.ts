@@ -50,6 +50,7 @@ async function main() {
     sectionOrderList: () => renderers.sectionOrderList(cfg),
     componentSubTokenList: () => renderers.componentSubTokenList(cfg),
     recommendedTokens: () => renderers.recommendedTokens(cfg),
+    typeDefinitions: (typeName?: string) => renderers.typeDefinitions(cfg, typeName),
   };
 
   const generated = await compileMdx(source, scope);

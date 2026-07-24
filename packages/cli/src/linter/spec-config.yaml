@@ -30,7 +30,7 @@ units:
 
 types:
   Color:
-    description: A color value is any valid CSS color string.
+    description: "A color value is any valid CSS color string. Supported formats include:"
     formats:
       - "Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`"
       - "Named colors: `red`, `cornflowerblue`, `transparent`"
@@ -40,7 +40,7 @@ types:
     note: All color values are internally converted to sRGB for WCAG contrast checking. The original format is preserved for display and export.
     recommendation: Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broad tooling support.
   Dimension:
-    description: A dimension value is a string with a unit suffix.
+    description: "A dimension value is a string with a unit suffix."
     units:
       - px
       - em
