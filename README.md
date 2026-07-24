@@ -139,8 +139,9 @@ Sections use `##` headings. They can be omitted, but those present must appear i
 | 4 | Layout | Layout & Spacing |
 | 5 | Elevation & Depth | Elevation |
 | 6 | Shapes | |
-| 7 | Components | |
-| 8 | Do's and Don'ts | |
+| 7 | Iconography | |
+| 8 | Components | |
+| 9 | Do's and Don'ts | |
 
 ### Component Tokens
 
