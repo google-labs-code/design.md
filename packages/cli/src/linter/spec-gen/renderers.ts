@@ -95,34 +95,29 @@ export function typographyPropertyList(config: SpecConfig): string {
   ).join('\n');
 }
 
-/** Primitive type definitions for the schema section. */
-export function typeDefinitions(config: SpecConfig): string {
-  return Object.entries(config.SPEC_TYPES)
-    .map(([name, typeDef]) => typeDefinition(name, typeDef))
-    .join('\n\n');
-}
-
-function typeDefinition(name: string, typeDef: TypeDef): string {
-  const lines = [`**${name}**: ${typeDef.description}`];
-
-  if (typeDef.formats?.length) {
-    lines.push('', 'Supported formats include:', '');
-    lines.push(...typeDef.formats.map(format => `- ${format}`));
-  }
-
-  if (typeDef.units?.length) {
-    lines.push('', `Valid units are: ${typeDef.units.join(', ')}.`);
-  }
-
-  if (typeDef.note) {
-    lines.push('', typeDef.note);
-  }
-
-  if (typeDef.recommendation) {
-    lines.push('', typeDef.recommendation);
-  }
-
-  return lines.join('\n');
+/** Primitive type definitions (Color, Dimension, etc.) for the schema section. */
+export function typeDefinitions(config: SpecConfig, typeName?: string): string {
+  const types = config.PRIMITIVE_TYPES || config.SPEC_TYPES;
+  const entries = typeName
+    ? Object.entries(types).filter(([n]) => n === typeName)
+    : Object.entries(types);
+  return entries.map(([name, def]: [string, TypeDef]) => {
+    let block = `**${name}**: ${def.description}`;
+    if (def.formats?.length) {
+      block += '\n\n' + def.formats.map((f: string) => `- ${f}`).join('\n');
+    }
+    if (name === 'Dimension' || def.units?.length) {
+      const units = def.units?.length ? def.units : config.STANDARD_UNITS;
+      block += ` Valid units are: ${units.join(', ')}.`;
+    }
+    if (def.note) {
+      block += '\n\n' + def.note.trim();
+    }
+    if (def.recommendation) {
+      block += '\n\n' + def.recommendation.trim();
+    }
+    return block;
+  }).join('\n\n');
 }
 
 /** Numbered section order list with aliases. */

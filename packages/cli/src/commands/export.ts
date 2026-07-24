@@ -121,3 +121,4 @@ export default defineCommand({
     process.exitCode = 0;
   },
 });
+

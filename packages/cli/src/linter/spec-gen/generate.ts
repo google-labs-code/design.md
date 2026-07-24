@@ -46,10 +46,10 @@ async function main() {
     typographyExample: () => renderers.typographyExample(cfg),
     componentsExample: () => renderers.componentsExample(cfg),
     typographyPropertyList: () => renderers.typographyPropertyList(cfg),
-    typeDefinitions: () => renderers.typeDefinitions(cfg),
     sectionOrderList: () => renderers.sectionOrderList(cfg),
     componentSubTokenList: () => renderers.componentSubTokenList(cfg),
     recommendedTokens: () => renderers.recommendedTokens(cfg),
+    typeDefinitions: (typeName?: string) => renderers.typeDefinitions(cfg, typeName),
   };
 
   const generated = await compileMdx(source, scope);

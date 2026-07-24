@@ -30,6 +30,7 @@ import {
   resolveAlias,
   VALID_TYPOGRAPHY_PROPS,
   VALID_COMPONENT_SUB_TOKENS,
+  PRIMITIVE_TYPES,
 } from './spec-config.js';
 
 // ── Loader robustness ─────────────────────────────────────────────────
@@ -68,6 +69,7 @@ describe('spec-config loader', () => {
       'typography_properties: [{name: x, type: y}]',
       'component_sub_tokens: [{name: x, type: y}]',
       'color_roles: [primary]',
+      'types: {Color: {description: x}}',
       'recommended_tokens: {a: [b]}',
       'examples:',
       '  colors: {a: "#000"}',
@@ -213,5 +215,28 @@ describe('spec-config derived constants', () => {
     for (const [alias, canonical] of Object.entries(SECTION_ALIASES)) {
       expect(CANONICAL_ORDER).toContain(canonical);
     }
+  });
+});
+
+// ── PRIMITIVE_TYPES ───────────────────────────────────────────────────
+
+describe('spec-config PRIMITIVE_TYPES', () => {
+  it('contains Color and Dimension entries', () => {
+    expect(PRIMITIVE_TYPES).toHaveProperty('Color');
+    expect(PRIMITIVE_TYPES).toHaveProperty('Dimension');
+  });
+
+  it('every type has a non-empty description', () => {
+    for (const [, def] of Object.entries(PRIMITIVE_TYPES)) {
+      expect(def.description.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('Color has at least one format entry', () => {
+    expect(PRIMITIVE_TYPES['Color']!.formats?.length).toBeGreaterThan(0);
+  });
+
+  it('Dimension has no formats list (units come from STANDARD_UNITS)', () => {
+    expect(PRIMITIVE_TYPES['Dimension']!.formats).toBeUndefined();
   });
 });
