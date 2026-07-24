@@ -19,6 +19,9 @@
   ],
   "private": false,
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "bin": {
     "design.md": "./dist/index.js",
     "designmd": "./dist/index.js"
