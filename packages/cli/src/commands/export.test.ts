@@ -12,45 +12,72 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { afterEach, describe, expect, it, spyOn } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
+import { fileURLToPath } from 'node:url';
 import exportCommand from './export.js';
 
-const DESIGN = `---
-version: alpha
-name: Finding Repro
-colors:
-  primary: "#000000"
-  on-primary: "#ffffff"
-components:
-  header:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
----
-
-## Overview
-
-Repro.
-`;
+const FIXTURE_PATH = fileURLToPath(new URL('../linter/fixtures/DESIGN-test.md', import.meta.url));
 
 describe('export command', () => {
-  afterEach(() => {
+  let logSpy: any;
+  let errorSpy: any;
+
+  beforeEach(() => {
     process.exitCode = undefined;
+    logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+    process.exitCode = 0;
+  });
+
+  it('outputs css-vars custom properties with an optional prefix', async () => {
+    await exportCommand.run!({
+      args: {
+        file: FIXTURE_PATH,
+        format: 'css-vars',
+        prefix: 'ds',
+      },
+    } as any);
+
+    expect(errorSpy.mock.calls.length).toBe(0);
+    expect(logSpy.mock.calls.length).toBe(1);
+    const output = logSpy.mock.calls[0][0];
+
+    expect(output).toStartWith(':root {\n');
+    expect(output).toContain('  --ds-color-primary: #006b5a;');
+    expect(output).toContain('  --ds-spacing-unit: 8px;');
+    expect(output).toContain('  --ds-rounded-sm: 0.25rem;');
+    expect(output).toEndWith('}\n');
+    expect(process.exitCode).toBe(0);
+  });
+
+  it('errors with exit code 1 for invalid export formats', async () => {
+    await exportCommand.run!({
+      args: {
+        file: FIXTURE_PATH,
+        format: 'not-a-format',
+      },
+    } as any);
+
+    expect(logSpy.mock.calls.length).toBe(0);
+    expect(errorSpy.mock.calls.length).toBe(1);
+    const error = JSON.parse(errorSpy.mock.calls[0][0]);
+    expect(error.message).toContain('Invalid format "not-a-format"');
+    expect(process.exitCode).toBe(1);
   });
 
   it('emits exactly one trailing newline for css-tailwind output', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'designmd-export-'));
-    const designPath = join(dir, 'DESIGN.md');
-    writeFileSync(designPath, DESIGN);
     const writeSpy = spyOn(process.stdout, 'write').mockImplementation(() => true);
     let output = '';
 
     try {
       await exportCommand.run!({
         args: {
-          file: designPath,
+          file: FIXTURE_PATH,
           format: 'css-tailwind',
         },
       } as any);
@@ -58,7 +85,6 @@ describe('export command', () => {
       output = String(writeSpy.mock.calls[0][0]);
     } finally {
       writeSpy.mockRestore();
-      rmSync(dir, { recursive: true, force: true });
     }
 
     expect(output).toEndWith('\n');

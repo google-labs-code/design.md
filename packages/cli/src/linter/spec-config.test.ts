@@ -18,6 +18,7 @@ import {
   loadSpecConfig,
   getSpecConfig,
   STANDARD_UNITS,
+  SPEC_TYPES,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
   COMPONENT_SUB_TOKENS,
@@ -29,6 +30,7 @@ import {
   resolveAlias,
   VALID_TYPOGRAPHY_PROPS,
   VALID_COMPONENT_SUB_TOKENS,
+  PRIMITIVE_TYPES,
 } from './spec-config.js';
 
 // ── Loader robustness ─────────────────────────────────────────────────
@@ -67,6 +69,7 @@ describe('spec-config loader', () => {
       'typography_properties: [{name: x, type: y}]',
       'component_sub_tokens: [{name: x, type: y}]',
       'color_roles: [primary]',
+      'types: {Color: {description: x}}',
       'recommended_tokens: {a: [b]}',
       'examples:',
       '  colors: {a: "#000"}',
@@ -159,6 +162,14 @@ describe('spec-config structural invariants', () => {
     expect(new Set(STANDARD_UNITS).size).toBe(STANDARD_UNITS.length);
   });
 
+  it('primitive type definitions are non-empty', () => {
+    expect(Object.keys(SPEC_TYPES).length).toBeGreaterThan(0);
+    for (const [name, typeDef] of Object.entries(SPEC_TYPES)) {
+      expect(name.length).toBeGreaterThan(0);
+      expect(typeDef.description.length).toBeGreaterThan(0);
+    }
+  });
+
   it('recommended token categories are non-empty', () => {
     for (const [category, tokens] of Object.entries(RECOMMENDED_TOKENS)) {
       expect(tokens.length).toBeGreaterThan(0);
@@ -204,5 +215,28 @@ describe('spec-config derived constants', () => {
     for (const [alias, canonical] of Object.entries(SECTION_ALIASES)) {
       expect(CANONICAL_ORDER).toContain(canonical);
     }
+  });
+});
+
+// ── PRIMITIVE_TYPES ───────────────────────────────────────────────────
+
+describe('spec-config PRIMITIVE_TYPES', () => {
+  it('contains Color and Dimension entries', () => {
+    expect(PRIMITIVE_TYPES).toHaveProperty('Color');
+    expect(PRIMITIVE_TYPES).toHaveProperty('Dimension');
+  });
+
+  it('every type has a non-empty description', () => {
+    for (const [, def] of Object.entries(PRIMITIVE_TYPES)) {
+      expect(def.description.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('Color has at least one format entry', () => {
+    expect(PRIMITIVE_TYPES['Color']!.formats?.length).toBeGreaterThan(0);
+  });
+
+  it('Dimension has no formats list (units come from STANDARD_UNITS)', () => {
+    expect(PRIMITIVE_TYPES['Dimension']!.formats).toBeUndefined();
   });
 });

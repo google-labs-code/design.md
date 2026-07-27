@@ -73,6 +73,7 @@ describe('compileMdx', () => {
       sectionOrderList: () => renderers.sectionOrderList(cfg),
       componentSubTokenList: () => renderers.componentSubTokenList(cfg),
       recommendedTokens: () => renderers.recommendedTokens(cfg),
+      typeDefinitions: (typeName?: string) => renderers.typeDefinitions(cfg, typeName),
     };
 
     const result = await compileMdx(source, scope);
@@ -84,5 +85,7 @@ describe('compileMdx', () => {
     expect(result).toContain('backgroundColor');
     expect(result).toContain('`headline-display`');
     expect(result).toContain('#1A1C1E');
+    expect(result).toContain('**Color**');
+    expect(result).toContain('oklch()');
   });
 });

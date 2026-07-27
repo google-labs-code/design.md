@@ -131,6 +131,96 @@ describe('ModelHandler', () => {
       expect(result.designSystem.symbolTable.has('colors.theme.surface.background.base')).toBe(true);
     });
 
+    it('emits diagnostic for duplicate token path in colors', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info': {
+            '50': '#111111',
+          },
+          'utility-info.50': '#222222',
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('colors.utility-info.50');
+      expect(errors[0]!.message).toBe("Duplicate token path 'colors.utility-info.50' detected.");
+    });
+
+    it('emits diagnostic when grouped color token flattens to an existing token name', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          'utility-info-50': '#111111',
+          'utility-info': {
+            '50': '#222222',
+          }
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('colors.utility-info.50');
+      expect(errors[0]!.message).toBe("Grouped colors token flattens to 'utility-info-50', which is already defined.");
+    });
+
+    it('emits diagnostic for duplicate token path in rounded', () => {
+      const result = handler.execute(makeParsed({
+        rounded: {
+          'button': {
+            'lg': '8px',
+          },
+          'button.lg': '12px',
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('rounded.button.lg');
+      expect(errors[0]!.message).toBe("Duplicate token path 'rounded.button.lg' detected.");
+    });
+
+    it('emits diagnostic when grouped rounded token flattens to an existing token name', () => {
+      const result = handler.execute(makeParsed({
+        rounded: {
+          'button-lg': '8px',
+          'button': {
+            'lg': '12px',
+          }
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('rounded.button.lg');
+      expect(errors[0]!.message).toBe("Grouped rounded token flattens to 'button-lg', which is already defined.");
+    });
+
+    it('emits diagnostic for duplicate token path in spacing', () => {
+      const result = handler.execute(makeParsed({
+        spacing: {
+          'gutter': {
+            's': '8px',
+          },
+          'gutter.s': '12px',
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('spacing.gutter.s');
+      expect(errors[0]!.message).toBe("Duplicate token path 'spacing.gutter.s' detected.");
+    });
+
+    it('emits diagnostic when grouped spacing token flattens to an existing token name', () => {
+      const result = handler.execute(makeParsed({
+        spacing: {
+          'gutter-s': '8px',
+          'gutter': {
+            's': '12px',
+          }
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('spacing.gutter.s');
+      expect(errors[0]!.message).toBe("Grouped spacing token flattens to 'gutter-s', which is already defined.");
+    });
+
     it('resolves standard CSS named colors and converts them to hex/sRGB', () => {
       const result = handler.execute(makeParsed({
         colors: { c1: 'red', c2: 'transparent', c3: 'aliceblue' },
@@ -217,6 +307,25 @@ describe('ModelHandler', () => {
       expect(mix2?.r).toBe(255);
       expect(mix2?.g).toBe(128);
       expect(mix2?.b).toBe(128);
+    });
+
+    it('parses grad hue units correctly (100grad === 90deg)', () => {
+      const result = handler.execute(makeParsed({
+        colors: { grad: 'hsl(100grad 100% 50%)', deg: 'hsl(90deg 100% 50%)' },
+      }));
+      expect(result.findings.length).toBe(0);
+      const grad = result.designSystem.colors.get('grad');
+      expect(grad?.hex).toBe('#80ff00');
+      expect(grad?.hex).toBe(result.designSystem.colors.get('deg')?.hex);
+    });
+
+    it('rejects color-mix with bare-number (non-percentage) weights', () => {
+      const result = handler.execute(makeParsed({
+        colors: { bad: 'color-mix(in srgb, red 20, blue)' },
+      }));
+      // CSS color-mix weights are percentages only; a bare number is invalid.
+      expect(result.designSystem.colors.has('bad')).toBe(false);
+      expect(result.findings.some(f => f.path === 'colors.bad' && f.severity === 'error')).toBe(true);
     });
   });
 
@@ -365,6 +474,20 @@ describe('ModelHandler', () => {
       expect(result.findings.length).toBe(0);
       const headline = result.designSystem.typography.get('headline');
       expect(headline?.fontWeight).toBe(700);
+    });
+
+    it('warns about unrecognized typography sub-properties that are silently dropped', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'headline': { fontFamily: 'Inter', textTransform: 'uppercase' },
+        },
+      }));
+      const warning = result.findings.find(f => f.path === 'typography.headline.textTransform');
+      expect(warning).toBeDefined();
+      expect(warning?.severity).toBe('warning');
+      // The recognized property is still resolved, and known props never warn.
+      expect(result.designSystem.typography.get('headline')?.fontFamily).toBe('Inter');
+      expect(result.findings.some(f => f.path === 'typography.headline.fontFamily')).toBe(false);
     });
   });
 
@@ -663,6 +786,22 @@ describe('ModelHandler', () => {
       // Construct the expected path: level1.level2...level21
       const path = Array.from({ length: 21 }, (_, i) => `level${i + 1}`).join('.');
       expect(result.designSystem.colors.has(path)).toBe(true);
+    });
+  });
+
+  describe('color-mix nesting depth limit', () => {
+    it('rejects pathologically nested color-mix as an invalid color without collapsing the model', () => {
+      let nested = 'red';
+      for (let i = 0; i < 50; i++) nested = `color-mix(in srgb, ${nested}, blue)`;
+      const result = handler.execute(makeParsed({
+        colors: { ok: '#ffffff', deep: nested },
+      }));
+      // The over-deep color resolves to "invalid" (a precise per-token error),
+      // not a thrown RangeError that collapses the whole model build.
+      expect(result.designSystem.colors.has('deep')).toBe(false);
+      expect(result.findings.some(f => f.path === 'colors.deep' && f.severity === 'error')).toBe(true);
+      // Other valid tokens are unaffected.
+      expect(result.designSystem.colors.get('ok')?.hex).toBe('#ffffff');
     });
   });
 });

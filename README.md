@@ -288,6 +288,8 @@ npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 | `tailwind` | JSON | Alias for `json-tailwind` |
 | `dtcg` | JSON | W3C Design Tokens Format Module |
 
+Exit code `0` on a successful export (regardless of any lint findings in the source — run `lint` to gate on those), `1` on an invalid `--format` or an emitter error, and `2` if the input file cannot be read.
+
 ### `spec`
 
 Output the DESIGN.md format specification (useful for injecting spec context into agent prompts).

@@ -26,6 +26,14 @@ const HEX_COLOR_RE = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const CSS_DIMENSION_RE = /^-?\d*\.?\d+[a-zA-Z%]+$/;
 
 /**
+ * Upper bound on a token-like leaf value's length before pattern matching.
+ * A hex color or CSS dimension is short; longer strings cannot match either,
+ * so capping the length avoids pathological regex backtracking on oversized
+ * attacker-supplied values.
+ */
+const MAX_TOKEN_VALUE_LENGTH = 64;
+
+/**
  * Typography-flavored property names that strongly suggest this map holds
  * design tokens rather than arbitrary metadata.
  */
@@ -54,7 +62,7 @@ function hasTokenLikeContent(obj: Record<string, unknown>): boolean {
     if (TYPOGRAPHY_PROPS.has(key)) return true;
 
     if (typeof val === 'string') {
-      if (HEX_COLOR_RE.test(val) || CSS_DIMENSION_RE.test(val)) return true;
+      if (val.length <= MAX_TOKEN_VALUE_LENGTH && (HEX_COLOR_RE.test(val) || CSS_DIMENSION_RE.test(val))) return true;
     } else if (val !== null && typeof val === 'object' && !Array.isArray(val)) {
       // Recurse one level for nested token maps (e.g. base_colors: { light: { ink: "#0B0F14" } })
       if (hasTokenLikeContent(val as Record<string, unknown>)) return true;

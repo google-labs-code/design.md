@@ -38,7 +38,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bun build src/index.ts src/linter/index.ts --outdir dist --target node && npx tsc --project tsconfig.build.json --emitDeclarationOnly --skipLibCheck && cp src/linter/spec-config.yaml dist/linter/ && cp src/linter/spec-config.yaml dist/ && cp ../../docs/spec.md dist/linter/",
+    "build": "bun build src/index.ts src/linter/index.ts --outdir dist --target node && npx tsc --project tsconfig.build.json --emitDeclarationOnly --skipLibCheck && cp src/linter/spec-config.yaml dist/linter/ && cp src/linter/spec-config.yaml dist/ && cp ../../docs/spec.md dist/linter/ && cp ../../docs/spec.md dist/",
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "lint": "tsc --noEmit --skipLibCheck",

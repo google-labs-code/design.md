@@ -61,11 +61,11 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
 
 **Color**: A color value is any valid CSS color string. Supported formats include:
 
-* Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
-* Named colors: `red`, `cornflowerblue`, `transparent`
-* Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`
-* Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`
-* Mixing: `color-mix(in srgb, ...)`
+- Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
+- Named colors: `red`, `cornflowerblue`, `transparent`
+- Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`
+- Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`
+- Mixing: `color-mix(in srgb, ...)`
 
 All color values are internally converted to sRGB for WCAG contrast checking. The original format is preserved for display and export.
 

@@ -34,6 +34,11 @@ export function unknownKey(state: DesignSystemState): RuleFinding[] {
     let bestMatch: string | undefined;
     let bestDist = Infinity;
     for (const known of SCHEMA_KEYS) {
+      // Edit distance is at least the length difference, so a key whose length
+      // differs from a known key by more than the typo threshold can never be a
+      // typo — skip the O(n*m) distance computation for it. This keeps the rule
+      // cheap on long, attacker-supplied keys without changing any result.
+      if (Math.abs(key.length - known.length) > MAX_TYPO_DISTANCE) continue;
       const dist = levenshtein(key.toLowerCase(), known.toLowerCase());
       if (dist < bestDist) {
         bestDist = dist;
