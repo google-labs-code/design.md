@@ -204,6 +204,13 @@ The shape language is defined by **Rounded** corners, mirroring the soft feature
 - **Inputs:** Form fields use a `0.5rem` radius to maintain a professional yet modern appearance.
 - **Icons:** Icons should feature rounded caps and corners to harmonize with the UI's structural elements.
 
+## Iconography
+
+Paws and Paths uses Lucide icons because the rounded outline style fits the friendly, service-focused brand.
+Prefer outlined symbols with 2px strokes and rounded caps; reserve filled icons for active navigation or important pet status.
+Sizes step from 16px for metadata to 24px for primary actions, and icons inherit text color unless a semantic orange, blue, or error state is needed.
+Do not mix icon libraries unless the replacement is redrawn to match the same stroke, corners, and visual weight.
+
 ## Components
 
 ### Buttons & Inputs
