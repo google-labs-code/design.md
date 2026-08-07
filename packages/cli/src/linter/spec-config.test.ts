@@ -21,6 +21,7 @@ import {
   SPEC_TYPES,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
+  SHADOW_PROPERTIES,
   COMPONENT_SUB_TOKENS,
   CORE_COLOR_ROLES,
   RECOMMENDED_TOKENS,
@@ -29,6 +30,7 @@ import {
   SECTION_ALIASES,
   resolveAlias,
   VALID_TYPOGRAPHY_PROPS,
+  VALID_SHADOW_PROPS,
   VALID_COMPONENT_SUB_TOKENS,
   PRIMITIVE_TYPES,
 } from './spec-config.js';
@@ -153,6 +155,12 @@ describe('spec-config structural invariants', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
+  it('shadow property names are unique and cover the composite fields', () => {
+    const names = SHADOW_PROPERTIES.map(p => p.name);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).toEqual(['offsetX', 'offsetY', 'blur', 'spread', 'color']);
+  });
+
   it('color roles are unique', () => {
     expect(new Set(CORE_COLOR_ROLES).size).toBe(CORE_COLOR_ROLES.length);
   });
@@ -176,9 +184,10 @@ describe('spec-config structural invariants', () => {
     }
   });
 
-  it('examples covers colors, typography, and components', () => {
+  it('examples covers colors, typography, shadows, and components', () => {
     expect(Object.keys(EXAMPLES.colors).length).toBeGreaterThan(0);
     expect(Object.keys(EXAMPLES.typography).length).toBeGreaterThan(0);
+    expect(Object.keys(EXAMPLES.shadows).length).toBeGreaterThan(0);
     expect(Object.keys(EXAMPLES.components).length).toBeGreaterThan(0);
   });
 });
@@ -205,6 +214,10 @@ describe('spec-config derived constants', () => {
 
   it('VALID_TYPOGRAPHY_PROPS length matches TYPOGRAPHY_PROPERTIES', () => {
     expect(VALID_TYPOGRAPHY_PROPS.length).toBe(TYPOGRAPHY_PROPERTIES.length);
+  });
+
+  it('VALID_SHADOW_PROPS length matches SHADOW_PROPERTIES', () => {
+    expect(VALID_SHADOW_PROPS.length).toBe(SHADOW_PROPERTIES.length);
   });
 
   it('VALID_COMPONENT_SUB_TOKENS length matches COMPONENT_SUB_TOKENS', () => {

@@ -19,7 +19,7 @@
  * Each function returns a ready-to-embed markdown string.
  */
 
-import type { SpecConfig, TypographyPropertyDef, SectionDef, ComponentSubTokenDef, TypeDef } from '../spec-config.js';
+import type { SpecConfig, PropertyDef, SectionDef, ComponentSubTokenDef, TypeDef } from '../spec-config.js';
 
 // ── YAML code block helpers ─────────────────────────────────────
 
@@ -76,6 +76,16 @@ export function typographyExample(config: SpecConfig): string {
   return yamlBlock(lines);
 }
 
+/** Shadows YAML example. */
+export function shadowsExample(config: SpecConfig): string {
+  const lines = ['shadows:'];
+  for (const [name, props] of Object.entries(config.EXAMPLES.shadows)) {
+    lines.push(`  ${name}:`);
+    lines.push(...yamlObject(props as Record<string, string | number>));
+  }
+  return yamlBlock(lines);
+}
+
 /** Components YAML example. */
 export function componentsExample(config: SpecConfig): string {
   const lines = ['components:'];
@@ -88,7 +98,16 @@ export function componentsExample(config: SpecConfig): string {
 
 /** Typography property list (for the schema section). */
 export function typographyPropertyList(config: SpecConfig): string {
-  return config.TYPOGRAPHY_PROPERTIES.map((p: TypographyPropertyDef) =>
+  return config.TYPOGRAPHY_PROPERTIES.map((p: PropertyDef) =>
+    p.description
+      ? `- \`${p.name}\` (${p.type}) - ${p.description}`
+      : `- \`${p.name}\` (${p.type})`
+  ).join('\n');
+}
+
+/** Shadow property list (for the schema section). */
+export function shadowPropertyList(config: SpecConfig): string {
+  return config.SHADOW_PROPERTIES.map((p: PropertyDef) =>
     p.description
       ? `- \`${p.name}\` (${p.type}) - ${p.description}`
       : `- \`${p.name}\` (${p.type})`

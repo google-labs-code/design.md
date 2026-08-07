@@ -198,6 +198,27 @@ Depth is achieved through **Tonal Layers** rather than heavy shadows. The
 background uses a soft off-white or very light green, while primary content sits on pure white cards.
 ```
 
+### Design Tokens
+
+The optional `shadows` section defines structured shadow tokens for design systems that convey elevation through box-shadow-style values. Each token is a composite of offset, blur, spread, and color — the same layered-value approach as `typography`, rather than a single CSS `box-shadow` string.
+
+It is a
+map\<string, Shadow\>, where each `Shadow` has the following properties:
+
+{shadowPropertyList()}
+
+The `color` property accepts a literal color value or a `{colors.*}` token reference, so a shadow's tint can stay tied to the palette.
+
+{shadowsExample()}
+
+A component references a shadow token the same way it references any other token, via a component sub-token (see [Components](#components)):
+
+```yaml
+components:
+  card:
+    boxShadow: "{shadows.card}"
+```
+
 ## Shapes
 
 This section describes how visual elements are shaped.
