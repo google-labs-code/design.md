@@ -27,6 +27,10 @@ units:
   - px
   - em
   - rem
+  - pt
+  - mm
+  - cm
+  - in
 
 types:
   Color:
