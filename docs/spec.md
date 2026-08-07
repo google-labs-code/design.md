@@ -82,7 +82,7 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
 - `fontVariation` (string) - configures
   [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings).
 
-**Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
+**Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem, pt, mm, cm, in.
 
 **Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, components). Each entry can be:
 
