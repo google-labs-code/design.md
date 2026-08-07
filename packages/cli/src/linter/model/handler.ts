@@ -25,7 +25,7 @@ import type {
   Finding,
 } from './spec.js';
 
-import { isValidColor, isParseableDimension, isStandardDimension, isTokenReference, parseDimensionParts, VALID_TYPOGRAPHY_PROPS } from './spec.js';
+import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts, VALID_TYPOGRAPHY_PROPS } from './spec.js';
 import { parseCssColor } from './color-parser.js';
 
 import {
@@ -36,6 +36,7 @@ import {
 
 const SCHEMA_KEY_SET: ReadonlySet<string> = new Set(SCHEMA_KEYS);
 const TYPOGRAPHY_PROP_SET: ReadonlySet<string> = new Set(VALID_TYPOGRAPHY_PROPS);
+const STANDARD_UNIT_SET: ReadonlySet<string> = new Set(STANDARD_UNITS);
 /** Human-readable unit list for "invalid unit" error messages, e.g. "px, em, rem, pt, mm, cm, in". */
 const STANDARD_UNIT_LIST = STANDARD_UNITS.join(', ');
 
@@ -99,7 +100,7 @@ export class ModelHandler implements ModelSpec {
           if (typeof raw === 'string') {
             if (isParseableDimension(raw)) {
               const resolved = parseDimension(raw);
-              if (!isStandardDimension(raw)) {
+              if (!STANDARD_UNIT_SET.has(resolved.unit)) {
                 findings.push({
                   severity: 'error',
                   path: `rounded.${name}`,
@@ -383,7 +384,7 @@ function parseTypography(props: Record<string, string | number>, path: string, f
     if (typeof raw === 'string') {
       if (isParseableDimension(raw)) {
         const parsed = parseDimension(raw);
-        if (!isStandardDimension(raw)) {
+        if (!STANDARD_UNIT_SET.has(parsed.unit)) {
           findings.push({
             severity: 'error',
             path: `${path}.${prop}`,
