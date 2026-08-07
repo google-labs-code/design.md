@@ -45,10 +45,6 @@ types:
     recommendation: Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broad tooling support.
   Dimension:
     description: "A dimension value is a string with a unit suffix."
-    units:
-      - px
-      - em
-      - rem
 
 sections:
   - canonical: Overview

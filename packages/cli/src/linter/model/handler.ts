@@ -25,16 +25,19 @@ import type {
   Finding,
 } from './spec.js';
 
-import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts, VALID_TYPOGRAPHY_PROPS } from './spec.js';
+import { isValidColor, isParseableDimension, isStandardDimension, isTokenReference, parseDimensionParts, VALID_TYPOGRAPHY_PROPS } from './spec.js';
 import { parseCssColor } from './color-parser.js';
 
 import {
   MAX_REFERENCE_DEPTH,
   MAX_TOKEN_NESTING_DEPTH,
+  STANDARD_UNITS,
 } from '../spec-config.js';
 
 const SCHEMA_KEY_SET: ReadonlySet<string> = new Set(SCHEMA_KEYS);
 const TYPOGRAPHY_PROP_SET: ReadonlySet<string> = new Set(VALID_TYPOGRAPHY_PROPS);
+/** Human-readable unit list for "invalid unit" error messages, e.g. "px, em, rem, pt, mm, cm, in". */
+const STANDARD_UNIT_LIST = STANDARD_UNITS.join(', ');
 
 /**
  * Builds a resolved DesignSystemState from parsed YAML tokens.
@@ -96,11 +99,11 @@ export class ModelHandler implements ModelSpec {
           if (typeof raw === 'string') {
             if (isParseableDimension(raw)) {
               const resolved = parseDimension(raw);
-              if (resolved.unit !== 'px' && resolved.unit !== 'rem' && resolved.unit !== 'em') {
+              if (!isStandardDimension(raw)) {
                 findings.push({
                   severity: 'error',
                   path: `rounded.${name}`,
-                  message: `'${raw}' has an invalid unit '${resolved.unit}'. Only px, rem, and em are allowed.`,
+                  message: `'${raw}' has an invalid unit '${resolved.unit}'. Only ${STANDARD_UNIT_LIST} are allowed.`,
                 });
               }
               rounded.set(name, resolved);
@@ -380,11 +383,11 @@ function parseTypography(props: Record<string, string | number>, path: string, f
     if (typeof raw === 'string') {
       if (isParseableDimension(raw)) {
         const parsed = parseDimension(raw);
-        if (parsed.unit !== 'px' && parsed.unit !== 'rem' && parsed.unit !== 'em') {
+        if (!isStandardDimension(raw)) {
           findings.push({
             severity: 'error',
             path: `${path}.${prop}`,
-            message: `'${raw}' has an invalid unit '${parsed.unit}'. Only px, rem, and em are allowed.`,
+            message: `'${raw}' has an invalid unit '${parsed.unit}'. Only ${STANDARD_UNIT_LIST} are allowed.`,
           });
         }
         result[prop] = parsed;
