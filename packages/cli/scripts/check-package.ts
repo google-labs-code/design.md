@@ -16,7 +16,7 @@
 /**
  * Package verification script for @google/design.md
  *
- * Runs 17 checks across 4 phases to ensure the package is correctly
+ * Runs package checks across 4 phases to ensure the package is correctly
  * structured for npm publication. Exit code 0 = all pass, 1 = failures.
  *
  * Usage: bun run scripts/check-package.ts
@@ -25,7 +25,7 @@
 import { readFileSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join, resolve } from 'path';
 import { execSync } from 'child_process';
-import { Glob, $ } from 'bun';
+import { Glob } from 'bun';
 import { tmpdir } from 'os';
 
 // ── Helpers ────────────────────────────────────────────────────────
