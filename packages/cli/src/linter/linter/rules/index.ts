@@ -26,6 +26,7 @@ import { missingTypographyRule } from './missing-typography.js';
 import { unknownKeyRule } from './unknown-key.js';
 import { tokenLikeIgnoredRule } from './token-like-ignored.js';
 import { omittedRule } from './omitted.js';
+import { proseTokenLeakRule } from './prose-token-leak.js';
 
 /** The default set of lint rule descriptors, in order. */
 export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
@@ -40,6 +41,7 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   unknownKeyRule,
   tokenLikeIgnoredRule,
   omittedRule,
+  proseTokenLeakRule,
 ];
 
 /** Converts a RuleDescriptor into a LintRule by injecting severity into findings. */
@@ -68,4 +70,5 @@ export { unknownKey } from './unknown-key.js';
 export { sectionOrder } from './section-order.js';
 export { tokenLikeIgnored } from './token-like-ignored.js';
 export { omittedRule as omitted } from './omitted.js';
+export { proseTokenLeak } from './prose-token-leak.js';
 export type { LintRule } from './types.js';

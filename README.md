@@ -317,7 +317,7 @@ npx @google/design.md spec --rules-only --format json
 
 ## Linting Rules
 
-The linter runs eleven rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
+The linter runs twelve rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
 
 | Rule | Severity | What it checks |
 |:-----|:---------|:---------------|
@@ -332,6 +332,7 @@ The linter runs eleven rules against a parsed DESIGN.md. Each rule produces find
 | `unknown-key` | warning | A top-level YAML key looks like a typo of a known schema key (e.g. `colours:` → `colors:`); custom extension keys stay silent |
 | `token-like-ignored` | warning | An unknown top-level key has token-like values (e.g. hex colors, font families, dimensions) suggesting it was dropped or misspelled |
 | `omitted-rules` | info | Validates the `omitted` configuration mapping for unknown or redundant sections |
+| `prose-token-leak` | warning | Literal token values (like hex colors or CSS dimensions) duplicated in the markdown prose body |
 
 ### Programmatic API
 

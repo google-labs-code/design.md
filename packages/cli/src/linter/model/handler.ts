@@ -220,6 +220,7 @@ export class ModelHandler implements ModelSpec {
           components,
           symbolTable,
           sections: input.sections,
+          documentSections: input.documentSections,
           unknownKeys,
           unknownKeyValues,
         },

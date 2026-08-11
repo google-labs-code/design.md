@@ -82,6 +82,8 @@ export interface DesignSystemState {
   symbolTable: Map<string, ResolvedValue>;
   /** Markdown heading names found in the document */
   sections?: string[] | undefined;
+  /** Full content of each section, including heading and body */
+  documentSections?: Array<{ heading: string; content: string }> | undefined;
   /** Top-level YAML keys that are not part of the known schema */
   unknownKeys?: string[] | undefined;
   /** Raw YAML values for unknown top-level keys, keyed by the unknown key name */
