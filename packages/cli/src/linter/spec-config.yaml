@@ -93,6 +93,10 @@ component_sub_tokens:
     type: Dimension
   - name: padding
     type: Dimension
+  - name: paddingX
+    type: Dimension
+  - name: paddingY
+    type: Dimension
   - name: size
     type: Dimension
   - name: height

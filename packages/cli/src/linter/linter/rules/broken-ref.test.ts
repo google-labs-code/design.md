@@ -46,6 +46,16 @@ describe('brokenRef', () => {
     expect(subTokenDiag!.severity).toBe('warning');
   });
 
+  it('does not emit warning for paddingX and paddingY sub-tokens', () => {
+    const state = buildState({
+      colors: { primary: '#ff0000' },
+      components: { button: { paddingX: '12px', paddingY: '16px' } },
+    });
+    const findings = brokenRef(state);
+    const subTokenDiag = findings.filter(d => d.message.includes('not a recognized'));
+    expect(subTokenDiag.length).toBe(0);
+  });
+
   it('has a valid rule descriptor', () => {
     expect(brokenRefRule.name).toBe('broken-ref');
     expect(brokenRefRule.severity).toBe('error');

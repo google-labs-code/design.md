@@ -166,7 +166,7 @@ components:
     backgroundColor: "{colors.tertiary-container}"
 ```
 
-Valid component properties: `backgroundColor`, `textColor`, `typography`, `rounded`, `padding`, `size`, `height`, `width`.
+Valid component properties: `backgroundColor`, `textColor`, `typography`, `rounded`, `padding`, `paddingX`, `paddingY`, `size`, `height`, `width`.
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 

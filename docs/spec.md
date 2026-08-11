@@ -336,6 +336,8 @@ Each component has a set of properties that are themselves design tokens:
 - typography: \<Typography\>
 - rounded: \<Dimension\>
 - padding: \<Dimension\>
+- paddingX: \<Dimension\>
+- paddingY: \<Dimension\>
 - size: \<Dimension\>
 - height: \<Dimension\>
 - width: \<Dimension\>
