@@ -17,6 +17,7 @@ import type { ParsedDesignSystem, OmittedSection } from '../parser/spec.js';
 import {
   STANDARD_UNITS as _STANDARD_UNITS,
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
+  VALID_SHADOW_PROPS as _VALID_SHADOW_PROPS,
   VALID_COMPONENT_SUB_TOKENS as _VALID_COMPONENT_SUB_TOKENS,
 } from '../spec-config.js';
 import { parseCssColor } from './color-parser.js';
@@ -62,10 +63,21 @@ export interface ResolvedTypography {
   fontVariation?: string | undefined;
 }
 
-export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string | number | boolean;
+export interface ResolvedShadow {
+  type: 'shadow';
+  offsetX?: ResolvedDimension | undefined;
+  offsetY?: ResolvedDimension | undefined;
+  blur?: ResolvedDimension | undefined;
+  /** Spread radius. Defaults to 0px when omitted from the source token. */
+  spread?: ResolvedDimension | undefined;
+  color?: ResolvedColor | undefined;
+}
+
+export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | ResolvedShadow | string | number | boolean;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
+export const VALID_SHADOW_PROPS = _VALID_SHADOW_PROPS;
 export const VALID_COMPONENT_SUB_TOKENS = _VALID_COMPONENT_SUB_TOKENS;
 
 // ── STATE ──────────────────────────────────────────────────────────
@@ -77,6 +89,7 @@ export interface DesignSystemState {
   typography: Map<string, ResolvedTypography>;
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
+  shadows: Map<string, ResolvedShadow>;
   components: Map<string, ComponentDef>;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;
@@ -99,6 +112,7 @@ export const ModelErrorCode = z.enum([
   'INVALID_COLOR',
   'INVALID_DIMENSION',
   'INVALID_TYPOGRAPHY_PROP',
+  'INVALID_SHADOW',
   'UNRESOLVED_REFERENCE',
   'CIRCULAR_REFERENCE',
   'REFERENCE_TO_NON_PRIMITIVE',

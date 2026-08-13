@@ -317,7 +317,7 @@ npx @google/design.md spec --rules-only --format json
 
 ## Linting Rules
 
-The linter runs eleven rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
+The linter runs twelve rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
 
 | Rule | Severity | What it checks |
 |:-----|:---------|:---------------|
@@ -325,6 +325,7 @@ The linter runs eleven rules against a parsed DESIGN.md. Each rule produces find
 | `missing-primary` | warning | Colors are defined but no `primary` color exists — agents will auto-generate one |
 | `contrast-ratio` | warning | Component `backgroundColor`/`textColor` pairs below WCAG AA minimum (4.5:1) |
 | `orphaned-tokens` | warning | Color tokens defined but never referenced by any component |
+| `shadow-orphaned` | warning | Shadow tokens defined but never referenced by any component |
 | `token-summary` | info | Summary of how many tokens are defined in each section |
 | `missing-sections` | info | Optional sections (spacing, rounded) absent when other tokens exist |
 | `missing-typography` | warning | Colors are defined but no typography tokens exist — agents will use default fonts |

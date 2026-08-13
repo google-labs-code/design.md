@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { TailwindV4EmitterSpec, TailwindV4EmitterResult, TailwindV4ThemeData } from './spec.js';
-import type { DesignSystemState, ResolvedDimension } from '../../model/spec.js';
+import type { DesignSystemState, ResolvedDimension, ResolvedShadow } from '../../model/spec.js';
 
 const VALID_TOKEN_NAME = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
 
@@ -32,6 +32,7 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
       ...state.typography.keys(),
       ...state.rounded.keys(),
       ...state.spacing.keys(),
+      ...state.shadows.keys(),
     ];
     for (const name of allNames) {
       if (!VALID_TOKEN_NAME.test(name)) {
@@ -79,6 +80,20 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
     }
     if (state.spacing.size > 0) {
       theme.spacing = mapDimensions(state.spacing);
+    }
+
+    // Shadows
+    if (state.shadows.size > 0) {
+      const shadow: Record<string, string> = {};
+      for (const [name, s] of state.shadows) {
+        const x = s.offsetX ? dimToString(s.offsetX) : '0px';
+        const y = s.offsetY ? dimToString(s.offsetY) : '0px';
+        const blur = s.blur ? dimToString(s.blur) : '0px';
+        const spread = s.spread ? dimToString(s.spread) : '0px';
+        const color = s.color ? s.color.hex.toLowerCase() : 'transparent';
+        shadow[name] = `${x} ${y} ${blur} ${spread} ${color}`;
+      }
+      theme.shadow = shadow;
     }
 
     return { success: true, data: { theme } };

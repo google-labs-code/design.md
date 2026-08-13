@@ -19,6 +19,7 @@ import { brokenRefRule } from './broken-ref.js';
 import { missingPrimaryRule } from './missing-primary.js';
 import { contrastCheckRule } from './contrast-ratio.js';
 import { orphanedTokensRule } from './orphaned-tokens.js';
+import { shadowOrphanedRule } from './shadow-orphaned.js';
 import { tokenSummaryRule } from './token-summary.js';
 import { missingSectionsRule } from './missing-sections.js';
 import { sectionOrderRule } from './section-order.js';
@@ -33,6 +34,7 @@ export const DEFAULT_RULE_DESCRIPTORS: RuleDescriptor[] = [
   missingPrimaryRule,
   contrastCheckRule,
   orphanedTokensRule,
+  shadowOrphanedRule,
   tokenSummaryRule,
   missingSectionsRule,
   missingTypographyRule,
@@ -61,6 +63,7 @@ export { brokenRef } from './broken-ref.js';
 export { missingPrimary } from './missing-primary.js';
 export { contrastCheck } from './contrast-ratio.js';
 export { orphanedTokens } from './orphaned-tokens.js';
+export { shadowOrphaned } from './shadow-orphaned.js';
 export { tokenSummary } from './token-summary.js';
 export { missingSections } from './missing-sections.js';
 export { missingTypography } from './missing-typography.js';

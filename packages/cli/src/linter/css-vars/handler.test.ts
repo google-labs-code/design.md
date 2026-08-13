@@ -15,7 +15,7 @@
 import { describe, test, expect } from 'bun:test';
 import { CssVarsEmitterHandler } from './handler.js';
 import { serializeCssVars } from './serialize.js';
-import type { DesignSystemState, ResolvedColor, ResolvedDimension } from '../model/spec.js';
+import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedShadow } from '../model/spec.js';
 
 function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
   return {
@@ -23,6 +23,7 @@ function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
     typography: new Map(),
     rounded: new Map(),
     spacing: new Map(),
+    shadows: new Map(),
     components: new Map(),
     symbolTable: new Map(),
     ...overrides,
@@ -129,6 +130,38 @@ describe('CssVarsEmitterHandler', () => {
     expect(serializeCssVars(result.data.declarations, { prefix: 'ds' })).toBe(
       ':root {\n'
       + '  --ds-color-primary: #1a1c1e;\n'
+      + '}\n',
+    );
+  });
+
+  test('shadows emit --shadow-* declarations with space-separated CSS values', () => {
+    const state = emptyState({
+      shadows: new Map([
+        ['card', {
+          type: 'shadow',
+          offsetX: makeDim(0, 'px'),
+          offsetY: makeDim(4, 'px'),
+          blur: makeDim(8, 'px'),
+          spread: makeDim(0, 'px'),
+          color: makeColor('#00000033', 0, 0, 0),
+        }],
+        ['button', {
+          type: 'shadow',
+          offsetX: makeDim(2, 'px'),
+          offsetY: makeDim(2, 'px'),
+          blur: makeDim(4, 'px'),
+        }],
+      ]),
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    expect(serializeCssVars(result.data.declarations)).toBe(
+      ':root {\n'
+      + '  --shadow-card: 0px 4px 8px 0px #00000033;\n'
+      + '  --shadow-button: 2px 2px 4px 0px transparent;\n'
       + '}\n',
     );
   });

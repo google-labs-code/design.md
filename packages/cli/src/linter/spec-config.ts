@@ -59,12 +59,14 @@ const ConfigSchema = z.object({
     aliases: z.array(z.string()).optional(),
   })).min(1),
   typography_properties: z.array(PropertyDefSchema).min(1),
+  shadow_properties: z.array(PropertyDefSchema).min(1),
   component_sub_tokens: z.array(PropertyDefSchema).min(1),
   color_roles: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
+    shadows: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
     components: z.record(z.string(), z.record(z.string(), z.string())),
   }),
 });
@@ -103,7 +105,8 @@ export interface SectionDef {
   aliases?: readonly string[] | undefined;
 }
 
-export interface TypographyPropertyDef {
+/** A named, typed property with an optional description — shared shape for typography and shadow sub-properties. */
+export interface PropertyDef {
   /** Property name as it appears in YAML. */
   name: string;
   /** Human-readable type for the spec document. */
@@ -111,6 +114,9 @@ export interface TypographyPropertyDef {
   /** Extended description for the spec (appears after the type). */
   description?: string | undefined;
 }
+
+/** @deprecated Use {@link PropertyDef}. Kept for backward compatibility with existing consumers. */
+export type TypographyPropertyDef = PropertyDef;
 
 export interface ComponentSubTokenDef {
   /** Sub-token property name. */
@@ -156,7 +162,9 @@ export const SPEC_TYPES: Record<string, TypeDef> = config.types;
 
 export const SECTIONS = config.sections;
 
-export const TYPOGRAPHY_PROPERTIES: readonly TypographyPropertyDef[] = config.typography_properties;
+export const TYPOGRAPHY_PROPERTIES: readonly PropertyDef[] = config.typography_properties;
+
+export const SHADOW_PROPERTIES: readonly PropertyDef[] = config.shadow_properties;
 
 export const COMPONENT_SUB_TOKENS: readonly ComponentSubTokenDef[] = config.component_sub_tokens;
 
@@ -192,6 +200,9 @@ export function resolveAlias(heading: string): string {
 /** Valid typography property names (for linter validation). */
 export const VALID_TYPOGRAPHY_PROPS = TYPOGRAPHY_PROPERTIES.map(p => p.name);
 
+/** Valid shadow property names (for linter validation). */
+export const VALID_SHADOW_PROPS = SHADOW_PROPERTIES.map(p => p.name);
+
 /** Valid component sub-token names (for linter validation). */
 export const VALID_COMPONENT_SUB_TOKENS = COMPONENT_SUB_TOKENS.map(p => p.name);
 
@@ -206,6 +217,7 @@ export interface SpecConfig {
   SPEC_TYPES: typeof SPEC_TYPES;
   SECTIONS: typeof SECTIONS;
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
+  SHADOW_PROPERTIES: typeof SHADOW_PROPERTIES;
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
@@ -222,6 +234,7 @@ export const SPEC_CONFIG: SpecConfig = {
   SPEC_TYPES,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
+  SHADOW_PROPERTIES,
   COMPONENT_SUB_TOKENS,
   CORE_COLOR_ROLES,
   RECOMMENDED_TOKENS,

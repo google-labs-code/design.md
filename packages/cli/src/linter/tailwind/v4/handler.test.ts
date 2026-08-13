@@ -133,6 +133,47 @@ describe('TailwindV4EmitterHandler', () => {
     });
   });
 
+  describe('shadows mapping', () => {
+    it('maps resolved shadows to theme.shadow keyed by token name', () => {
+      const state = buildState({
+        shadows: {
+          card: {
+            offsetX: '0px',
+            offsetY: '4px',
+            blur: '8px',
+            spread: '2px',
+            color: '#00000033',
+          },
+          button: {
+            offsetX: '1px',
+            offsetY: '2px',
+            blur: '3px',
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const theme = result.data.theme;
+
+      expect(theme.shadow?.['card']).toBe('0px 4px 8px 2px #00000033');
+      expect(theme.shadow?.['button']).toBe('1px 2px 3px 0px transparent');
+    });
+
+    it('fails when a shadow token name is not a valid CSS identifier', () => {
+      const state = buildState({});
+      state.shadows.set('has space', {
+        type: 'shadow',
+        offsetX: { type: 'dimension', value: 0, unit: 'px' },
+        offsetY: { type: 'dimension', value: 4, unit: 'px' },
+        blur: { type: 'dimension', value: 8, unit: 'px' },
+        spread: { type: 'dimension', value: 0, unit: 'px' },
+        color: { type: 'color', hex: '#00000033', r: 0, g: 0, b: 0, luminance: 0 },
+      });
+      const result = emitter.execute(state);
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe('empty state', () => {
     it('returns success with an empty theme object', () => {
       const state = buildState({});

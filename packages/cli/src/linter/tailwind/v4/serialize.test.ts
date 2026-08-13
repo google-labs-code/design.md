@@ -37,6 +37,7 @@ describe('serializeToCss', () => {
       fontWeight: { 'headline-lg': '500' },
       borderRadius: { regular: '4px' },
       spacing: { 'gutter-s': '8px' },
+      shadow: { card: '0px 4px 8px 0px #00000033' },
     };
     const out = serializeToCss(data);
     expect(out).toContain('--color-primary: #000000;');
@@ -47,23 +48,27 @@ describe('serializeToCss', () => {
     expect(out).toContain('--font-weight-headline-lg: 500;');
     expect(out).toContain('--radius-regular: 4px;');
     expect(out).toContain('--spacing-gutter-s: 8px;');
+    expect(out).toContain('--shadow-card: 0px 4px 8px 0px #00000033;');
   });
 
-  it('emits categories in fixed order: colors → fontFamily → fontSize → lineHeight → letterSpacing → fontWeight → borderRadius → spacing', () => {
+  it('emits categories in fixed order: colors → fontFamily → fontSize → lineHeight → letterSpacing → fontWeight → borderRadius → spacing → shadow', () => {
     const data: TailwindV4ThemeData = {
       spacing: { s: '8px' },
       colors: { primary: '#000000' },
       borderRadius: { r: '4px' },
       fontFamily: { f: '"X"' },
+      shadow: { sh: '0px 4px 8px 0px #00000033' },
     };
     const out = serializeToCss(data);
     const colorIdx = out.indexOf('--color-primary');
     const fontFamilyIdx = out.indexOf('--font-f');
     const radiusIdx = out.indexOf('--radius-r');
     const spacingIdx = out.indexOf('--spacing-s');
+    const shadowIdx = out.indexOf('--shadow-sh');
     expect(colorIdx).toBeLessThan(fontFamilyIdx);
     expect(fontFamilyIdx).toBeLessThan(radiusIdx);
     expect(radiusIdx).toBeLessThan(spacingIdx);
+    expect(spacingIdx).toBeLessThan(shadowIdx);
   });
 
   it('skips empty categories (no blank lines)', () => {

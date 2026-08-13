@@ -14,6 +14,7 @@
 
 import type { DesignSystemState } from '../../model/spec.js';
 import type { RuleDescriptor, RuleFinding } from './types.js';
+import { computeReferencedPaths } from './reference-utils.js';
 
 /**
  * Reduce a Material Design 3 color token name to its family root.
@@ -60,18 +61,7 @@ const MD3_STANDARD_FAMILIES = new Set([
 export function orphanedTokens(state: DesignSystemState): RuleFinding[] {
   if (state.components.size === 0) return [];
 
-  const referencedPaths = new Set<string>();
-  for (const [, comp] of state.components) {
-    for (const [, value] of comp.properties) {
-      if (typeof value === 'object' && value !== null && 'type' in value) {
-        for (const [key, symValue] of state.symbolTable) {
-          if (symValue === value) {
-            referencedPaths.add(key);
-          }
-        }
-      }
-    }
-  }
+  const referencedPaths = computeReferencedPaths(state);
 
   // A component referencing one MD3 token implies its semantic siblings are
   // part of the same in-use group (e.g. `primary` brings `on-primary`,

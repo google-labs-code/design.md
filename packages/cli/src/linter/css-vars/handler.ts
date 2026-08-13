@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { CssVarDeclaration, CssVarsEmitterSpec, CssVarsEmitterResult } from './spec.js';
-import type { DesignSystemState, ResolvedDimension } from '../model/spec.js';
+import type { DesignSystemState, ResolvedDimension, ResolvedShadow } from '../model/spec.js';
 
 /**
  * Pure function mapping DesignSystemState → CSS custom property declarations.
@@ -32,8 +32,27 @@ export class CssVarsEmitterHandler implements CssVarsEmitterSpec {
 
     this.mapDimensionGroup(declarations, 'spacing', state.spacing);
     this.mapDimensionGroup(declarations, 'rounded', state.rounded);
+    this.mapShadowGroup(declarations, 'shadow', state.shadows);
 
     return { success: true, data: { declarations } };
+  }
+
+  private mapShadowGroup(
+    declarations: CssVarDeclaration[],
+    group: 'shadow',
+    shadows: Map<string, ResolvedShadow>,
+  ): void {
+    for (const [name, shadow] of shadows) {
+      const x = shadow.offsetX ? this.dimToString(shadow.offsetX) : '0px';
+      const y = shadow.offsetY ? this.dimToString(shadow.offsetY) : '0px';
+      const blur = shadow.blur ? this.dimToString(shadow.blur) : '0px';
+      const spread = shadow.spread ? this.dimToString(shadow.spread) : '0px';
+      const color = shadow.color ? shadow.color.hex.toLowerCase() : 'transparent';
+      declarations.push({
+        name: `${group}-${this.cssSafe(name)}`,
+        value: `${x} ${y} ${blur} ${spread} ${color}`,
+      });
+    }
   }
 
   private mapDimensionGroup(

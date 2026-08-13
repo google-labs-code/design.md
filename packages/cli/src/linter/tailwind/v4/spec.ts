@@ -27,6 +27,7 @@ export const TailwindV4ThemeDataSchema = z.object({
   fontWeight: z.record(z.string()).optional(),
   borderRadius: z.record(z.string()).optional(),
   spacing: z.record(z.string()).optional(),
+  shadow: z.record(z.string()).optional(),
 });
 
 export type TailwindV4ThemeData = z.infer<typeof TailwindV4ThemeDataSchema>;

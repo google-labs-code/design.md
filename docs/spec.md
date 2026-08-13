@@ -266,6 +266,39 @@ Depth is achieved through **Tonal Layers** rather than heavy shadows. The
 background uses a soft off-white or very light green, while primary content sits on pure white cards.
 ```
 
+### Design Tokens
+
+The optional `shadows` section defines structured shadow tokens for design systems that convey elevation through box-shadow-style values. Each token is a composite of offset, blur, spread, and color — the same layered-value approach as `typography`, rather than a single CSS `box-shadow` string.
+
+It is a
+map\<string, Shadow>, where each `Shadow` has the following properties:
+
+- `offsetX` (Dimension) - Horizontal offset of the shadow. Negative values shift the shadow left.
+- `offsetY` (Dimension) - Vertical offset of the shadow. Negative values shift the shadow up.
+- `blur` (Dimension) - Blur radius. Larger values produce a softer, more spread-out shadow.
+- `spread` (Dimension) - Spread radius. Optional; defaults to `0px` when omitted.
+- `color` (Color | Reference) - The shadow's color, as a literal color value or a `{colors.*}` token reference.
+
+The `color` property accepts a literal color value or a `{colors.*}` token reference, so a shadow's tint can stay tied to the palette.
+
+```yaml
+shadows:
+  card:
+    offsetX: 0px
+    offsetY: 4px
+    blur: 8px
+    spread: 0px
+    color: #00000033
+```
+
+A component references a shadow token the same way it references any other token, via a component sub-token (see [Components](#components)):
+
+```yaml
+components:
+  card:
+    boxShadow: "{shadows.card}"
+```
+
 ## Shapes
 
 This section describes how visual elements are shaped.
@@ -339,6 +372,7 @@ Each component has a set of properties that are themselves design tokens:
 - size: \<Dimension\>
 - height: \<Dimension\>
 - width: \<Dimension\>
+- boxShadow: \<Shadow\>
 
 ## Do's and Don'ts
 
