@@ -474,7 +474,7 @@ describe('ModelHandler', () => {
       const body = result.designSystem.typography.get('body-md');
       expect(body?.lineHeight?.value).toBe(1.6);
       expect(body?.lineHeight?.unit).toBe('');
-      expect(result.findings.filter((f) => f.path.includes('lineHeight'))).toHaveLength(0);
+      expect(result.findings.filter((f) => f.path?.includes('lineHeight') === true)).toHaveLength(0);
     });
 
     it('accepts string representations of numbers for fontWeight', () => {
