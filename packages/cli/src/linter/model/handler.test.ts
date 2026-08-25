@@ -465,6 +465,18 @@ describe('ModelHandler', () => {
       expect(result.findings[0]!.severity).toBe('error');
     });
 
+    it('keeps unquoted YAML numeric lineHeight as a unitless multiplier', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': { fontFamily: 'Inter', fontSize: '16px', fontWeight: 400, lineHeight: 1.6 },
+        },
+      }));
+      const body = result.designSystem.typography.get('body-md');
+      expect(body?.lineHeight?.value).toBe(1.6);
+      expect(body?.lineHeight?.unit).toBe('');
+      expect(result.findings.filter((f) => f.path.includes('lineHeight'))).toHaveLength(0);
+    });
+
     it('accepts string representations of numbers for fontWeight', () => {
       const result = handler.execute(makeParsed({
         typography: {
