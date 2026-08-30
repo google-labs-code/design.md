@@ -347,6 +347,20 @@ console.log(report.summary);        // { errors, warnings, info }
 console.log(report.designSystem);   // Parsed DesignSystemState
 ```
 
+Projects can declare additional component sub-tokens for the `broken-ref` rule.
+The configured names are added to the built-in vocabulary, so undeclared names
+still produce typo warnings and unresolved token references remain errors:
+
+```typescript
+const report = lint(markdownString, {
+  ruleOptions: {
+    'broken-ref': {
+      additionalComponentSubTokens: ['owner', 'gap'],
+    },
+  },
+});
+```
+
 ## Design Token Interoperability
 
 DESIGN.md tokens are inspired by the [W3C Design Token Format](https://www.designtokens.org/). The `export` command converts tokens to other formats:

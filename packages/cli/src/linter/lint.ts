@@ -20,11 +20,17 @@ import { TailwindEmitterHandler } from './tailwind/handler.js';
 import type { DesignSystemState } from './model/spec.js';
 import type { Finding } from './linter/spec.js';
 import type { LintRule } from './linter/rules/types.js';
+import type { BrokenRefOptions } from './linter/rules/broken-ref.js';
+import { DEFAULT_RULE_DESCRIPTORS } from './linter/rules/index.js';
 import type { TailwindEmitterResult } from './tailwind/spec.js';
 
 export interface LintOptions {
-  /** Custom lint rules. Defaults to DEFAULT_RULES if omitted. */
+  /** Custom lint rules. Defaults to the built-in rules if omitted. */
   rules?: LintRule[];
+  /** Options for individual built-in lint rules. */
+  ruleOptions?: {
+    'broken-ref'?: BrokenRefOptions;
+  };
 }
 
 export interface LintReport {
@@ -89,7 +95,11 @@ export function lint(content: string, options?: LintOptions): LintReport {
   }
 
   const { designSystem, findings: modelFindings } = model.execute(parseResult.data);
-  const lintResult = runLinter(designSystem, options?.rules);
+  const lintResult = runLinter(
+    designSystem,
+    options?.rules ?? DEFAULT_RULE_DESCRIPTORS,
+    options?.ruleOptions,
+  );
   const tailwindConfig = tailwind.execute(designSystem);
 
   const findings = [...modelFindings, ...lintResult.findings];

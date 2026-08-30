@@ -27,9 +27,12 @@ export interface RuleFinding {
 /** A pure lint rule: takes immutable state, returns findings. No side effects. */
 export type LintRule = (state: DesignSystemState) => Finding[];
 
-export interface RuleDescriptor {
+/** Options passed to a lint rule by name. */
+export type RuleOptions = Record<string, unknown>;
+
+export interface RuleDescriptor<TOptions = unknown> {
   name: string;
   severity: Severity;
   description: string;
-  run: (state: DesignSystemState) => RuleFinding[];
+  run(state: DesignSystemState, options?: TOptions): RuleFinding[];
 }

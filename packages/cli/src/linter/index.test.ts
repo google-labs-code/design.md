@@ -163,4 +163,30 @@ motion:
     );
     expect(unknownKeyFindings).toEqual([]);
   });
+
+  it('passes per-rule options to built-in lint rules', () => {
+    const content = `---
+name: Extended components
+spacing:
+  md: 16px
+components:
+  stack:
+    gap: "{spacing.md}"
+    owner: "@example/stack"
+    gaap: "{spacing.md}"
+---`;
+
+    const result = lint(content, {
+      ruleOptions: {
+        'broken-ref': {
+          additionalComponentSubTokens: ['gap', 'owner'],
+        },
+      },
+    });
+
+    const unknownSubTokens = result.findings.filter(
+      f => f.rule === 'broken-ref' && f.message.includes('not a recognized')
+    );
+    expect(unknownSubTokens.map(f => f.path)).toEqual(['components.stack.gaap']);
+  });
 });

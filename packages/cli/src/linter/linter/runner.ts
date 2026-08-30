@@ -14,8 +14,8 @@
 
 import type { DesignSystemState } from '../model/spec.js';
 import type { LintResult, Finding, GradedTokenEdits, TokenEditEntry } from './spec.js';
-import type { LintRule, RuleDescriptor } from './rules/types.js';
-import { DEFAULT_RULES, DEFAULT_RULE_DESCRIPTORS } from './rules/index.js';
+import type { LintRule, RuleDescriptor, RuleOptions } from './rules/types.js';
+import { DEFAULT_RULE_DESCRIPTORS } from './rules/index.js';
 
 /** Type guard: checks if the array contains RuleDescriptors (objects with `run`). */
 function isDescriptorArray(rules: LintRule[] | RuleDescriptor[]): rules is RuleDescriptor[] {
@@ -28,13 +28,15 @@ function isDescriptorArray(rules: LintRule[] | RuleDescriptor[]): rules is RuleD
  */
 export function runLinter(
   state: DesignSystemState,
-  rules: LintRule[] | RuleDescriptor[] = DEFAULT_RULES,
+  rules: LintRule[] | RuleDescriptor[] = DEFAULT_RULE_DESCRIPTORS,
+  ruleOptions: RuleOptions = {},
 ): LintResult {
   const findings: Finding[] = isDescriptorArray(rules)
-    ? rules.flatMap(desc => desc.run(state).map(f => ({
+    ? rules.flatMap(desc => desc.run(state, ruleOptions[desc.name]).map(f => ({
         severity: f.severity ?? desc.severity,
         path: f.path,
         message: f.message,
+        rule: f.rule ?? desc.name,
       })))
     : rules.flatMap(rule => rule(state));
   return {
@@ -52,9 +54,10 @@ export function runLinter(
  */
 export function preEvaluate(
   state: DesignSystemState,
-  rules: LintRule[] | RuleDescriptor[] = DEFAULT_RULES,
+  rules: LintRule[] | RuleDescriptor[] = DEFAULT_RULE_DESCRIPTORS,
+  ruleOptions: RuleOptions = {},
 ): GradedTokenEdits {
-  const { findings } = runLinter(state, rules);
+  const { findings } = runLinter(state, rules, ruleOptions);
   const fixes: TokenEditEntry[] = [];
   const improvements: TokenEditEntry[] = [];
   const suggestions: TokenEditEntry[] = [];

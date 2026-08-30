@@ -16,11 +16,23 @@ import type { DesignSystemState } from '../../model/spec.js';
 import { VALID_COMPONENT_SUB_TOKENS } from '../../model/spec.js';
 import type { RuleDescriptor, RuleFinding } from './types.js';
 
+export interface BrokenRefOptions {
+  /** Additional project-owned component sub-token names to recognize. */
+  additionalComponentSubTokens?: readonly string[];
+}
+
 /**
  * Broken/circular references and unknown component sub-tokens.
  */
-export function brokenRef(state: DesignSystemState): RuleFinding[] {
+export function brokenRef(
+  state: DesignSystemState,
+  options: BrokenRefOptions = {},
+): RuleFinding[] {
   const findings: RuleFinding[] = [];
+  const validComponentSubTokens = new Set([
+    ...VALID_COMPONENT_SUB_TOKENS,
+    ...(options.additionalComponentSubTokens ?? []),
+  ]);
   for (const [compName, comp] of state.components) {
     // Unresolved references
     for (const ref of comp.unresolvedRefs) {
@@ -32,11 +44,11 @@ export function brokenRef(state: DesignSystemState): RuleFinding[] {
 
     // Unknown component sub-tokens (lower severity override)
     for (const [propName] of comp.properties) {
-      if (!(VALID_COMPONENT_SUB_TOKENS as readonly string[]).includes(propName)) {
+      if (!validComponentSubTokens.has(propName)) {
         findings.push({
           severity: 'warning',
           path: `components.${compName}.${propName}`,
-          message: `'${propName}' is not a recognized component sub-token. Valid sub-tokens: ${VALID_COMPONENT_SUB_TOKENS.join(', ')}.`,
+          message: `'${propName}' is not a recognized component sub-token. Valid sub-tokens: ${[...validComponentSubTokens].join(', ')}.`,
         });
       }
     }
@@ -44,7 +56,7 @@ export function brokenRef(state: DesignSystemState): RuleFinding[] {
   return findings;
 }
 
-export const brokenRefRule: RuleDescriptor = {
+export const brokenRefRule: RuleDescriptor<BrokenRefOptions> = {
   name: 'broken-ref',
   severity: 'error',
   description: 'Broken/circular references and unknown component sub-tokens.',

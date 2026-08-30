@@ -34,8 +34,9 @@ export type { CssVarsEmitterResult, CssVarDeclaration } from './css-vars/spec.js
 
 // ── Advanced linting ───────────────────────────────────────────────
 export { runLinter, preEvaluate } from './linter/runner.js';
-export { DEFAULT_RULES } from './linter/rules/index.js';
-export type { LintRule } from './linter/rules/types.js';
+export { DEFAULT_RULES, DEFAULT_RULE_DESCRIPTORS } from './linter/rules/index.js';
+export type { LintRule, RuleDescriptor, RuleOptions } from './linter/rules/types.js';
+export type { BrokenRefOptions } from './linter/rules/broken-ref.js';
 export type { GradedTokenEdits, TokenEditEntry } from './linter/spec.js';
 export {
   brokenRef,

@@ -46,6 +46,38 @@ describe('brokenRef', () => {
     expect(subTokenDiag!.severity).toBe('warning');
   });
 
+  it('accepts additional project-owned component sub-tokens', () => {
+    const state = buildState({
+      spacing: { md: '16px' },
+      components: {
+        stack: {
+          gap: '{spacing.md}',
+          owner: '@example/stack',
+          gaap: '{spacing.md}',
+        },
+      },
+    });
+    const findings = brokenRef(state, {
+      additionalComponentSubTokens: ['gap', 'owner'],
+    });
+
+    expect(findings.some(d => d.path === 'components.stack.gap')).toBe(false);
+    expect(findings.some(d => d.path === 'components.stack.owner')).toBe(false);
+    expect(findings.some(d => d.path === 'components.stack.gaap')).toBe(true);
+  });
+
+  it('still reports unresolved references when additional sub-tokens are configured', () => {
+    const state = buildState({
+      components: { stack: { gap: '{spacing.missing}' } },
+    });
+    const findings = brokenRef(state, {
+      additionalComponentSubTokens: ['gap'],
+    });
+
+    expect(findings.some(d => d.message.includes('does not resolve'))).toBe(true);
+    expect(findings.some(d => d.message.includes('not a recognized'))).toBe(false);
+  });
+
   it('has a valid rule descriptor', () => {
     expect(brokenRefRule.name).toBe('broken-ref');
     expect(brokenRefRule.severity).toBe('error');
