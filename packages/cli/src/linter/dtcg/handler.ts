@@ -17,6 +17,9 @@ import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypog
 
 const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.json';
 
+/** DESIGN.md has no required letterSpacing field; DTCG typography requires one. */
+const DEFAULT_LETTER_SPACING: DtcgDimensionValue = { value: 0, unit: 'px' };
+
 /**
  * Pure function mapping DesignSystemState → DTCG tokens.json (W3C Design Tokens Format Module 2025.10).
  * No side effects.
@@ -101,7 +104,9 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     if (typo.fontFamily) value.fontFamily = typo.fontFamily;
     if (typo.fontSize) value.fontSize = this.dimToValue(typo.fontSize);
     if (typo.fontWeight !== undefined) value.fontWeight = typo.fontWeight;
-    if (typo.letterSpacing) value.letterSpacing = this.dimToValue(typo.letterSpacing);
+    value.letterSpacing = typo.letterSpacing
+      ? this.dimToValue(typo.letterSpacing)
+      : DEFAULT_LETTER_SPACING;
     if (typo.lineHeight) {
       // DTCG lineHeight is a unitless multiplier of fontSize.
       // Our model stores it as a ResolvedDimension. Convert if possible.

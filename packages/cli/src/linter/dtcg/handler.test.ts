@@ -14,6 +14,7 @@
 
 import { describe, test, expect } from 'bun:test';
 import { DtcgEmitterHandler } from './handler.js';
+import { lint } from '../lint.js';
 import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography } from '../model/spec.js';
 
 function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
@@ -170,7 +171,28 @@ describe('DtcgEmitterHandler', () => {
     expect(value['letterSpacing']).toEqual({ value: 0.5, unit: 'px' });
   });
 
-  test('typography with missing fields omits them from $value', () => {
+  test('typography without letterSpacing emits a 0px default', () => {
+    const body: ResolvedTypography = {
+      type: 'typography',
+      fontFamily: 'Manrope, Arial, sans-serif',
+      fontSize: makeDim(16, 'px'),
+      fontWeight: 400,
+      lineHeight: makeDim(1.6, ''),
+    };
+
+    const state = emptyState({
+      typography: new Map([['body-md', body]]),
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
+  });
+
+  test('typography with missing fields omits them from $value except default letterSpacing', () => {
     const minimal: ResolvedTypography = {
       type: 'typography',
       fontFamily: 'Roboto',
@@ -189,6 +211,57 @@ describe('DtcgEmitterHandler', () => {
     expect(value['fontSize']).toBeUndefined();
     expect(value['fontWeight']).toBeUndefined();
     expect(value['lineHeight']).toBeUndefined();
-    expect(value['letterSpacing']).toBeUndefined();
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
+  });
+
+  test('exported typography includes all DTCG required properties', () => {
+    const body: ResolvedTypography = {
+      type: 'typography',
+      fontFamily: 'Manrope',
+      fontSize: makeDim(16, 'px'),
+      fontWeight: 400,
+      lineHeight: makeDim(1.6, ''),
+    };
+
+    const state = emptyState({
+      typography: new Map([['body-md', body]]),
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+    expect(Object.keys(value).sort()).toEqual(
+      ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight'].sort(),
+    );
+    expect(value['fontFamily']).toBe('Manrope');
+    expect(value['fontSize']).toEqual({ value: 16, unit: 'px' });
+    expect(value['fontWeight']).toBe(400);
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
+    expect(value['lineHeight']).toBe(1.6);
+  });
+
+  test('YAML numeric lineHeight round-trips through lint into required DTCG typography props', () => {
+    const report = lint(`---
+typography:
+  body-md:
+    fontFamily: Manrope
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+---
+# Spec
+`);
+    const result = handler.execute(report.designSystem);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+    expect(Object.keys(value).sort()).toEqual(
+      ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight'].sort(),
+    );
+    expect(value['lineHeight']).toBe(1.6);
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
   });
 });
