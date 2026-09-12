@@ -4,7 +4,7 @@ A format specification for describing a visual identity to coding agents. DESIGN
 
 ## The Format
 
-A DESIGN.md file combines machine-readable design tokens (YAML front matter) with human-readable design rationale (markdown prose). Tokens give agents exact values. Prose tells them *why* those values exist and how to apply them.
+A DESIGN.md file combines machine-readable design tokens (YAML front matter or interleaved YAML code blocks) with human-readable design rationale (markdown prose). Tokens give agents exact values. Prose tells them *why* those values exist and how to apply them.
 
 ```md
 ---
@@ -102,7 +102,7 @@ The full DESIGN.md spec lives at [`docs/spec.md`](docs/spec.md). What follows is
 
 A DESIGN.md file has two layers:
 
-1. **YAML front matter** — Machine-readable design tokens, delimited by `---` fences at the top of the file.
+1. **YAML Design tokens** — Machine-readable design tokens, delimited by `---` fences at the top of the file or interleaved as fenced ` ```yaml ` code blocks within each `##` section.
 2. **Markdown body** — Human-readable design rationale organized into `##` sections.
 
 The tokens are the normative values. The prose provides context for how to apply them.
@@ -179,6 +179,7 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 | Unknown typography token name | Accept as valid typography |
 | Unknown component property | Accept with warning |
 | Duplicate section heading | Error; reject the file |
+| Duplicate top-level YAML key | Error; reject the file |
 
 ## CLI Reference
 
