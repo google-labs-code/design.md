@@ -163,4 +163,85 @@ motion:
     );
     expect(unknownKeyFindings).toEqual([]);
   });
+
+  it('processes a hybrid frontmatter + interleaved YAML code block DESIGN.md', () => {
+    const content = `---
+version: alpha
+name: Kindred Spirit
+description: Describes the design system for a pet care assistant.
+---
+
+## Overview
+
+A warm, health-sector-inspired design system for pet care.
+
+## Colors
+
+The palette uses a deep Evergreen primary with a soft neutral canvas.
+
+\`\`\`yaml
+colors:
+  primary: "#647D66"
+  on-primary: "#FFFFFF"
+  surface: "#FAFDF7"
+\`\`\`
+
+## Typography
+
+\`\`\`yaml
+typography:
+  headline-lg:
+    fontFamily: Google Sans Display
+    fontSize: 42px
+    fontWeight: 500
+    lineHeight: 50px
+\`\`\`
+
+## Layout & Spacing
+
+\`\`\`yaml
+spacing:
+  gutter-s: 8px
+  gutter-l: 16px
+\`\`\`
+
+## Elevation & Depth
+
+Depth is achieved through subtle tonal layering.
+
+## Shapes
+
+\`\`\`yaml
+rounded:
+  md: 8px
+  full: 9999px
+\`\`\`
+
+## Components
+
+\`\`\`yaml
+components:
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.on-primary}"
+    rounded: "{rounded.md}"
+    padding: 12px
+\`\`\`
+
+## Do's and Don'ts
+
+- Do use primary color for main actions.
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.designSystem.name).toBe('Kindred Spirit');
+    expect(result.designSystem.colors.size).toBe(3);
+    expect(result.designSystem.typography.size).toBe(1);
+    expect(result.designSystem.spacing.size).toBe(2);
+    expect(result.designSystem.rounded.size).toBe(2);
+    expect(result.designSystem.components.size).toBe(1);
+    expect(result.tailwindConfig.success).toBe(true);
+  });
 });

@@ -13,8 +13,19 @@
 // limitations under the License.
 
 import { describe, it, expect } from 'bun:test';
-import { typeDefinitions } from './renderers.js';
+import { typeDefinitions, interleavedExample } from './renderers.js';
 import { SPEC_CONFIG } from '../spec-config.js';
+
+describe('interleavedExample', () => {
+  it('renders markdown with frontmatter metadata and interleaved yaml code blocks', () => {
+    const result = interleavedExample(SPEC_CONFIG);
+    expect(result).toContain('name: Daylight Prestige');
+    expect(result).toContain('## Colors');
+    expect(result).toContain('```yaml\ncolors:');
+    expect(result).toContain('## Typography');
+    expect(result).toContain('```yaml\ntypography:');
+  });
+});
 
 describe('typeDefinitions', () => {
   it('includes **Color** with its description', () => {

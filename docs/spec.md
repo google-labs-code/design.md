@@ -5,7 +5,7 @@
 
 DESIGN.md is a self-contained, plain-text representation of a design system. It defines the visual identity of a brand and product, thereby ensuring that these stylistic choices can be followed across design sessions and between different AI agents and tools.  As a human-readable, open-format document, it serves as a living source of truth that both humans and AI can understand and refine.
 
-A DESIGN.md file contains two parts: An optional YAML frontmatter, and a markdown body. The YAML front matter contains machine-readable design tokens. The markdown body sections provide human-readable design rationale and guidance. Prose may use descriptive color names (e.g., "Midnight Forest Green") that correspond to systematic token names (e.g., `primary`). The tokens are the normative values; the prose provides context for how to apply them.
+A DESIGN.md file contains two parts: human-readable markdown prose and machine-readable YAML design tokens. The markdown body sections provide human-readable design rationale and guidance. Prose may use descriptive color names (e.g., "Midnight Forest Green") that correspond to systematic token names (e.g., `primary`). The tokens are the normative values; the prose provides context for how to apply them.
 
 # Design Tokens
 
@@ -14,9 +14,14 @@ DESIGN.md may embed design tokens in a structured format. The system that we use
 
 These tokens are easily converted from or to `tokens.json`, Figma variables, and Tailwind theme configs.
 
-Design tokens are embedded as YAML front matter at the beginning of the file. The front matter block must begin with a line containing exactly `---` and end with a line containing exactly `---`. The YAML content between these delimiters is parsed according to the schema defined below.
+Design tokens may be embedded into `DESIGN.md` in two ways:
 
-Example:
+1. **YAML Front Matter:** Placed at the beginning of the file. The front matter block must begin with a line containing exactly `---` and end with a line containing exactly `---`.
+2. **Interleaved YAML Code Blocks:** Distributed throughout the document as fenced ` ```yaml ` code blocks placed within the relevant markdown section.
+
+Both approaches may be used together in the same document, for example, placing document metadata like `name` and `description` in the front matter, while placing section tokens like `colors` and `typography` in fenced code blocks inside their respective sections. When multiple YAML blocks are present, all blocks are parsed and merged into a single design token tree. Each top-level schema key may be defined at most once across the entire document; defining the same top-level key in multiple blocks is an error.
+
+Front Matter Example:
 
 ```yaml
 ---
@@ -36,9 +41,44 @@ typography:
 ---
 ```
 
+Interleaved YAML Code Block Example:
+
+````markdown
+---
+version: alpha
+name: Daylight Prestige
+description: Editorial design system with high-contrast neutrals.
+---
+
+## Colors
+
+The palette is rooted in high-contrast neutrals and a single accent color.
+
+```yaml
+colors:
+  primary: "#1A1C1E"
+  secondary: "#6C7278"
+  tertiary: "#B8422E"
+```
+
+## Typography
+
+The typography strategy leverages Public Sans for headlines and narrative.
+
+```yaml
+typography:
+  h1:
+    fontFamily: Public Sans
+    fontSize: 48px
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: -0.02em
+```
+````
+
 ## Schema
 
-Below is the schema for the design tokens defined in the front matter:
+Below is the schema for the design tokens:
 
 ```yaml
 version: <string>          # optional, current version: "alpha"
@@ -375,3 +415,4 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Unknown component property | Accept with warning | `borderColor` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |
+| Duplicate top-level YAML key | Error; reject the file | `colors` defined in both front matter and a code block |

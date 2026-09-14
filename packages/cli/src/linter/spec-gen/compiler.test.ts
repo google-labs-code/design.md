@@ -66,6 +66,7 @@ describe('compileMdx', () => {
     const scope = {
       ...cfg,
       frontmatterExample: () => renderers.frontmatterExample(cfg),
+      interleavedExample: () => renderers.interleavedExample(cfg),
       colorsExample: () => renderers.colorsExample(cfg),
       typographyExample: () => renderers.typographyExample(cfg),
       componentsExample: () => renderers.componentsExample(cfg),

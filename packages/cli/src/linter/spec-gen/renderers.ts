@@ -61,6 +61,41 @@ export function frontmatterExample(config: SpecConfig): string {
   ]);
 }
 
+/** Interleaved YAML code block example (overview section). */
+export function interleavedExample(config: SpecConfig): string {
+  const [typoName, typoProps] = Object.entries(config.EXAMPLES.typography)[0]!;
+  return [
+    '````markdown',
+    '---',
+    `version: ${config.SPEC_VERSION}`,
+    'name: Daylight Prestige',
+    'description: Editorial design system with high-contrast neutrals.',
+    '---',
+    '',
+    '## Colors',
+    '',
+    'The palette is rooted in high-contrast neutrals and a single accent color.',
+    '',
+    ...yamlBlock([
+      'colors:',
+      ...yamlEntries(
+        Object.fromEntries(Object.entries(config.EXAMPLES.colors).slice(0, 3)) as Record<string, string>
+      ),
+    ]).split('\n'),
+    '',
+    '## Typography',
+    '',
+    'The typography strategy leverages Public Sans for headlines and narrative.',
+    '',
+    ...yamlBlock([
+      'typography:',
+      `  ${typoName}:`,
+      ...yamlObject(typoProps as Record<string, string | number>),
+    ]).split('\n'),
+    '````',
+  ].join('\n');
+}
+
 /** Colors YAML example. */
 export function colorsExample(config: SpecConfig): string {
   return yamlBlock(['colors:', ...yamlEntries(config.EXAMPLES.colors)]);
