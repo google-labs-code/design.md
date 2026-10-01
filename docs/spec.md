@@ -7,6 +7,8 @@ DESIGN.md is a self-contained, plain-text representation of a design system. It 
 
 A DESIGN.md file contains two parts: An optional YAML frontmatter, and a markdown body. The YAML front matter contains machine-readable design tokens. The markdown body sections provide human-readable design rationale and guidance. Prose may use descriptive color names (e.g., "Midnight Forest Green") that correspond to systematic token names (e.g., `primary`). The tokens are the normative values; the prose provides context for how to apply them.
 
+For larger design systems or multi-agent workflows, `DESIGN.md` may also act as a lightweight, authoritative index that points to canonical external files via `@`-references (such as `@components/button.html`, `@tokens.json`, or sub-surface `DESIGN.md` files), enabling downstream agents to lazily load detailed markup or token files on demand.
+
 # Design Tokens
 
 DESIGN.md may embed design tokens in a structured format. The system that we use to describe design tokens is inspired by the
@@ -340,6 +342,25 @@ Each component has a set of properties that are themselves design tokens:
 - height: \<Dimension\>
 - width: \<Dimension\>
 
+### External References (`@`-references)
+
+Instead of (or in addition to) inlining a large `components:` YAML dictionary, `## Components` may record an index of `@`-references to self-contained HTML component sticker sheets in `components/*.html`, followed by the exact `<!-- COMPONENT: name -->` markers defined inside each file:
+
+```markdown
+## Components
+
+Component implementations live as individual HTML sticker sheet files in `components/`. Each file contains the canonical, styled HTML components with `<!-- COMPONENT: name -->` comment markers. Read each file before use.
+
+- **Buttons** → `@components/button.html` — `button-primary`, `button-secondary`, `button-tertiary`, `button-icon`
+- **Cards** → `@components/card.html` — `card-elevated`, `card-outlined`
+- **Input Fields** → `@components/input-field.html` — `input-default`, `input-error`, `input-disabled`
+```
+
+This pattern supports two key workflows:
+
+* **Lazy context loading**: Downstream screen-generation agents inspect `DESIGN.md` to discover available component marker IDs, then read only the specific `@components/<name>.html` files required for the target screen rather than loading every component's full HTML/CSS markup upfront.
+* **External token and multi-file discovery**: In large monorepos or DTCG workflows, `@`-references also allow `DESIGN.md` to link canonical external files (such as `@tokens.json` or sub-surface `DESIGN.md` files) without duplicating every primitive token inline.
+
 ## Do's and Don'ts
 
 This section provides practical guidelines and common pitfalls. These act as guardrails when creating designs.
@@ -374,4 +395,5 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Unknown component property | Accept with warning | `borderColor` |
+| External `@`-reference in prose | Preserve; resolve referenced file on demand | `@components/button.html`, `@tokens.json` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |

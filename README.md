@@ -170,6 +170,15 @@ Valid component properties: `backgroundColor`, `textColor`, `typography`, `round
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 
+Instead of (or in addition to) inline `components:` YAML entries, `## Components` may index external HTML component sticker sheets or token files via `@`-references (e.g., `@components/button.html` with `<!-- COMPONENT: name -->` markers, or `@tokens.json`) for lazy context loading by downstream agents:
+
+```markdown
+## Components
+
+- **Buttons** → `@components/button.html` — `button-primary`, `button-secondary`, `button-tertiary`, `button-icon`
+- **Cards** → `@components/card.html` — `card-elevated`, `card-outlined`
+```
+
 ### Consumer Behavior for Unknown Content
 
 | Scenario | Behavior |
@@ -178,6 +187,7 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 | Unknown color token name | Accept if value is valid |
 | Unknown typography token name | Accept as valid typography |
 | Unknown component property | Accept with warning |
+| External `@`-reference in prose | Preserve; resolve referenced file on demand |
 | Duplicate section heading | Error; reject the file |
 
 ## CLI Reference
