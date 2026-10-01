@@ -47,12 +47,20 @@ description: <string>      # optional
 omitted: <string[]|OmittedSection[]> # optional
 colors:
   <token-name>: <Color>
+  <group-name>:            # optional nested group (e.g., light, dark, primary)
+    <token-name>: <Color>
 typography:
   <token-name>: <Typography>
+  <group-name>:            # optional nested group (e.g., sm, md, lg, xl)
+    <token-name>: <Typography>
 rounded:
   <scale-level>: <Dimension>
+  <group-name>:            # optional nested group
+    <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+  <group-name>:            # optional nested group (e.g., sm, md, lg, xl)
+    <scale-level>: <Dimension | number>
 components:
   <component-name>:
     <token-name>: <string|token reference>
@@ -95,7 +103,15 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
       reason: "No rounded corners defined in brand book"
   ```
 
-**Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
+**Grouped Tokens**: Top-level token categories (`colors`, `typography`, `rounded`, and `spacing`) accept nested YAML sub-maps to organize tokens into logical groups. Common grouping patterns include:
+
+* **Theme modes**: Grouping mode-dependent color tokens under `light` and `dark` sub-maps while keeping mode-agnostic brand roles at the top level.
+* **Responsive breakpoints**: Grouping breakpoint-specific `typography` or `spacing` scales under breakpoint sub-maps. For responsive design, the recommended (but not required) group names are `sm`, `md`, `lg`, and `xl` (corresponding to mobile, tablet, laptop, and desktop, respectively).
+* **Token families**: Grouping related scales or semantic subsets (e.g., `colors.primary.light`, `spacing.inset.md`).
+
+Grouped tokens are flattened internally to dot-separated paths (e.g., `colors.light.surface`, `typography.sm.headline-lg`, `spacing.lg.gutter`) and can be nested up to 20 levels deep. Mixing flat hyphenated keys (e.g., `colors.primary-light`) and nested grouped keys (e.g., `colors.primary.light`) that produce identical flattened CSS custom property names (`--color-primary-light`) is rejected as an error by the linter, as are duplicate token paths.
+
+**Token References**: A token reference must be wrapped in curly braces, and contain a dot-separated object path to another value in the YAML tree (including grouped tokens, such as `{colors.light.surface}`, `{typography.sm.headline-lg}`, or `{spacing.lg.gutter}`). For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors` or `colors.light`). Within the `components` section, references to composite values (e.g., `{typography.label-md}` or `{typography.sm.headline-lg}`) are permitted.
 
 # Sections
 
@@ -150,7 +166,7 @@ The palette is rooted in high-contrast neutrals and a single, evocative accent c
 The `colors` section defines all color design tokens. The color tokens should be derived from the key color palettes defined in the markdown prose. The exact mapping from color palettes to color tokens may follow any consistent naming convention.
 
 It is a
-map\<string, Color>, that maps the name of the color token to its value.
+map\<string, Color> (with optional nested group sub-maps), that maps the name or dot-separated group path of the color token to its value.
 
 ```yaml
 colors:
@@ -158,6 +174,27 @@ colors:
   secondary: "#6C7278"
   tertiary: "#B8422E"
   neutral: "#F7F5F2"
+```
+
+For adaptive light and dark themes, mode-agnostic brand and semantic roles can remain at the top level while mode-dependent surface and text tokens are grouped under optional `light` and `dark` sub-maps:
+
+```yaml
+colors:
+  primary: "#647D66"
+  on-primary: "#FFFFFF"
+  secondary: "#FF8A65"
+  on-secondary: "#FFFFFF"
+  error: "#BA1A1A"
+  light:
+    surface: "#FAFDF7"
+    on-surface: "#1A1C19"
+    surface-container: "#FFFFFF"
+    surface-container-low: "#F4F7F1"
+  dark:
+    surface: "#10130E"
+    on-surface: "#E2E4DE"
+    surface-container: "#1A1C19"
+    surface-container-low: "#14170F"
 ```
 
 ## Typography
@@ -190,7 +227,7 @@ the narrative and **Space Grotesk** for technical data.
 The `typography` section defines the precise font properties for the typography design tokens.
 
 It is a
-map\<string, Typography>
+map\<string, Typography> (with optional nested group sub-maps).
 
 ```yaml
 typography:
@@ -211,6 +248,29 @@ typography:
     fontWeight: 500
     lineHeight: 1
     letterSpacing: 0.1em
+```
+
+For responsive typography, tokens can be grouped under breakpoint sub-maps while breakpoint-agnostic styles remain at the top level. The recommended (but not required) group names for responsive design are `sm`, `md`, `lg`, and `xl` (mobile, tablet, laptop, and desktop, respectively):
+
+```yaml
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+  sm:
+    headline-lg:
+      fontFamily: Public Sans
+      fontSize: 32px
+      fontWeight: 600
+      lineHeight: 1.15
+  lg:
+    headline-lg:
+      fontFamily: Public Sans
+      fontSize: 48px
+      fontWeight: 600
+      lineHeight: 1.1
 ```
 
 ## Layout
@@ -237,7 +297,7 @@ A strict 8px spacing scale (with a 4px half-step for micro-adjustments) is used 
 The spacing section defines the spacing design tokens. These may include spacing units that are useful for implementing the layout model. For example, a fixed grid layout may have spacing units for column spans, gutters, and margins.
 
 It is a
-map\<string, Dimension | number> that maps the spacing scale identifier to a dimension value or a unitless number (e.g., column counts or ratios).
+map\<string, Dimension | number> (with optional nested group sub-maps) that maps the spacing scale identifier or group path to a dimension value or a unitless number (e.g., column counts or ratios).
 
 ```yaml
 spacing:
@@ -249,6 +309,22 @@ spacing:
   xl: 64px
   gutter: 24px
   margin: 32px
+```
+
+For responsive layout metrics, spacing tokens can also be grouped under breakpoint sub-maps (recommended: `sm`, `md`, `lg`, and `xl` for mobile, tablet, laptop, and desktop, respectively):
+
+```yaml
+spacing:
+  base: 16px
+  xs: 4px
+  sm:
+    gutter: 16px
+    margin: 16px
+    columns: 4
+  lg:
+    gutter: 24px
+    margin: 32px
+    columns: 12
 ```
 
 ## Elevation & Depth
@@ -286,7 +362,7 @@ engineered aesthetic.
 The `rounded` section defines the design tokens for rounded corners used in
 buttons, cards, and other rectangular shapes.
 
-It is a map\<string, Dimension>.
+It is a map\<string, Dimension> (with optional nested group sub-maps).
 
 ```yaml
 rounded:
@@ -363,6 +439,10 @@ The following names are commonly used across design systems. They are not requir
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
+**Theme Mode Groups:** `light`, `dark`
+
+**Responsive Breakpoint Groups:** `sm` (mobile), `md` (tablet), `lg` (laptop), `xl` (desktop)
+
 # Consumer Behavior for Unknown Content
 
 When a DESIGN.md consumer encounters content not defined by this spec:
@@ -373,5 +453,7 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
+| Grouped token sub-map | Flatten to dot-separated token path | `colors.light.surface`, `typography.sm.headline-lg` |
+| Flat and grouped token name collision | Error; reject the conflicting token | `colors.primary-light` and `colors.primary.light` |
 | Unknown component property | Accept with warning | `borderColor` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |

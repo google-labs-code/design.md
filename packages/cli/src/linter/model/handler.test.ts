@@ -489,6 +489,74 @@ describe('ModelHandler', () => {
       expect(result.designSystem.typography.get('headline')?.fontFamily).toBe('Inter');
       expect(result.findings.some(f => f.path === 'typography.headline.fontFamily')).toBe(false);
     });
+
+    it('successfully parses grouped typography declarations across responsive breakpoints', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': {
+            fontFamily: 'Public Sans',
+            fontSize: '16px',
+            fontWeight: 400,
+            lineHeight: 1.6,
+          },
+          sm: {
+            'headline-lg': {
+              fontFamily: 'Public Sans',
+              fontSize: '32px',
+              fontWeight: 700,
+              lineHeight: 1.15,
+            },
+          },
+          lg: {
+            'headline-lg': {
+              fontFamily: 'Public Sans',
+              fontSize: '48px',
+              fontWeight: 700,
+              lineHeight: 1.1,
+            },
+          },
+        },
+      }));
+
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      expect(result.findings.filter(f => f.severity === 'warning')).toHaveLength(0);
+      expect(result.designSystem.typography.has('body-md')).toBe(true);
+      expect(result.designSystem.typography.has('sm.headline-lg')).toBe(true);
+      expect(result.designSystem.typography.has('lg.headline-lg')).toBe(true);
+      expect(result.designSystem.typography.get('sm.headline-lg')?.fontSize?.value).toBe(32);
+      expect(result.designSystem.typography.get('lg.headline-lg')?.fontSize?.value).toBe(48);
+      expect(result.designSystem.symbolTable.has('typography.sm.headline-lg')).toBe(true);
+    });
+
+    it('emits diagnostic for duplicate token path in typography', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          sm: {
+            'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+          },
+          'sm.headline-lg': { fontFamily: 'Public Sans', fontSize: '36px' },
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('typography.sm.headline-lg');
+      expect(errors[0]!.message).toBe("Duplicate token path 'typography.sm.headline-lg' detected.");
+    });
+
+    it('emits diagnostic when grouped typography token flattens to an existing token name', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'sm-headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+          sm: {
+            'headline-lg': { fontFamily: 'Public Sans', fontSize: '36px' },
+          },
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('typography.sm.headline-lg');
+      expect(errors[0]!.message).toBe("Grouped typography token flattens to 'sm-headline-lg', which is already defined.");
+    });
   });
 
   describe('rounded validation', () => {
