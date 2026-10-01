@@ -163,4 +163,83 @@ motion:
     );
     expect(unknownKeyFindings).toEqual([]);
   });
+
+  it('processes grouped tokens across colors, typography, spacing, and rounded', () => {
+    const content = `---
+name: Adaptive Design System
+
+colors:
+  primary: "#647D66"
+  on-primary: "#FFFFFF"
+  light:
+    surface: "#FAFDF7"
+    on-surface: "#1A1C19"
+  dark:
+    surface: "#10130E"
+    on-surface: "#E2E4DE"
+
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+  sm:
+    headline-lg:
+      fontFamily: Public Sans
+      fontSize: 32px
+      fontWeight: 600
+      lineHeight: 1.15
+  lg:
+    headline-lg:
+      fontFamily: Public Sans
+      fontSize: 48px
+      fontWeight: 600
+      lineHeight: 1.1
+
+rounded:
+  sm: 4px
+  control:
+    pill: 9999px
+
+spacing:
+  base: 16px
+  sm:
+    gutter: 16px
+  lg:
+    gutter: 24px
+
+components:
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.on-primary}"
+    typography: "{typography.sm.headline-lg}"
+    rounded: "{rounded.control.pill}"
+    padding: "{spacing.sm.gutter}"
+  card-light:
+    backgroundColor: "{colors.light.surface}"
+    textColor: "{colors.light.on-surface}"
+  card-dark:
+    backgroundColor: "{colors.dark.surface}"
+    textColor: "{colors.dark.on-surface}"
+---
+
+## Overview
+
+Adaptive design system with grouped theme and responsive tokens.
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.designSystem.colors.size).toBe(6);
+    expect(result.designSystem.typography.size).toBe(3);
+    expect(result.designSystem.rounded.size).toBe(2);
+    expect(result.designSystem.spacing.size).toBe(3);
+    expect(result.designSystem.typography.get('sm.headline-lg')?.fontSize?.value).toBe(32);
+    expect(result.designSystem.typography.get('lg.headline-lg')?.fontSize?.value).toBe(48);
+    expect(result.designSystem.spacing.get('sm.gutter')?.value).toBe(16);
+    expect(result.designSystem.spacing.get('lg.gutter')?.value).toBe(24);
+  });
 });
+

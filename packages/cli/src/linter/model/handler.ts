@@ -80,11 +80,14 @@ export class ModelHandler implements ModelSpec {
 
       // Typography
       if (input.typography) {
-        for (const [name, props] of Object.entries(input.typography)) {
+        const isCollision = buildCollisionGuard('typography', findings);
+        forEachTypographyLeaf(input.typography, (name, props) => {
+          if (isCollision(name)) return;
+
           const resolved = parseTypography(props, `typography.${name}`, findings);
           typography.set(name, resolved);
           symbolTable.set(`typography.${name}`, resolved);
-        }
+        }, '', 0, findings, 'typography');
       }
 
       // Rounded
@@ -486,6 +489,47 @@ function forEachLeaf(
       forEachLeaf(value, fn, fullPath, depth + 1, findings, rootPath);
     } else {
       fn(fullPath, value);
+    }
+  }
+}
+
+function isTypographyGroup(obj: Record<string, unknown>): boolean {
+  const entries = Object.entries(obj);
+  if (entries.length === 0) return false;
+  if (entries.some(([key]) => TYPOGRAPHY_PROP_SET.has(key))) return false;
+  return entries.every(
+    ([, val]) => val !== null && typeof val === 'object' && !Array.isArray(val),
+  );
+}
+
+function forEachTypographyLeaf(
+  obj: Record<string, any>,
+  fn: (path: string, value: Record<string, string | number>) => void,
+  prefix = '',
+  depth = 0,
+  findings?: Finding[],
+  rootPath?: string,
+) {
+  if (depth > MAX_TOKEN_NESTING_DEPTH) {
+    if (findings && rootPath) {
+      if (!findings.some((f) => f.path === rootPath && f.message.includes('nesting depth'))) {
+        findings.push({
+          severity: 'error',
+          path: rootPath,
+          message: `Token nesting depth exceeds maximum allowed depth of ${MAX_TOKEN_NESTING_DEPTH}.`,
+        });
+      }
+    }
+    return;
+  }
+  for (const [key, value] of Object.entries(obj)) {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      if (isTypographyGroup(value)) {
+        forEachTypographyLeaf(value, fn, fullPath, depth + 1, findings, rootPath);
+      } else {
+        fn(fullPath, value);
+      }
     }
   }
 }

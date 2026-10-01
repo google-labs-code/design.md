@@ -116,12 +116,20 @@ description: <string>      # optional
 omitted: <string[] | OmittedSection[]> # optional, list of sections to intentionally omit
 colors:
   <token-name>: <Color>
+  <group-name>:            # optional nested group
+    <token-name>: <Color>
 typography:
   <token-name>: <Typography>
+  <group-name>:            # optional nested group
+    <token-name>: <Typography>
 rounded:
   <scale-level>: <Dimension>
+  <group-name>:            # optional nested group
+    <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+  <group-name>:            # optional nested group
+    <scale-level>: <Dimension | number>
 components:
   <component-name>:
     <token-name>: <string | token reference>
@@ -133,7 +141,7 @@ components:
 |:-----|:-------|:--------|
 | Color | Any CSS color (hex, `rgb()`, `oklch()`, named, etc.) | `"#1A1C1E"`, `"oklch(62% 0.18 250)"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
-| Token Reference | `{path.to.token}` | `{colors.primary}` |
+| Token Reference | `{path.to.token}` | `{colors.primary}`, `{colors.light.surface}`, `{typography.sm.headline-lg}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
 
 ### Section Order
@@ -177,6 +185,8 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 | Unknown section heading | Preserve; do not error |
 | Unknown color token name | Accept if value is valid |
 | Unknown typography token name | Accept as valid typography |
+| Grouped token sub-map | Flatten to dot-separated token path |
+| Flat and grouped token name collision | Error; reject the conflicting token |
 | Unknown component property | Accept with warning |
 | Duplicate section heading | Error; reject the file |
 
