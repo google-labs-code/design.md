@@ -61,6 +61,10 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
   ```
 **Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
 
+# External References
+
+Any prose in `DESIGN.md` may reference external files using the `@<relative-path>` syntax (for example, `@components/button.html` or `@tokens.json`), where `<relative-path>` is resolved relative to the directory containing `DESIGN.md`.
+
 # Sections
 
 Every `DESIGN.md` follows the same structure. Sections can be omitted if they're not relevant to your project, but those present should appear in the sequence listed below. All sections use `<h2>` (`##`) headings. An optional `<h1>` heading may appear for document titling purposes but is not parsed as a section.
@@ -256,6 +260,18 @@ Each component has a set of properties that are themselves design tokens:
 
 {componentSubTokenList()}
 
+The components section may use [external references](#external-references) to point to further elaboration of the component kit, such as component templates in HTML or component source code in JSX.
+
+```markdown
+## Components
+
+Component implementations live as individual HTML sticker sheet files in `components/`. Each file contains the canonical, styled HTML components with `<!-- COMPONENT: name -->` comment markers. Read each file before use.
+
+- **Buttons** → `@components/button.html` — `button-primary`, `button-secondary`, `button-tertiary`, `button-icon`
+- **Cards** → `@components/card.html` — `card-elevated`, `card-outlined`
+- **Input Fields** → `@components/input-field.html` — `input-default`, `input-error`, `input-disabled`
+```
+
 ## Do's and Don'ts
 
 This section provides practical guidelines and common pitfalls. These act as guardrails when creating designs.
@@ -286,4 +302,5 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Unknown component property | Accept with warning | `borderColor` |
+| External `@`-reference in prose | Preserve; resolve referenced file on demand | `@components/button.html`, `@tokens.json` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |

@@ -163,4 +163,50 @@ motion:
     );
     expect(unknownKeyFindings).toEqual([]);
   });
+
+  it('processes a DESIGN.md with external @components/*.html references without errors or orphaned-token warnings', () => {
+    const content = `---
+name: Kindred Spirit
+
+colors:
+  primary: "#647D66"
+  secondary: "#A3B8A5"
+
+typography:
+  headline-lg:
+    fontFamily: Google Sans Display
+    fontSize: 42px
+    fontWeight: 500
+    lineHeight: 50px
+---
+
+## Overview
+
+The palette uses a deep "Evergreen" primary for health-sector credibility.
+
+## Colors
+
+- **Primary (#647D66):** Deep Evergreen for primary actions.
+- **Secondary (#A3B8A5):** Soft sage for secondary surfaces.
+
+## Typography
+
+- **Headline Large:** Google Sans Display at 42px.
+
+## Components
+
+Component implementations live as individual HTML sticker sheet files in \`components/\`. Each file contains the canonical, styled HTML components with \`<!-- COMPONENT: name -->\` comment markers. Read each file before use.
+
+- **Buttons** → \`@components/button.html\` — \`button-primary\`, \`button-secondary\`, \`button-tertiary\`, \`button-icon\`
+- **Cards** → \`@components/card.html\` — \`card-elevated\`, \`card-outlined\`
+- **Input Fields** → \`@components/input-field.html\` — \`input-default\`, \`input-error\`, \`input-disabled\`
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.summary.warnings).toBe(0);
+    expect(result.designSystem.sections).toEqual(['Overview', 'Colors', 'Typography', 'Components']);
+  });
 });
+
