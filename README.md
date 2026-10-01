@@ -116,11 +116,11 @@ description: <string>      # optional
 omitted: <string[] | OmittedSection[]> # optional, list of sections to intentionally omit
 colors:
   <token-name>: <Color>
-  <group-name>:            # optional nested group (e.g., light, dark, primary)
+  <group-name>:            # optional nested group
     <token-name>: <Color>
 typography:
   <token-name>: <Typography>
-  <group-name>:            # optional nested group (e.g., sm, md, lg, xl)
+  <group-name>:            # optional nested group
     <token-name>: <Typography>
 rounded:
   <scale-level>: <Dimension>
@@ -128,14 +128,12 @@ rounded:
     <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
-  <group-name>:            # optional nested group (e.g., sm, md, lg, xl)
+  <group-name>:            # optional nested group
     <scale-level>: <Dimension | number>
 components:
   <component-name>:
     <token-name>: <string | token reference>
 ```
-
-Top-level token categories (`colors`, `typography`, `rounded`, `spacing`) support nested YAML sub-maps for theme modes (`light`, `dark`), responsive breakpoints (recommended: `sm`, `md`, `lg`, `xl` for mobile, tablet, laptop, and desktop, respectively), and hierarchical token families.
 
 ### Token Types
 

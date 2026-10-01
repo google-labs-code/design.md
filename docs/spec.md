@@ -47,11 +47,11 @@ description: <string>      # optional
 omitted: <string[]|OmittedSection[]> # optional
 colors:
   <token-name>: <Color>
-  <group-name>:            # optional nested group (e.g., light, dark, primary)
+  <group-name>:            # optional nested group
     <token-name>: <Color>
 typography:
   <token-name>: <Typography>
-  <group-name>:            # optional nested group (e.g., sm, md, lg, xl)
+  <group-name>:            # optional nested group
     <token-name>: <Typography>
 rounded:
   <scale-level>: <Dimension>
@@ -59,7 +59,7 @@ rounded:
     <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
-  <group-name>:            # optional nested group (e.g., sm, md, lg, xl)
+  <group-name>:            # optional nested group
     <scale-level>: <Dimension | number>
 components:
   <component-name>:
@@ -103,15 +103,9 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
       reason: "No rounded corners defined in brand book"
   ```
 
-**Grouped Tokens**: Top-level token categories (`colors`, `typography`, `rounded`, and `spacing`) accept nested YAML sub-maps to organize tokens into logical groups. Common grouping patterns include:
+**Grouped Tokens**: Top-level token categories (`colors`, `typography`, `rounded`, and `spacing`) accept optional nested YAML sub-maps to organize tokens into logical groups. Grouped tokens are flattened internally to dot-separated paths (e.g., `<category>.<group-name>.<token-name>`) and can be nested up to 20 levels deep. Mixing flat hyphenated keys (e.g., `colors.primary-light`) and nested grouped keys (e.g., `colors.primary.light`) that produce identical flattened CSS custom property names (`--color-primary-light`) is rejected as an error by the linter, as are duplicate token paths.
 
-* **Theme modes**: Grouping mode-dependent color tokens under `light` and `dark` sub-maps while keeping mode-agnostic brand roles at the top level.
-* **Responsive breakpoints**: Grouping breakpoint-specific `typography` or `spacing` scales under breakpoint sub-maps. For responsive design, the recommended (but not required) group names are `sm`, `md`, `lg`, and `xl` (corresponding to mobile, tablet, laptop, and desktop, respectively).
-* **Token families**: Grouping related scales or semantic subsets (e.g., `colors.primary.light`, `spacing.inset.md`).
-
-Grouped tokens are flattened internally to dot-separated paths (e.g., `colors.light.surface`, `typography.sm.headline-lg`, `spacing.lg.gutter`) and can be nested up to 20 levels deep. Mixing flat hyphenated keys (e.g., `colors.primary-light`) and nested grouped keys (e.g., `colors.primary.light`) that produce identical flattened CSS custom property names (`--color-primary-light`) is rejected as an error by the linter, as are duplicate token paths.
-
-**Token References**: A token reference must be wrapped in curly braces, and contain a dot-separated object path to another value in the YAML tree (including grouped tokens, such as `{colors.light.surface}`, `{typography.sm.headline-lg}`, or `{spacing.lg.gutter}`). For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors` or `colors.light`). Within the `components` section, references to composite values (e.g., `{typography.label-md}` or `{typography.sm.headline-lg}`) are permitted.
+**Token References**: A token reference must be wrapped in curly braces, and contain a dot-separated object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60` or `colors.light.surface`), not a group (e.g., `colors` or `colors.light`). Within the `components` section, references to composite values (e.g., `{typography.label-md}` or `{typography.sm.headline-lg}`) are permitted.
 
 # Sections
 
