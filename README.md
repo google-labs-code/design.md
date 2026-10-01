@@ -170,7 +170,7 @@ Valid component properties: `backgroundColor`, `textColor`, `typography`, `round
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 
-Instead of (or in addition to) inline `components:` YAML entries, `## Components` may index external HTML component sticker sheets or token files via `@`-references (e.g., `@components/button.html` with `<!-- COMPONENT: name -->` markers, or `@tokens.json`) for lazy context loading by downstream agents:
+Instead of (or in addition to) inline `components:` YAML entries, `## Components` may reference external HTML component files via `@`-references (e.g., `@components/button.html` alongside `<!-- COMPONENT: name -->` markers):
 
 ```markdown
 ## Components
