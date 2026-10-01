@@ -170,7 +170,7 @@ Valid component properties: `backgroundColor`, `textColor`, `typography`, `round
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 
-Instead of (or in addition to) inline `components:` YAML entries, `## Components` may reference external HTML component files via `@`-references (e.g., `@components/button.html` alongside `<!-- COMPONENT: name -->` markers):
+The components section may use external references (`@<relative-path>`) to point to further elaboration of the component kit, such as component templates in HTML or component source code in JSX:
 
 ```markdown
 ## Components

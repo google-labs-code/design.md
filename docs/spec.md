@@ -97,6 +97,10 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
 
 **Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
 
+# External References
+
+Any prose in `DESIGN.md` may reference external files using the `@<relative-path>` syntax (for example, `@components/button.html` or `@tokens.json`), where `<relative-path>` is resolved relative to the directory containing `DESIGN.md`.
+
 # Sections
 
 Every `DESIGN.md` follows the same structure. Sections can be omitted if they're not relevant to your project, but those present should appear in the sequence listed below. All sections use `<h2>` (`##`) headings. An optional `<h1>` heading may appear for document titling purposes but is not parsed as a section.
@@ -340,7 +344,7 @@ Each component has a set of properties that are themselves design tokens:
 - height: \<Dimension\>
 - width: \<Dimension\>
 
-Instead of (or in addition to) inline `components` YAML tokens, the `## Components` section may use [external references](#external-references) to point to self-contained HTML component files in `components/*.html`, listing each file path alongside the `<!-- COMPONENT: name -->` markers defined inside that file:
+The components section may use [external references](#external-references) to point to further elaboration of the component kit, such as component templates in HTML or component source code in JSX.
 
 ```markdown
 ## Components
@@ -364,12 +368,6 @@ This section provides practical guidelines and common pitfalls. These act as gua
 - Do maintain WCAG AA contrast ratios (4.5:1 for normal text)
 - Don't use more than two font weights on a single screen
 ```
-
-# External References
-
-Any prose section in `DESIGN.md` may reference external files using the `@<relative-path>` syntax (for example, `@components/button.html` or `@tokens.json`), where `<relative-path>` is resolved relative to the directory containing `DESIGN.md`. External references may appear inline or within markdown code spans (`` `@path/to/file` ``).
-
-While external references are allowed in any prose section, the recommended use is in [`## Components`](#components) to link external component files.
 
 # Recommended Token Names (Non-Normative)
 
