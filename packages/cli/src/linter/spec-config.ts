@@ -49,7 +49,7 @@ const TypeDefSchema = z.object({
 const ConfigSchema = z.object({
   version: z.string(),
   limits: z.object({
-    max_token_nesting_depth: z.number().default(20),
+    max_token_nesting_depth: z.number().default(1),
     max_reference_depth: z.number().default(10),
   }).default({}),
   units: z.array(z.string()).min(1),

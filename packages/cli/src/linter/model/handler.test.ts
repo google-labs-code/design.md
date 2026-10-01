@@ -93,42 +93,19 @@ describe('ModelHandler', () => {
       expect(result.designSystem.symbolTable.has('colors.background.light')).toBe(true);
     });
 
-    it('successfully parses 3-level nested color declarations', () => {
+    it('rejects color declarations nested deeper than 1 group level', () => {
       const result = handler.execute(makeParsed({
         colors: {
           background: {
             light: {
               primary: '#fbfaf1',
-              secondary: '#f0f0f0'
             }
           }
         }
       }));
 
-      expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
-      expect(result.designSystem.colors.has('background.light.primary')).toBe(true);
-      expect(result.designSystem.colors.has('background.light.secondary')).toBe(true);
-      expect(result.designSystem.colors.get('background.light.primary')?.hex).toBe('#fbfaf1');
-      expect(result.designSystem.symbolTable.has('colors.background.light.primary')).toBe(true);
-    });
-
-    it('successfully parses 4-level nested color declarations', () => {
-      const result = handler.execute(makeParsed({
-        colors: {
-          theme: {
-            surface: {
-              background: {
-                base: '#fbfaf1'
-              }
-            }
-          }
-        }
-      }));
-
-      expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
-      expect(result.designSystem.colors.has('theme.surface.background.base')).toBe(true);
-      expect(result.designSystem.colors.get('theme.surface.background.base')?.hex).toBe('#fbfaf1');
-      expect(result.designSystem.symbolTable.has('colors.theme.surface.background.base')).toBe(true);
+      expect(result.findings.some(f => f.severity === 'error' && f.path === 'colors' && f.message.includes('nesting depth'))).toBe(true);
+      expect(result.designSystem.colors.has('background.light.primary')).toBe(false);
     });
 
     it('emits diagnostic for duplicate token path in colors', () => {
@@ -824,36 +801,43 @@ describe('ModelHandler', () => {
   });
 
   describe('token nesting depth limit', () => {
-    it('emits error when token nesting depth exceeds 20', () => {
-      // 22 levels: Level 1..21 are objects, Level 22 is a leaf.
-      // forEachLeaf will be called for Level 22 with depth 21.
-      let obj: any = '#ffffff';
-      for (let i = 22; i >= 1; i--) {
-        obj = { [`level${i}`]: obj };
-      }
-
+    it('emits error when token nesting depth exceeds 1', () => {
       const result = handler.execute(makeParsed({
-        colors: obj,
+        colors: {
+          level1: {
+            level2: {
+              leaf: '#ffffff',
+            },
+          },
+        } as any,
+        typography: {
+          sm: {
+            mobile: {
+              'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+            },
+          },
+        } as any,
       }));
-      expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(true);
-      expect(result.findings.find((f) => f.message.includes('nesting depth'))?.path).toBe('colors');
+      expect(result.findings.some((f) => f.path === 'colors' && f.message.includes('nesting depth'))).toBe(true);
+      expect(result.findings.some((f) => f.path === 'typography' && f.message.includes('nesting depth'))).toBe(true);
     });
 
-    it('allows nesting up to depth 20', () => {
-      // 21 levels: Level 1..20 are objects, Level 21 is a leaf.
-      // forEachLeaf will be called for Level 21 with depth 20.
-      let obj: any = '#ffffff';
-      for (let i = 21; i >= 1; i--) {
-        obj = { [`level${i}`]: obj };
-      }
-
+    it('allows 1 level of group nesting', () => {
       const result = handler.execute(makeParsed({
-        colors: obj,
+        colors: {
+          light: {
+            surface: '#ffffff',
+          },
+        },
+        typography: {
+          sm: {
+            'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+          },
+        } as any,
       }));
       expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(false);
-      // Construct the expected path: level1.level2...level21
-      const path = Array.from({ length: 21 }, (_, i) => `level${i + 1}`).join('.');
-      expect(result.designSystem.colors.has(path)).toBe(true);
+      expect(result.designSystem.colors.has('light.surface')).toBe(true);
+      expect(result.designSystem.typography.has('sm.headline-lg')).toBe(true);
     });
   });
 
