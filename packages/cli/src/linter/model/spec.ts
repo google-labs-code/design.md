@@ -17,6 +17,7 @@ import type { ParsedDesignSystem, OmittedSection } from '../parser/spec.js';
 import {
   STANDARD_UNITS as _STANDARD_UNITS,
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
+  VALID_MOTION_PROPS as _VALID_MOTION_PROPS,
   VALID_COMPONENT_SUB_TOKENS as _VALID_COMPONENT_SUB_TOKENS,
 } from '../spec-config.js';
 import { parseCssColor } from './color-parser.js';
@@ -62,10 +63,18 @@ export interface ResolvedTypography {
   fontVariation?: string | undefined;
 }
 
-export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string | number | boolean;
+export interface ResolvedMotion {
+  type: 'motion';
+  duration?: string | undefined;
+  delay?: string | undefined;
+  timingFunction?: string | undefined;
+}
+
+export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | ResolvedMotion | string | number | boolean;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
+export const VALID_MOTION_PROPS = _VALID_MOTION_PROPS;
 export const VALID_COMPONENT_SUB_TOKENS = _VALID_COMPONENT_SUB_TOKENS;
 
 // ── STATE ──────────────────────────────────────────────────────────
@@ -77,6 +86,7 @@ export interface DesignSystemState {
   typography: Map<string, ResolvedTypography>;
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
+  motion?: Map<string, ResolvedMotion> | undefined;
   components: Map<string, ComponentDef>;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;

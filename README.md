@@ -122,6 +122,8 @@ rounded:
   <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+motion:
+  <token-name>: <Motion>
 components:
   <component-name>:
     <token-name>: <string | token reference>
@@ -133,8 +135,10 @@ components:
 |:-----|:-------|:--------|
 | Color | Any CSS color (hex, `rgb()`, `oklch()`, named, etc.) | `"#1A1C1E"`, `"oklch(62% 0.18 250)"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
+| Duration | number + `ms` | `100ms`, `250ms` |
 | Token Reference | `{path.to.token}` | `{colors.primary}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
+| Motion | object with `duration`, `delay`, `timingFunction` | `duration: 100ms`, `timingFunction: ease-out` |
 
 ### Section Order
 
@@ -148,8 +152,9 @@ Sections use `##` headings. They can be omitted, but those present must appear i
 | 4 | Layout | Layout & Spacing |
 | 5 | Elevation & Depth | Elevation |
 | 6 | Shapes | |
-| 7 | Components | |
-| 8 | Do's and Don'ts | |
+| 7 | Motion & Micro-interaction | Motion & Micro-interactions, Motion |
+| 8 | Components | |
+| 9 | Do's and Don'ts | |
 
 ### Component Tokens
 
@@ -177,6 +182,7 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 | Unknown section heading | Preserve; do not error |
 | Unknown color token name | Accept if value is valid |
 | Unknown typography token name | Accept as valid typography |
+| Unknown motion token name | Accept as valid motion |
 | Unknown component property | Accept with warning |
 | Duplicate section heading | Error; reject the file |
 

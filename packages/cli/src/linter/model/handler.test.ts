@@ -804,4 +804,47 @@ describe('ModelHandler', () => {
       expect(result.designSystem.colors.get('ok')?.hex).toBe('#ffffff');
     });
   });
+
+  describe('motion validation', () => {
+    it('resolves valid motion tokens into designSystem.motion and symbolTable', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          'state-change': {
+            duration: '100ms',
+            delay: '0ms',
+            timingFunction: 'ease-out',
+          },
+          'surface-enter': {
+            duration: '250ms',
+            delay: '0ms',
+            timingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+          },
+        },
+      }));
+      expect(result.findings).toEqual([]);
+      expect(result.designSystem.motion?.size).toBe(2);
+      expect(result.designSystem.motion?.get('state-change')).toEqual({
+        type: 'motion',
+        duration: '100ms',
+        delay: '0ms',
+        timingFunction: 'ease-out',
+      });
+      expect(result.designSystem.symbolTable.has('motion.surface-enter')).toBe(true);
+    });
+
+    it('emits error for invalid duration or timingFunction and warning for unknown property', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          'bad-motion': {
+            duration: '2s',
+            timingFunction: 'invalid-easing',
+            extraProp: 'foo',
+          },
+        },
+      }));
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.duration' && f.severity === 'error')).toBe(true);
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.timingFunction' && f.severity === 'error')).toBe(true);
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.extraProp' && f.severity === 'warning')).toBe(true);
+    });
+  });
 });

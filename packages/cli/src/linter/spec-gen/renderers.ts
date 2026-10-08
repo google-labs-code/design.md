@@ -19,7 +19,7 @@
  * Each function returns a ready-to-embed markdown string.
  */
 
-import type { SpecConfig, TypographyPropertyDef, SectionDef, ComponentSubTokenDef, TypeDef } from '../spec-config.js';
+import type { SpecConfig, TypographyPropertyDef, MotionPropertyDef, SectionDef, ComponentSubTokenDef, TypeDef } from '../spec-config.js';
 
 // ── YAML code block helpers ─────────────────────────────────────
 
@@ -86,9 +86,28 @@ export function componentsExample(config: SpecConfig): string {
   return yamlBlock(lines);
 }
 
+/** Motion YAML example. */
+export function motionExample(config: SpecConfig): string {
+  const lines = ['motion:'];
+  for (const [name, props] of Object.entries(config.EXAMPLES.motion ?? {})) {
+    lines.push(`  ${name}:`);
+    lines.push(...yamlObject(props as Record<string, string | number>));
+  }
+  return yamlBlock(lines);
+}
+
 /** Typography property list (for the schema section). */
 export function typographyPropertyList(config: SpecConfig): string {
   return config.TYPOGRAPHY_PROPERTIES.map((p: TypographyPropertyDef) =>
+    p.description
+      ? `- \`${p.name}\` (${p.type}) - ${p.description}`
+      : `- \`${p.name}\` (${p.type})`
+  ).join('\n');
+}
+
+/** Motion property list (for the schema section). */
+export function motionPropertyList(config: SpecConfig): string {
+  return config.MOTION_PROPERTIES.map((p: MotionPropertyDef) =>
     p.description
       ? `- \`${p.name}\` (${p.type}) - ${p.description}`
       : `- \`${p.name}\` (${p.type})`

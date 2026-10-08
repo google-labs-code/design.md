@@ -1,5 +1,5 @@
-import { SPEC_VERSION, SECTIONS, TYPOGRAPHY_PROPERTIES, COMPONENT_SUB_TOKENS, CORE_COLOR_ROLES, RECOMMENDED_TOKENS, EXAMPLES } from '../spec-config.js'
-import { frontmatterExample, colorsExample, typographyExample, componentsExample, typographyPropertyList, typeDefinitions, sectionOrderList, componentSubTokenList, recommendedTokens } from './renderers.js'
+import { SPEC_VERSION, SECTIONS, TYPOGRAPHY_PROPERTIES, MOTION_PROPERTIES, COMPONENT_SUB_TOKENS, CORE_COLOR_ROLES, RECOMMENDED_TOKENS, EXAMPLES } from '../spec-config.js'
+import { frontmatterExample, colorsExample, typographyExample, motionExample, componentsExample, typographyPropertyList, motionPropertyList, typeDefinitions, sectionOrderList, componentSubTokenList, recommendedTokens } from './renderers.js'
 
 # DESIGN.md Format
 
@@ -37,6 +37,8 @@ rounded:
   <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+motion:
+  <token-name>: <Motion>
 components:
   <component-name>:
     <token-name>: <string|token reference>
@@ -50,7 +52,13 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
 
 {typeDefinitions('Dimension')}
 
-**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, components). Each entry can be:
+{typeDefinitions('Duration')}
+
+**Motion**: A motion token is an object that maps a purpose-driven motion name to its timing properties:
+
+{motionPropertyList()}
+
+**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, motion, components). Each entry can be:
 * A string representing the section name (e.g., `spacing`)
 * An object of the form `{ section: string, reason?: string }` mapping a section to a documented reason for its omission:
   ```yaml
@@ -228,6 +236,33 @@ rounded:
   full: 9999px
 ```
 
+## Motion & Micro-interaction
+
+Also known as "Motion & Micro-interactions" or "Motion".
+
+This section describes how the interface moves. It pairs prose choreography rules with structured `motion` tokens so transitions feel consistent and respect user motion preferences:
+
+- **What moves**: State changes on interactive elements, surfaces entering and leaving, and content loading, as well as what deliberately does not move.
+- **Duration rhythm**: Small, local changes are faster than large structural transitions.
+- **Easing intent**: Elements entering the screen decelerate, elements leaving accelerate, and elements staying on screen use a symmetric curve.
+- **Restraint**: Honor `prefers-reduced-motion` and avoid animating properties that force layout recalculation (prefer `transform` and `opacity`).
+
+Example:
+
+```markdown
+## Motion & Micro-interaction
+
+Motion is quick and understated. Interactive feedback lands within a tenth of a second so the interface feels immediate, while surfaces that enter the screen take longer and decelerate. Nothing loops, and nothing moves purely for decoration. Honor `prefers-reduced-motion`.
+```
+
+### Design Tokens
+
+The `motion` section defines purpose-named motion tokens (such as `state-change`, `surface-enter`, and `surface-exit`) rather than raw speed labels. Each entry maps a semantic motion name to its timing properties (`duration`, `delay`, and `timingFunction`).
+
+It is a map\<string, Motion\>.
+
+{motionExample()}
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -284,6 +319,7 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown section heading | Preserve; do not error | `## Iconography` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
+| Unknown motion token name | Accept as valid motion | `page-transition` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Unknown component property | Accept with warning | `borderColor` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |
