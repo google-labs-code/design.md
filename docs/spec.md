@@ -109,8 +109,9 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 4. **Layout** (also: "Layout & Spacing")
 5. **Elevation & Depth** (also: "Elevation")
 6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+7. **Voice & Content Strategy**
+8. **Components**
+9. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -294,6 +295,30 @@ rounded:
   md: 8px
   lg: 12px
   full: 9999px
+```
+
+## Voice & Content Strategy
+
+This section defines how the product writes. Interface copy is part of the design system: inconsistent tense, capitalization, or terminology degrades visual cohesion just as clearly as inconsistent spacing does. This section is prose-only and covers:
+
+* **Tone of voice**: Two or three adjectives describing the brand voice, with a short explanation of what they sound like in practice and what they rule out.
+* **Capitalization**: Sentence case or title case, applied consistently across headings, buttons, form labels, and menu items.
+* **Terminology**: The product's canonical names for its own concepts and the synonyms to avoid.
+* **Button and action labels**: The grammar of interactive labels (e.g., verb phrases naming the outcome rather than generic labels like "OK" or "Submit").
+* **Empty, loading, and error states**: What an empty list says, what an error message says, and whether an error suggests a specific next action.
+* **Numbers, dates, and units**: Conventions for date/time formats, relative time, number rounding, and unit spacing.
+
+Example:
+
+```markdown
+## Voice & Content Strategy
+
+- **Tone of voice:** Precise, calm, and utilitarian. Avoid exclamation marks, marketing hyperbole, and conversational filler.
+- **Capitalization:** Sentence case applied consistently across all headings, buttons, form labels, and menu items.
+- **Terminology:** Use "Workspace" (never "Project" or "Repo") and "Member" (never "User" or "Collaborator"). Pick one word per concept and keep it.
+- **Button and action labels:** Use a verb phrase naming the outcome (e.g., "Save changes", "Create workspace"), never vague labels like "OK" or "Submit".
+- **Empty, loading, and error states:** Empty states explain what belongs in the list and provide a direct creation CTA. Error messages state what failed and suggest a specific next action.
+- **Numbers, dates, and units:** Format dates as `YYYY-MM-DD` in tables, use relative time ("3m ago") in activity feeds, and separate numeric values from units with a space (`16 px`).
 ```
 
 ## Components
