@@ -102,6 +102,34 @@ describe('TailwindEmitterHandler', () => {
     });
   });
 
+  describe('motion mapping', () => {
+    it('maps motion tokens to transitionDuration, transitionDelay, and transitionTimingFunction', () => {
+      const state = buildState({
+        motion: {
+          'state-change': {
+            duration: '100ms',
+            delay: '0ms',
+            timingFunction: 'ease-out',
+          },
+          'surface-enter': {
+            duration: '250ms',
+            delay: '0ms',
+            timingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+          },
+        },
+      });
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error('Expected success');
+      const config = result.data;
+
+      expect(config.theme.extend.transitionDuration?.['state-change']).toBe('100ms');
+      expect(config.theme.extend.transitionDuration?.['surface-enter']).toBe('250ms');
+      expect(config.theme.extend.transitionDelay?.['state-change']).toBe('0ms');
+      expect(config.theme.extend.transitionTimingFunction?.['state-change']).toBe('ease-out');
+      expect(config.theme.extend.transitionTimingFunction?.['surface-enter']).toBe('cubic-bezier(0.2, 0, 0, 1)');
+    });
+  });
+
   // ── Empty state produces empty config ─────────────────────────────
   describe('empty state', () => {
     it('produces a valid config with empty extend sections', () => {

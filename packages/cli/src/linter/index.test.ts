@@ -163,4 +163,74 @@ motion:
     );
     expect(unknownKeyFindings).toEqual([]);
   });
+
+  it('processes a DESIGN.md with Motion & Micro-interaction section and purpose-named motion tokens', () => {
+    const content = `---
+name: Daylight Prestige
+
+colors:
+  primary: "#1A1C1E"
+
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+
+motion:
+  state-change:
+    duration: 100ms
+    delay: 0ms
+    timingFunction: ease-out
+  surface-enter:
+    duration: 250ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.2, 0, 0, 1)
+  surface-exit:
+    duration: 150ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.3, 0, 1, 1)
+---
+
+## Overview
+
+Editorial design system with high-contrast neutrals.
+
+## Colors
+
+Primary ink palette.
+
+## Typography
+
+Public Sans for body text.
+
+## Motion & Micro-interaction
+
+Motion is quick and understated. Interactive feedback lands within a tenth of a second so the interface feels immediate, while surfaces that enter the screen take longer and decelerate. Nothing loops, and nothing moves purely for decoration. Honor \`prefers-reduced-motion\`.
+
+## Components
+
+Core component library.
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.designSystem.motion?.size).toBe(3);
+    expect(result.designSystem.motion?.get('state-change')).toEqual({
+      type: 'motion',
+      duration: '100ms',
+      delay: '0ms',
+      timingFunction: 'ease-out',
+    });
+
+    expect(result.tailwindConfig.success).toBe(true);
+    if (result.tailwindConfig.success) {
+      const extend = result.tailwindConfig.data.theme.extend;
+      expect(extend.transitionDuration?.['surface-enter']).toBe('250ms');
+      expect(extend.transitionDelay?.['surface-enter']).toBe('0ms');
+      expect(extend.transitionTimingFunction?.['surface-enter']).toBe('cubic-bezier(0.2, 0, 0, 1)');
+    }
+  });
 });

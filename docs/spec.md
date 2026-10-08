@@ -53,6 +53,8 @@ rounded:
   <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+motion:
+  <token-name>: <Motion>
 components:
   <component-name>:
     <token-name>: <string|token reference>
@@ -84,7 +86,15 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
 
 **Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
 
-**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, components). Each entry can be:
+**Duration**: A duration value is a string with a `ms` unit suffix (e.g., `100ms`, `250ms`).
+
+**Motion**: A motion token is an object that maps a purpose-driven motion name to its timing properties:
+
+- `duration` (Duration) - The length of time a transition takes to complete (e.g., `100ms`, `250ms`).
+- `delay` (Duration) - The time to wait before a transition starts (e.g., `0ms`, `50ms`).
+- `timingFunction` (string) - A CSS easing function such as `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `steps(...)`, or `cubic-bezier(...)`.
+
+**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, motion, components). Each entry can be:
 
 * A string representing the section name (e.g., `spacing`)
 * An object of the form `{ section: string, reason?: string }` mapping a section to a documented reason for its omission:
@@ -109,8 +119,9 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 4. **Layout** (also: "Layout & Spacing")
 5. **Elevation & Depth** (also: "Elevation")
 6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+7. **Motion & Micro-interaction** (also: "Motion & Micro-interactions", "Motion")
+8. **Components**
+9. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -296,6 +307,47 @@ rounded:
   full: 9999px
 ```
 
+## Motion & Micro-interaction
+
+Also known as "Motion & Micro-interactions" or "Motion".
+
+This section describes how the interface moves. It pairs prose choreography rules with structured `motion` tokens so transitions feel consistent and respect user motion preferences:
+
+* **What moves**: State changes on interactive elements, surfaces entering and leaving, and content loading, as well as what deliberately does not move.
+* **Duration rhythm**: Small, local changes are faster than large structural transitions.
+* **Easing intent**: Elements entering the screen decelerate, elements leaving accelerate, and elements staying on screen use a symmetric curve.
+* **Restraint**: Honor `prefers-reduced-motion` and avoid animating properties that force layout recalculation (prefer `transform` and `opacity`).
+
+Example:
+
+```markdown
+## Motion & Micro-interaction
+
+Motion is quick and understated. Interactive feedback lands within a tenth of a second so the interface feels immediate, while surfaces that enter the screen take longer and decelerate. Nothing loops, and nothing moves purely for decoration. Honor `prefers-reduced-motion`.
+```
+
+### Design Tokens
+
+The `motion` section defines purpose-named motion tokens (such as `state-change`, `surface-enter`, and `surface-exit`) rather than raw speed labels. Each entry maps a semantic motion name to its timing properties (`duration`, `delay`, and `timingFunction`).
+
+It is a map\<string, Motion>.
+
+```yaml
+motion:
+  state-change:
+    duration: 100ms
+    delay: 0ms
+    timingFunction: ease-out
+  surface-enter:
+    duration: 250ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.2, 0, 0, 1)
+  surface-exit:
+    duration: 150ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.3, 0, 1, 1)
+```
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -363,6 +415,8 @@ The following names are commonly used across design systems. They are not requir
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
+**Motion:** `state-change`, `surface-enter`, `surface-exit`
+
 # Consumer Behavior for Unknown Content
 
 When a DESIGN.md consumer encounters content not defined by this spec:
@@ -372,6 +426,7 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown section heading | Preserve; do not error | `## Iconography` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
+| Unknown motion token name | Accept as valid motion | `page-transition` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Unknown component property | Accept with warning | `borderColor` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |

@@ -91,7 +91,7 @@ describe('sectionOrder', () => {
 
   it('should handle mixed aliases and canonical names', () => {
     const state = {
-      sections: ['Brand & Style', 'Colors', 'Typography', 'Layout & Spacing', 'Elevation & Depth', 'Shapes', 'Components'],
+      sections: ['Brand & Style', 'Colors', 'Typography', 'Layout & Spacing', 'Elevation & Depth', 'Shapes', 'Motion & Micro-interaction', 'Components'],
     } as unknown as DesignSystemState;
 
     const findings = sectionOrder(state);
@@ -105,6 +105,8 @@ describe('resolveAlias', () => {
     expect(resolveAlias('Brand & Style')).toBe('Overview');
     expect(resolveAlias('Layout & Spacing')).toBe('Layout');
     expect(resolveAlias('Elevation')).toBe('Elevation & Depth');
+    expect(resolveAlias('Motion & Micro-interactions')).toBe('Motion & Micro-interaction');
+    expect(resolveAlias('Motion')).toBe('Motion & Micro-interaction');
   });
 
   it('should pass through canonical names unchanged', () => {

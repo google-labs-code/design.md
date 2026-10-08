@@ -45,6 +45,8 @@ types:
       - px
       - em
       - rem
+  Duration:
+    description: "A duration value is a string with a `ms` unit suffix (e.g., `100ms`, `250ms`)."
 
 sections:
   - canonical: Overview
@@ -59,6 +61,10 @@ sections:
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Motion & Micro-interaction
+    aliases:
+      - Motion & Micro-interactions
+      - Motion
   - canonical: Components
   - canonical: "Do's and Don'ts"
 
@@ -81,6 +87,17 @@ typography_properties:
   - name: fontVariation
     type: string
     description: "configures\n  [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings)."
+
+motion_properties:
+  - name: duration
+    type: Duration
+    description: "The length of time a transition takes to complete (e.g., `100ms`, `250ms`)."
+  - name: delay
+    type: Duration
+    description: "The time to wait before a transition starts (e.g., `0ms`, `50ms`)."
+  - name: timingFunction
+    type: string
+    description: "A CSS easing function such as `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `steps(...)`, or `cubic-bezier(...)`."
 
 component_sub_tokens:
   - name: backgroundColor
@@ -132,6 +149,10 @@ recommended_tokens:
     - lg
     - xl
     - full
+  motion:
+    - state-change
+    - surface-enter
+    - surface-exit
 
 examples:
   colors:
@@ -157,6 +178,19 @@ examples:
       fontWeight: 500
       lineHeight: 1.0
       letterSpacing: "0.1em"
+  motion:
+    state-change:
+      duration: 100ms
+      delay: 0ms
+      timingFunction: ease-out
+    surface-enter:
+      duration: 250ms
+      delay: 0ms
+      timingFunction: "cubic-bezier(0.2, 0, 0, 1)"
+    surface-exit:
+      duration: 150ms
+      delay: 0ms
+      timingFunction: "cubic-bezier(0.3, 0, 1, 1)"
   components:
     button-primary:
       backgroundColor: "{colors.primary-60}"
