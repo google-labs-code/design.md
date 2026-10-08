@@ -163,4 +163,57 @@ motion:
     );
     expect(unknownKeyFindings).toEqual([]);
   });
+
+  it('processes a DESIGN.md with a prose-only Voice & Content Strategy section in canonical order', () => {
+    const content = `---
+name: Daylight Prestige
+
+colors:
+  primary: "#1A1C1E"
+
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+---
+
+## Overview
+
+Editorial design system with high-contrast neutrals.
+
+## Colors
+
+Primary ink palette.
+
+## Typography
+
+Public Sans for body text.
+
+## Shapes
+
+Sharp 4px corner radius.
+
+## Voice & Content Strategy
+
+- **Tone of voice:** Precise, calm, and utilitarian. Avoid exclamation marks, marketing hyperbole, and conversational filler.
+- **Capitalization:** Sentence case applied consistently across all headings, buttons, form labels, and menu items.
+- **Terminology:** Use "Workspace" (never "Project" or "Repo") and "Member" (never "User" or "Collaborator"). Pick one word per concept and keep it.
+- **Button and action labels:** Use a verb phrase naming the outcome (e.g., "Save changes", "Create workspace"), never vague labels like "OK" or "Submit".
+- **Empty, loading, and error states:** Empty states explain what belongs in the list and provide a direct creation CTA. Error messages state what failed and suggest a specific next action.
+- **Numbers, dates, and units:** Format dates as \`YYYY-MM-DD\` in tables, use relative time ("3m ago") in activity feeds, and separate numeric values from units with a space (\`16 px\`).
+
+## Components
+
+Core component library.
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.designSystem.sections).toContain('Voice & Content Strategy');
+    const orderFindings = result.findings.filter(f => f.rule === 'section-order');
+    expect(orderFindings).toEqual([]);
+  });
 });

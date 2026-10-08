@@ -91,7 +91,7 @@ describe('sectionOrder', () => {
 
   it('should handle mixed aliases and canonical names', () => {
     const state = {
-      sections: ['Brand & Style', 'Colors', 'Typography', 'Layout & Spacing', 'Elevation & Depth', 'Shapes', 'Components'],
+      sections: ['Brand & Style', 'Colors', 'Typography', 'Layout & Spacing', 'Elevation & Depth', 'Shapes', 'Voice & Content Strategy', 'Components'],
     } as unknown as DesignSystemState;
 
     const findings = sectionOrder(state);
