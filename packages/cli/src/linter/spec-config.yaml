@@ -59,6 +59,7 @@ sections:
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Iconography
   - canonical: Components
   - canonical: "Do's and Don'ts"
 
