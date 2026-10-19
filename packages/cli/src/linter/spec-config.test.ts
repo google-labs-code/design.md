@@ -162,6 +162,12 @@ describe('spec-config structural invariants', () => {
     expect(new Set(STANDARD_UNITS).size).toBe(STANDARD_UNITS.length);
   });
 
+  it('includes physical print units alongside px/em/rem (issue #162)', () => {
+    for (const unit of ['px', 'em', 'rem', 'pt', 'mm', 'cm', 'in']) {
+      expect(STANDARD_UNITS).toContain(unit);
+    }
+  });
+
   it('primitive type definitions are non-empty', () => {
     expect(Object.keys(SPEC_TYPES).length).toBeGreaterThan(0);
     for (const [name, typeDef] of Object.entries(SPEC_TYPES)) {
