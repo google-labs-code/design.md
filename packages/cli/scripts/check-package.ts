@@ -16,7 +16,7 @@
 /**
  * Package verification script for @google/design.md
  *
- * Runs 17 checks across 4 phases to ensure the package is correctly
+ * Runs 21 checks across 5 phases to ensure the package is correctly
  * structured for npm publication. Exit code 0 = all pass, 1 = failures.
  *
  * Usage: bun run scripts/check-package.ts
@@ -326,6 +326,26 @@ function phase4() {
   }
 }
 
+// ── Phase 5: Dependency Audit ──────────────────────────────────────
+
+function phase5() {
+  heading('Phase 5: Dependency Audit');
+
+  // 21. Verify production dependencies are secure and audit-free
+  const audit = exec('npm audit --omit=dev --json');
+  let zeroVulnerabilities = false;
+
+  try {
+    const report = JSON.parse(audit.stdout);
+    zeroVulnerabilities = report.metadata?.vulnerabilities?.total === 0 || !report.vulnerabilities;
+  } catch {
+    zeroVulnerabilities = audit.ok;
+  }
+
+  check('#21 Production dependencies are secure', zeroVulnerabilities,
+    'Vulnerabilities found in production dependencies. Run `npm audit` to see specifics.');
+}
+
 // ── Main ───────────────────────────────────────────────────────────
 
 console.log('🔍 Package verification: @google/design.md\n');
@@ -335,6 +355,7 @@ phase2();
 phase1_paths();
 phase3();
 phase4();
+phase5();
 
 console.log(`\n${'═'.repeat(60)}`);
 console.log(`  ✅ ${passed} passed   ❌ ${failed} failed`);
