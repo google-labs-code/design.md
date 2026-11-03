@@ -59,12 +59,14 @@ const ConfigSchema = z.object({
     aliases: z.array(z.string()).optional(),
   })).min(1),
   typography_properties: z.array(PropertyDefSchema).min(1),
+  motion_properties: z.array(PropertyDefSchema).default([]),
   component_sub_tokens: z.array(PropertyDefSchema).min(1),
   color_roles: z.array(z.string()).min(1),
   recommended_tokens: z.record(z.string(), z.array(z.string())),
   examples: z.object({
     colors: z.record(z.string(), z.string()),
     typography: z.record(z.string(), z.record(z.string(), z.union([z.string(), z.number()]))),
+    motion: z.record(z.string(), z.record(z.string(), z.string())).optional(),
     components: z.record(z.string(), z.record(z.string(), z.string())),
   }),
 });
@@ -104,6 +106,15 @@ export interface SectionDef {
 }
 
 export interface TypographyPropertyDef {
+  /** Property name as it appears in YAML. */
+  name: string;
+  /** Human-readable type for the spec document. */
+  type: string;
+  /** Extended description for the spec (appears after the type). */
+  description?: string | undefined;
+}
+
+export interface MotionPropertyDef {
   /** Property name as it appears in YAML. */
   name: string;
   /** Human-readable type for the spec document. */
@@ -158,6 +169,8 @@ export const SECTIONS = config.sections;
 
 export const TYPOGRAPHY_PROPERTIES: readonly TypographyPropertyDef[] = config.typography_properties;
 
+export const MOTION_PROPERTIES: readonly MotionPropertyDef[] = config.motion_properties;
+
 export const COMPONENT_SUB_TOKENS: readonly ComponentSubTokenDef[] = config.component_sub_tokens;
 
 /** Core color roles that every design system should define. */
@@ -192,6 +205,9 @@ export function resolveAlias(heading: string): string {
 /** Valid typography property names (for linter validation). */
 export const VALID_TYPOGRAPHY_PROPS = TYPOGRAPHY_PROPERTIES.map(p => p.name);
 
+/** Valid motion property names (for linter validation). */
+export const VALID_MOTION_PROPS = MOTION_PROPERTIES.map(p => p.name);
+
 /** Valid component sub-token names (for linter validation). */
 export const VALID_COMPONENT_SUB_TOKENS = COMPONENT_SUB_TOKENS.map(p => p.name);
 
@@ -206,6 +222,7 @@ export interface SpecConfig {
   SPEC_TYPES: typeof SPEC_TYPES;
   SECTIONS: typeof SECTIONS;
   TYPOGRAPHY_PROPERTIES: typeof TYPOGRAPHY_PROPERTIES;
+  MOTION_PROPERTIES: typeof MOTION_PROPERTIES;
   COMPONENT_SUB_TOKENS: typeof COMPONENT_SUB_TOKENS;
   CORE_COLOR_ROLES: typeof CORE_COLOR_ROLES;
   RECOMMENDED_TOKENS: typeof RECOMMENDED_TOKENS;
@@ -222,6 +239,7 @@ export const SPEC_CONFIG: SpecConfig = {
   SPEC_TYPES,
   SECTIONS,
   TYPOGRAPHY_PROPERTIES,
+  MOTION_PROPERTIES,
   COMPONENT_SUB_TOKENS,
   CORE_COLOR_ROLES,
   RECOMMENDED_TOKENS,

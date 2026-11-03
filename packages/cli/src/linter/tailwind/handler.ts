@@ -21,6 +21,7 @@ import type { DesignSystemState, ResolvedDimension } from '../model/spec.js';
  */
 export class TailwindEmitterHandler implements TailwindEmitterSpec {
   execute(state: DesignSystemState): TailwindEmitterResult {
+    const motionExtend = this.mapMotion(state);
     return {
       success: true,
       data: {
@@ -31,10 +32,38 @@ export class TailwindEmitterHandler implements TailwindEmitterSpec {
             fontSize: this.mapFontSizes(state),
             borderRadius: this.mapDimensions(state.rounded),
             spacing: this.mapDimensions(state.spacing),
+            ...motionExtend,
           },
         },
       }
     };
+  }
+
+  private mapMotion(state: DesignSystemState): {
+    transitionDuration?: Record<string, string>;
+    transitionDelay?: Record<string, string>;
+    transitionTimingFunction?: Record<string, string>;
+  } {
+    if (!state.motion || state.motion.size === 0) return {};
+    const transitionDuration: Record<string, string> = {};
+    const transitionDelay: Record<string, string> = {};
+    const transitionTimingFunction: Record<string, string> = {};
+
+    for (const [name, entry] of state.motion) {
+      if (entry.duration) transitionDuration[name] = entry.duration;
+      if (entry.delay) transitionDelay[name] = entry.delay;
+      if (entry.timingFunction) transitionTimingFunction[name] = entry.timingFunction;
+    }
+
+    const result: {
+      transitionDuration?: Record<string, string>;
+      transitionDelay?: Record<string, string>;
+      transitionTimingFunction?: Record<string, string>;
+    } = {};
+    if (Object.keys(transitionDuration).length > 0) result.transitionDuration = transitionDuration;
+    if (Object.keys(transitionDelay).length > 0) result.transitionDelay = transitionDelay;
+    if (Object.keys(transitionTimingFunction).length > 0) result.transitionTimingFunction = transitionTimingFunction;
+    return result;
   }
 
   private mapColors(state: DesignSystemState): Record<string, string> {

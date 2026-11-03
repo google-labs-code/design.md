@@ -20,12 +20,13 @@ import type {
   ResolvedColor,
   ResolvedDimension,
   ResolvedTypography,
+  ResolvedMotion,
   ResolvedValue,
   ComponentDef,
   Finding,
 } from './spec.js';
 
-import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts, VALID_TYPOGRAPHY_PROPS } from './spec.js';
+import { isValidColor, isParseableDimension, isTokenReference, parseDimensionParts, VALID_TYPOGRAPHY_PROPS, VALID_MOTION_PROPS } from './spec.js';
 import { parseCssColor } from './color-parser.js';
 
 import {
@@ -35,6 +36,9 @@ import {
 
 const SCHEMA_KEY_SET: ReadonlySet<string> = new Set(SCHEMA_KEYS);
 const TYPOGRAPHY_PROP_SET: ReadonlySet<string> = new Set(VALID_TYPOGRAPHY_PROPS);
+const MOTION_PROP_SET: ReadonlySet<string> = new Set(VALID_MOTION_PROPS);
+const DURATION_RE = /^\d+(\.\d+)?ms$/;
+const EASING_RE = /^(linear|ease|ease-in|ease-out|ease-in-out|steps\(.+\)|cubic-bezier\(.+\))$/;
 
 /**
  * Builds a resolved DesignSystemState from parsed YAML tokens.
@@ -51,6 +55,7 @@ export class ModelHandler implements ModelSpec {
       const typography = new Map<string, ResolvedTypography>();
       const rounded = new Map<string, ResolvedDimension>();
       const spacing = new Map<string, ResolvedDimension>();
+      const motion = new Map<string, ResolvedMotion>();
 
       // ── Phase 1: Resolve primitive tokens ──────────────────────────
       // Colors
@@ -135,6 +140,19 @@ export class ModelHandler implements ModelSpec {
         }, '', 0, findings, 'spacing');
       }
 
+      // Motion
+      if (input.motion && typeof input.motion === 'object') {
+        for (const [name, props] of Object.entries(input.motion)) {
+          if (props && typeof props === 'object' && !Array.isArray(props)) {
+            const resolved = parseMotion(props, `motion.${name}`, findings);
+            motion.set(name, resolved);
+            symbolTable.set(`motion.${name}`, resolved);
+          } else {
+            symbolTable.set(`motion.${name}`, props as any);
+          }
+        }
+      }
+
       // ── Phase 2: Resolve chained token references ──────────────────
       // Iterate the symbol table directly (not re-walking raw input) so that
       // Phase 1 collision decisions are never overwritten.
@@ -217,6 +235,7 @@ export class ModelHandler implements ModelSpec {
           typography,
           rounded,
           spacing,
+          motion,
           components,
           symbolTable,
           sections: input.sections,
@@ -413,6 +432,53 @@ function parseTypography(props: Record<string, string | number>, path: string, f
         severity: 'warning',
         path: `${path}.${key}`,
         message: `'${key}' is not a recognized typography property. Valid properties: ${VALID_TYPOGRAPHY_PROPS.join(', ')}.`,
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Parse a motion properties object into a ResolvedMotion.
+ */
+function parseMotion(props: Record<string, unknown>, path: string, findings: Finding[]): ResolvedMotion {
+  const result: ResolvedMotion = { type: 'motion' };
+
+  for (const key of ['duration', 'delay'] as const) {
+    if (props[key] !== undefined) {
+      const raw = String(props[key]);
+      if (DURATION_RE.test(raw)) {
+        result[key] = raw;
+      } else {
+        findings.push({
+          severity: 'error',
+          path: `${path}.${key}`,
+          message: `'${raw}' is not a valid ms duration (e.g., 100ms, 250ms).`,
+        });
+      }
+    }
+  }
+
+  if (props['timingFunction'] !== undefined) {
+    const raw = String(props['timingFunction']);
+    if (EASING_RE.test(raw)) {
+      result.timingFunction = raw;
+    } else {
+      findings.push({
+        severity: 'error',
+        path: `${path}.timingFunction`,
+        message: `'${raw}' is not a valid timing function (expected linear, ease, ease-in, ease-out, ease-in-out, steps(...), or cubic-bezier(...)).`,
+      });
+    }
+  }
+
+  for (const key of Object.keys(props)) {
+    if (!MOTION_PROP_SET.has(key)) {
+      findings.push({
+        severity: 'warning',
+        path: `${path}.${key}`,
+        message: `'${key}' is not a recognized motion property. Valid properties: ${VALID_MOTION_PROPS.join(', ')}.`,
       });
     }
   }
