@@ -36,6 +36,30 @@ Some markdown content here.
         expect(result.data.colors?.['primary']).toBe('#647D66');
       }
     });
+
+    it('captures declared theme modes from frontmatter', () => {
+      const input = `---
+name: Modeful
+themes:
+  - light
+  - dark
+default-theme: light
+colors:
+  surface:
+    light: "#ffffff"
+    dark: "#111111"
+---`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.themes).toEqual(['light', 'dark']);
+        expect(result.data.defaultTheme).toBe('light');
+        expect(result.data.colors?.['surface']).toEqual({
+          light: '#ffffff',
+          dark: '#111111',
+        });
+      }
+    });
   });
 
   // ── Cycle 3: Code block extraction ────────────────────────────────
