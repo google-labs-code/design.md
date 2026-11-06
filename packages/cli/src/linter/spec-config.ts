@@ -51,7 +51,9 @@ const ConfigSchema = z.object({
   limits: z.object({
     max_token_nesting_depth: z.number().default(20),
     max_reference_depth: z.number().default(10),
-  }).default({}),
+  // `.prefault({})` (not `.default({})`): in Zod 4, `.default()` short-circuits
+  // and would skip the inner field defaults when `limits` is omitted.
+  }).prefault({}),
   units: z.array(z.string()).min(1),
   types: z.record(z.string(), TypeDefSchema),
   sections: z.array(z.object({
