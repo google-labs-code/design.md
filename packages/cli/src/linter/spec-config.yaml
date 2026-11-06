@@ -59,6 +59,7 @@ sections:
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Voice & Content Strategy
   - canonical: Components
   - canonical: "Do's and Don'ts"
 
