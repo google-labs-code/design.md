@@ -16,16 +16,24 @@
 /**
  * Package verification script for @google/design.md
  *
- * Runs 17 checks across 4 phases to ensure the package is correctly
- * structured for npm publication. Exit code 0 = all pass, 1 = failures.
+ * Runs a series of checks, grouped into phases, to ensure the package is
+ * correctly structured for npm publication. The final phase installs the
+ * packed tarball into a throwaway consumer project and audits the production
+ * dependency tree that consumers would actually receive.
+ * Exit code 0 = all pass, 1 = failures.
  *
- * Usage: bun run scripts/check-package.ts
+ * Usage: bun run scripts/check-package.ts [--skip-audit]
+ *
+ * The dependency audit needs network access to the npm registry and fails
+ * closed when the registry can't be reached. To run offline, opt out with
+ * `--skip-audit` or `DESIGN_MD_SKIP_AUDIT=1`; the audit is then reported as
+ * SKIPPED rather than passed.
  */
 
 import { readFileSync, existsSync, mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join, resolve } from 'path';
 import { execSync } from 'child_process';
-import { Glob, $ } from 'bun';
+import { Glob } from 'bun';
 import { tmpdir } from 'os';
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -35,6 +43,8 @@ const PKG_PATH = join(ROOT, 'package.json');
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
+let phases = 0;
 
 function pass(label: string) {
   console.log(`  ✅ ${label}`);
@@ -47,12 +57,19 @@ function fail(label: string, detail?: string) {
   failed++;
 }
 
+function skip(label: string, reason: string) {
+  console.log(`  ⏭️  SKIPPED ${label}`);
+  console.log(`     → ${reason}`);
+  skipped++;
+}
+
 function check(label: string, ok: boolean, detail?: string) {
   if (ok) pass(label);
   else fail(label, detail);
 }
 
 function heading(title: string) {
+  phases++;
   console.log(`\n── ${title} ${'─'.repeat(Math.max(0, 56 - title.length))}`);
 }
 
@@ -60,12 +77,14 @@ function readPkg(): Record<string, unknown> {
   return JSON.parse(readFileSync(PKG_PATH, 'utf-8'));
 }
 
-function exec(cmd: string, opts?: { cwd?: string }): { ok: boolean; stdout: string; stderr: string } {
+function exec(cmd: string, opts?: { cwd?: string; timeoutMs?: number }): { ok: boolean; stdout: string; stderr: string } {
   try {
     const stdout = execSync(cmd, {
       cwd: opts?.cwd ?? ROOT,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: opts?.timeoutMs,
+      maxBuffer: 64 * 1024 * 1024,
       env: { ...process.env, PATH: `${process.env.HOME}/.bun/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${process.env.PATH ?? ''}` },
     });
     return { ok: true, stdout, stderr: '' };
@@ -326,6 +345,172 @@ function phase4() {
   }
 }
 
+// ── Phase 5: Consumer dependency audit ─────────────────────────────
+
+const AUDIT_LABEL = 'Consumer dependency audit (no high/critical advisories)';
+const FAILING_SEVERITIES = new Set(['high', 'critical']);
+const NETWORK_TIMEOUT_MS = 3 * 60 * 1000;
+// Bound npm's network retries so an unreachable registry fails in seconds
+// instead of hanging on npm's default exponential backoff.
+const NPM_NETWORK_FLAGS = '--fetch-retries=1 --fetch-retry-mintimeout=2000 --fetch-retry-maxtimeout=10000 --fetch-timeout=60000';
+
+function auditSkipReason(): string | null {
+  if (process.argv.includes('--skip-audit')) return '--skip-audit flag set';
+  const env = process.env.DESIGN_MD_SKIP_AUDIT;
+  if (env && env !== '0' && env.toLowerCase() !== 'false') return `DESIGN_MD_SKIP_AUDIT=${env}`;
+  return null;
+}
+
+interface Advisory {
+  pkg: string;
+  severity: string;
+  url: string;
+  title: string;
+}
+
+/**
+ * Packs the package and installs the tarball (production deps only) into a
+ * fresh consumer project, so the audit sees exactly what a user would get —
+ * not the monorepo's root lockfile.
+ */
+function installPackedTarball(consumerDir: string): { ok: boolean; detail: string } {
+  const packed = exec(`npm pack --json --pack-destination "${consumerDir}"`, { timeoutMs: NETWORK_TIMEOUT_MS });
+  let tarball = '';
+  try {
+    const parsed = JSON.parse(packed.stdout);
+    tarball = (parsed[0]?.filename ?? '') as string;
+  } catch {
+    // handled below
+  }
+  if (!packed.ok || !tarball) {
+    return { ok: false, detail: `npm pack failed: ${packed.stderr.trim().split('\n').pop() ?? ''}` };
+  }
+  // npm >= 9 may prefix scoped filenames differently; resolve to what's on disk.
+  const tarballPath = join(consumerDir, tarball.replace(/^@/, '').replace(/\//g, '-'));
+  if (!existsSync(tarballPath)) {
+    return { ok: false, detail: `packed tarball not found at ${tarballPath}` };
+  }
+
+  writeFileSync(
+    join(consumerDir, 'package.json'),
+    JSON.stringify({ name: 'check-package-consumer', version: '0.0.0', private: true }, null, 2) + '\n',
+  );
+  const install = exec(
+    `npm install "${tarballPath}" --omit=dev --ignore-scripts --no-audit --no-fund ${NPM_NETWORK_FLAGS}`,
+    { cwd: consumerDir, timeoutMs: NETWORK_TIMEOUT_MS },
+  );
+  if (!install.ok) {
+    const firstErrors = install.stderr.trim().split('\n')
+      .filter((l) => l.trim() !== '' && l.trim() !== 'npm error')
+      .slice(0, 2)
+      .join(' | ');
+    return { ok: false, detail: `npm install of packed tarball failed: ${firstErrors || 'no output'}` };
+  }
+  return { ok: true, detail: '' };
+}
+
+/**
+ * Runs `npm audit` in `consumerDir` and records a single pass/fail result.
+ * Fails closed: anything other than a well-formed report with zero
+ * high/critical advisories is a failure.
+ */
+function auditConsumer(consumerDir: string) {
+  const audit = exec(`npm audit --omit=dev --audit-level=high --json ${NPM_NETWORK_FLAGS}`, {
+    cwd: consumerDir,
+    timeoutMs: NETWORK_TIMEOUT_MS,
+  });
+
+  let report: Record<string, unknown>;
+  try {
+    report = JSON.parse(audit.stdout);
+  } catch {
+    const why = (audit.stderr || audit.stdout).trim().split('\n').slice(-3).join(' | ') || 'no output';
+    fail(AUDIT_LABEL, `audit unavailable: could not parse npm audit output (${why}). ` +
+      'Re-run with network access, or pass --skip-audit / DESIGN_MD_SKIP_AUDIT=1 to skip explicitly.');
+    return;
+  }
+
+  if (report.error) {
+    const err = (typeof report.error === 'object' ? report.error : {}) as {
+      code?: string; summary?: string; detail?: string;
+    };
+    const why = [err.code, err.summary, err.detail, report.message as string | undefined]
+      .filter((x) => typeof x === 'string' && x.trim() !== '')
+      .join(' — ') || 'no details';
+    fail(AUDIT_LABEL, `audit unavailable: npm audit reported an error (${why}). Re-run with network ` +
+      'access, or pass --skip-audit / DESIGN_MD_SKIP_AUDIT=1 to skip explicitly.');
+    return;
+  }
+
+  const counts = (report.metadata as { vulnerabilities?: Record<string, number> } | undefined)?.vulnerabilities;
+  const vulns = report.vulnerabilities as Record<string, { via?: unknown[] }> | undefined;
+  if (!counts || typeof counts !== 'object' || !vulns || typeof vulns !== 'object') {
+    fail(AUDIT_LABEL, 'audit unavailable: npm audit output is missing vulnerability data');
+    return;
+  }
+
+  // Collect concrete advisories (via entries that are objects, not package names).
+  const advisories = new Map<string, Advisory>();
+  for (const entry of Object.values(vulns)) {
+    for (const via of entry.via ?? []) {
+      if (typeof via !== 'object' || via === null) continue;
+      const v = via as { name?: string; severity?: string; url?: string; title?: string; source?: number };
+      const key = v.url ?? `${v.name}:${v.source}`;
+      advisories.set(key, {
+        pkg: v.name ?? '?',
+        severity: v.severity ?? 'unknown',
+        url: v.url ?? '(no url)',
+        title: v.title ?? '(no title)',
+      });
+    }
+  }
+
+  const blocking = [...advisories.values()].filter((a) => FAILING_SEVERITIES.has(a.severity));
+  const informational = [...advisories.values()].filter((a) => !FAILING_SEVERITIES.has(a.severity));
+  const highCount = (counts.high ?? 0) + (counts.critical ?? 0);
+
+  for (const a of informational) {
+    console.log(`  ℹ️  ${a.severity}: ${a.pkg} — ${a.title} (${a.url})`);
+  }
+
+  if (blocking.length === 0 && highCount === 0) {
+    pass(`${AUDIT_LABEL} — ${informational.length} lower-severity advisor${informational.length === 1 ? 'y' : 'ies'}`);
+    return;
+  }
+
+  const list = blocking.length > 0
+    ? blocking.map((a) => `${a.severity}: ${a.pkg} — ${a.title} (${a.url})`).join('\n       ')
+    : `${highCount} high/critical vulnerabilities reported, but no advisory details were returned`;
+  fail(AUDIT_LABEL, `found ${blocking.length || highCount} high/critical advisor${(blocking.length || highCount) === 1 ? 'y' : 'ies'}:\n       ${list}`);
+}
+
+function phase5() {
+  heading('Phase 5: Consumer dependency audit');
+
+  const reason = auditSkipReason();
+  if (reason) {
+    skip(AUDIT_LABEL, `${reason} — dependency audit was NOT run`);
+    return;
+  }
+
+  const consumerDir = mkdtempSync(join(tmpdir(), 'check-pkg-consumer-'));
+  try {
+    const install = installPackedTarball(consumerDir);
+    if (!install.ok) {
+      fail(AUDIT_LABEL, `audit unavailable: ${install.detail}. Re-run with network access, or pass ` +
+        '--skip-audit / DESIGN_MD_SKIP_AUDIT=1 to skip explicitly.');
+      return;
+    }
+    auditConsumer(consumerDir);
+  } finally {
+    try {
+      rmSync(consumerDir, { recursive: true, force: true });
+    } catch {
+      // best effort
+    }
+  }
+}
+
 // ── Main ───────────────────────────────────────────────────────────
 
 console.log('🔍 Package verification: @google/design.md\n');
@@ -335,9 +520,11 @@ phase2();
 phase1_paths();
 phase3();
 phase4();
+phase5();
 
 console.log(`\n${'═'.repeat(60)}`);
-console.log(`  ✅ ${passed} passed   ❌ ${failed} failed`);
+console.log(`  ${passed + failed + skipped} checks across ${phases} phases`);
+console.log(`  ✅ ${passed} passed   ❌ ${failed} failed${skipped > 0 ? `   ⏭️  ${skipped} skipped` : ''}`);
 console.log(`${'═'.repeat(60)}\n`);
 
 if (failed > 0) {
