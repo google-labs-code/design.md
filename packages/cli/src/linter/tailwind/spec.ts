@@ -18,11 +18,11 @@ import type { DesignSystemState } from '../model/spec.js';
 
 // ── TAILWIND CONFIG SCHEMA ──────────────────────────────────────────
 export const TailwindThemeExtendSchema = z.object({
-  colors: z.record(z.string()).optional(),
-  fontFamily: z.record(z.array(z.string())).optional(),
-  fontSize: z.record(z.tuple([z.string(), z.record(z.string())])).optional(),
-  borderRadius: z.record(z.string()).optional(),
-  spacing: z.record(z.string()).optional(),
+  colors: z.record(z.string(), z.string()).optional(),
+  fontFamily: z.record(z.string(), z.array(z.string())).optional(),
+  fontSize: z.record(z.string(), z.tuple([z.string(), z.record(z.string(), z.string())])).optional(),
+  borderRadius: z.record(z.string(), z.string()).optional(),
+  spacing: z.record(z.string(), z.string()).optional(),
 });
 
 export type TailwindThemeExtend = z.infer<typeof TailwindThemeExtendSchema>;

@@ -60,7 +60,7 @@ export interface DtcgTokenFile extends DtcgGroup {
 export const DtcgEmitterResultSchema = z.discriminatedUnion('success', [
   z.object({
     success: z.literal(true),
-    data: z.record(z.unknown()),
+    data: z.record(z.string(), z.unknown()),
   }),
   z.object({
     success: z.literal(false),
