@@ -377,6 +377,25 @@ function parseTypography(props: Record<string, string | number>, path: string, f
   const dimensionProps = ['fontSize', 'lineHeight', 'letterSpacing'] as const;
   for (const prop of dimensionProps) {
     const raw = props[prop];
+    if (typeof raw === 'number' && Number.isFinite(raw)) {
+      // YAML parses unquoted unitless values as numbers. lineHeight is a
+      // unitless multiplier in both DESIGN.md and DTCG; other dimension
+      // properties still require an explicit unit.
+      if (prop === 'lineHeight') {
+        result[prop] = {
+          type: 'dimension',
+          value: raw,
+          unit: '',
+        };
+      } else {
+        findings.push({
+          severity: 'error',
+          path: `${path}.${prop}`,
+          message: `'${raw}' is not a valid dimension. Include a unit (px, rem, or em).`,
+        });
+      }
+      continue;
+    }
     if (typeof raw === 'string') {
       if (isParseableDimension(raw)) {
         const parsed = parseDimension(raw);

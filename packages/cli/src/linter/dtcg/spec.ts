@@ -57,10 +57,20 @@ export interface DtcgTokenFile extends DtcgGroup {
 
 // ── Result ─────────────────────────────────────────────────────────
 
+/** Non-fatal issue: the export succeeded but a source value could not be represented. */
+export const DtcgEmitterWarningSchema = z.object({
+  code: z.string(),
+  path: z.string(),
+  message: z.string(),
+});
+
+export type DtcgEmitterWarning = z.infer<typeof DtcgEmitterWarningSchema>;
+
 export const DtcgEmitterResultSchema = z.discriminatedUnion('success', [
   z.object({
     success: z.literal(true),
     data: z.record(z.string(), z.unknown()),
+    warnings: z.array(DtcgEmitterWarningSchema).optional(),
   }),
   z.object({
     success: z.literal(false),

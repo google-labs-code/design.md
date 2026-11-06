@@ -476,6 +476,28 @@ describe('ModelHandler', () => {
       expect(headline?.fontWeight).toBe(700);
     });
 
+    it('keeps unquoted YAML numeric lineHeight as a unitless multiplier', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': { fontFamily: 'Inter', fontSize: '16px', fontWeight: 400, lineHeight: 1.6 },
+        },
+      }));
+      const body = result.designSystem.typography.get('body-md');
+      expect(body?.lineHeight?.value).toBe(1.6);
+      expect(body?.lineHeight?.unit).toBe('');
+      expect(result.findings.filter((f) => f.path?.includes('lineHeight') === true)).toHaveLength(0);
+    });
+
+    it('rejects unquoted YAML numeric fontSize because a unit is required', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': { fontFamily: 'Inter', fontSize: 16, fontWeight: 400 },
+        },
+      }));
+      expect(result.designSystem.typography.get('body-md')?.fontSize).toBeUndefined();
+      expect(result.findings.some((f) => f.path === 'typography.body-md.fontSize' && f.severity === 'error')).toBe(true);
+    });
+
     it('warns about unrecognized typography sub-properties that are silently dropped', () => {
       const result = handler.execute(makeParsed({
         typography: {

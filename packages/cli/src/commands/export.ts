@@ -101,6 +101,12 @@ export default defineCommand({
         return;
       }
 
+      // Non-fatal: values that could not be represented are omitted from the
+      // output and reported on stderr, one JSON object per line.
+      for (const warning of result.warnings ?? []) {
+        console.error(JSON.stringify({ warning: warning.code, path: warning.path, message: warning.message }));
+      }
+
       console.log(JSON.stringify(result.data, null, 2));
     } else if (format === 'css-vars') {
       const handler = new CssVarsEmitterHandler();
