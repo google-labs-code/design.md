@@ -83,6 +83,33 @@ describe('spec-config loader', () => {
     }
   });
 
+  it('applies default limits when the limits block is omitted', () => {
+    const path = '__test_no_limits.yaml';
+    writeFileSync(path, [
+      'version: alpha',
+      'units: [px]',
+      'sections: [{canonical: Colors}]',
+      'typography_properties: [{name: x, type: y}]',
+      'component_sub_tokens: [{name: x, type: y}]',
+      'color_roles: [primary]',
+      'types: {Color: {description: x}}',
+      'recommended_tokens: {a: [b]}',
+      'examples:',
+      '  colors: {a: "#000"}',
+      '  typography: {a: {fontFamily: x}}',
+      '  components: {a: {bg: x}}',
+    ].join('\n'));
+    try {
+      const config = loadSpecConfig(path);
+      expect(config.limits).toEqual({
+        max_token_nesting_depth: 20,
+        max_reference_depth: 10,
+      });
+    } finally {
+      unlinkSync(path);
+    }
+  });
+
   it('does not write to stdout or stderr', () => {
     const originalLog = console.log;
     const originalError = console.error;
