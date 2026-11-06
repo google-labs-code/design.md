@@ -264,4 +264,118 @@ typography:
     expect(value['lineHeight']).toBe(1.6);
     expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
   });
+  describe('lineHeight conversion to a unitless multiplier', () => {
+    function typoValue(
+      lineHeight: ResolvedDimension,
+      fontSize?: ResolvedDimension,
+    ): { value: Record<string, unknown>; warnings: unknown[] | undefined } {
+      const typo: ResolvedTypography = {
+        type: 'typography',
+        fontFamily: 'Inter',
+        fontWeight: 400,
+        lineHeight,
+        ...(fontSize ? { fontSize } : {}),
+      };
+      const result = handler.execute(emptyState({ typography: new Map([['body', typo]]) }));
+      if (!result.success) throw new Error('expected success');
+      const value = ((result.data['typography'] as Record<string, unknown>)['body'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+      return { value, warnings: result.warnings };
+    }
+
+    test('px lineHeight with px fontSize: 22px @ 16px → 1.375', () => {
+      const { value, warnings } = typoValue(makeDim(22, 'px'), makeDim(16, 'px'));
+      expect(value['lineHeight']).toBe(1.375);
+      expect(warnings).toBeUndefined();
+    });
+
+    test('rem lineHeight with rem fontSize: 1.5rem @ 1rem → 1.5', () => {
+      const { value } = typoValue(makeDim(1.5, 'rem'), makeDim(1, 'rem'));
+      expect(value['lineHeight']).toBe(1.5);
+    });
+
+    test('px lineHeight with rem fontSize assumes a 16px root: 24px @ 1rem → 1.5', () => {
+      const { value } = typoValue(makeDim(24, 'px'), makeDim(1, 'rem'));
+      expect(value['lineHeight']).toBe(1.5);
+    });
+
+    test('rem lineHeight with px fontSize assumes a 16px root: 1.5rem @ 12px → 2', () => {
+      const { value } = typoValue(makeDim(1.5, 'rem'), makeDim(12, 'px'));
+      expect(value['lineHeight']).toBe(2);
+    });
+
+    test('rounds to 3 decimal places: 20px @ 14px → 1.429', () => {
+      const { value } = typoValue(makeDim(20, 'px'), makeDim(14, 'px'));
+      expect(value['lineHeight']).toBe(1.429);
+    });
+
+    test('em lineHeight passes through as a multiplier, regardless of fontSize unit', () => {
+      expect(typoValue(makeDim(1.4, 'em'), makeDim(16, 'px')).value['lineHeight']).toBe(1.4);
+      expect(typoValue(makeDim(1.4, 'em')).value['lineHeight']).toBe(1.4);
+    });
+
+    test('unitless lineHeight passes through even without a fontSize', () => {
+      const { value, warnings } = typoValue(makeDim(1.6, ''));
+      expect(value['lineHeight']).toBe(1.6);
+      expect(warnings).toBeUndefined();
+    });
+
+    test('px lineHeight without a fontSize is omitted with a warning', () => {
+      const { value, warnings } = typoValue(makeDim(22, 'px'));
+      expect(value['lineHeight']).toBeUndefined();
+      expect(warnings).toEqual([
+        expect.objectContaining({ code: 'LINE_HEIGHT_NOT_CONVERTIBLE', path: 'typography.body.lineHeight' }),
+      ]);
+    });
+
+    test('px lineHeight with an em fontSize is omitted with a warning', () => {
+      const { value, warnings } = typoValue(makeDim(22, 'px'), makeDim(1.2, 'em'));
+      expect(value['lineHeight']).toBeUndefined();
+      expect(warnings).toHaveLength(1);
+      expect((warnings as Array<{ message: string }>)[0]!.message).toContain("'22px'");
+    });
+
+    test('lint → export: YAML `lineHeight: 22px` with `fontSize: 16px` exports 1.375', () => {
+      const report = lint(`---
+typography:
+  body-md:
+    fontFamily: Inter
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 22px
+---
+# Spec
+`);
+      const result = handler.execute(report.designSystem);
+      if (!result.success) throw new Error('expected success');
+      const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+      expect(value['lineHeight']).toBe(1.375);
+    });
+  });
+
+  test('each typography token gets its own default letterSpacing object', () => {
+    const typo = (): ResolvedTypography => ({
+      type: 'typography',
+      fontFamily: 'Inter',
+      fontSize: makeDim(16, 'px'),
+      fontWeight: 400,
+      lineHeight: makeDim(1.5, ''),
+    });
+    const result = handler.execute(emptyState({
+      typography: new Map([['a', typo()], ['b', typo()]]),
+    }));
+    if (!result.success) throw new Error('expected success');
+    const group = result.data['typography'] as Record<string, { $value: Record<string, unknown> }>;
+    const a = group['a']!.$value['letterSpacing'] as { value: number; unit: string };
+    const b = group['b']!.$value['letterSpacing'] as { value: number; unit: string };
+    expect(a).toEqual({ value: 0, unit: 'px' });
+    expect(b).toEqual({ value: 0, unit: 'px' });
+    expect(a).not.toBe(b);
+    a.value = 99;
+    expect(b.value).toBe(0);
+    // A later export is unaffected by mutating an earlier result.
+    const again = handler.execute(emptyState({ typography: new Map([['c', typo()]]) }));
+    if (!again.success) throw new Error('expected success');
+    const c = (again.data['typography'] as Record<string, { $value: Record<string, unknown> }>)['c']!.$value['letterSpacing'];
+    expect(c).toEqual({ value: 0, unit: 'px' });
+  });
 });
