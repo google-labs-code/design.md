@@ -51,6 +51,15 @@ describe('unknownKey', () => {
     expect(findings[0]!.message).toBe('Unknown key "nam" — did you mean "name"?');
   });
 
+  it('warns and suggests "shadows" for "shadow" (distance 1)', () => {
+    const state = buildState({
+      sourceMap: new Map([['shadow', loc]]),
+    });
+    const findings = unknownKey(state);
+    expect(findings.length).toBe(1);
+    expect(findings[0]!.message).toBe('Unknown key "shadow" — did you mean "shadows"?');
+  });
+
   it('matches case-insensitively (e.g. "Colors" is treated as known)', () => {
     const state = buildState({
       sourceMap: new Map([['Colors', loc]]),

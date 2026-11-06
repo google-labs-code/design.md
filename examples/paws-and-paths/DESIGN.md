@@ -108,6 +108,13 @@ spacing:
   xl: 64px
   gutter: 16px
   margin: 24px
+shadows:
+  card:
+    offsetX: 0px
+    offsetY: 2px
+    blur: 6px
+    spread: 0px
+    color: "#00000026"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -131,6 +138,7 @@ components:
     backgroundColor: "{colors.surface-container-lowest}"
     rounded: "{rounded.xl}"
     padding: "{spacing.md}"
+    boxShadow: "{shadows.card}"
   card-walk-stat:
     backgroundColor: "{colors.secondary-container}"
     textColor: "{colors.on-secondary-container}"

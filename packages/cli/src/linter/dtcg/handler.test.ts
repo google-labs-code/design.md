@@ -23,6 +23,7 @@ function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
     typography: new Map(),
     rounded: new Map(),
     spacing: new Map(),
+    shadows: new Map(),
     components: new Map(),
     symbolTable: new Map(),
     ...overrides,

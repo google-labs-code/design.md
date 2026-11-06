@@ -82,6 +82,23 @@ typography_properties:
     type: string
     description: "configures\n  [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/font-variation-settings)."
 
+shadow_properties:
+  - name: offsetX
+    type: Dimension
+    description: "Horizontal offset of the shadow. Negative values shift the shadow left."
+  - name: offsetY
+    type: Dimension
+    description: "Vertical offset of the shadow. Negative values shift the shadow up."
+  - name: blur
+    type: Dimension
+    description: "Blur radius. Larger values produce a softer, more spread-out shadow."
+  - name: spread
+    type: Dimension
+    description: "Spread radius. Optional; defaults to `0px` when omitted."
+  - name: color
+    type: "Color | Reference"
+    description: "The shadow's color, as a literal color value or a `{colors.*}` token reference."
+
 component_sub_tokens:
   - name: backgroundColor
     type: Color
@@ -99,6 +116,8 @@ component_sub_tokens:
     type: Dimension
   - name: width
     type: Dimension
+  - name: boxShadow
+    type: Shadow
 
 color_roles:
   - primary
@@ -157,6 +176,13 @@ examples:
       fontWeight: 500
       lineHeight: 1.0
       letterSpacing: "0.1em"
+  shadows:
+    card:
+      offsetX: 0px
+      offsetY: 4px
+      blur: 8px
+      spread: 0px
+      color: "#00000033"
   components:
     button-primary:
       backgroundColor: "{colors.primary-60}"
