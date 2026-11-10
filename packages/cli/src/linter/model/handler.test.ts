@@ -441,6 +441,39 @@ describe('ModelHandler', () => {
       expect(result.findings[0]!.path).toBe('typography.headline.letterSpacing');
       expect(result.findings[0]!.severity).toBe('error');
     });
+
+    it('accepts physical print units (pt, mm, cm, in) in typography (issue #162)', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          headline: { fontFamily: 'Roboto', fontSize: '12pt', letterSpacing: '0.5cm' },
+          body: { fontFamily: 'Roboto', lineHeight: '1mm' },
+        },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toEqual([]);
+    });
+
+    it('accepts physical print units (pt, mm, cm, in) in rounded (issue #162)', () => {
+      const result = handler.execute(makeParsed({
+        rounded: { sm: '1in', md: '3mm', lg: '0.5cm', xl: '12pt' },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toEqual([]);
+      expect(result.designSystem.rounded.size).toBe(4);
+    });
+
+    it('still rejects non-standard units after the physical-unit widening', () => {
+      const result = handler.execute(makeParsed({
+        rounded: { sm: '3vh' },
+      }));
+      expect(result.findings.some(f => f.path === 'rounded.sm' && f.severity === 'error' && f.message.includes('invalid unit'))).toBe(true);
+    });
+
+    it('still accepts px/rem/em unchanged after the physical-unit widening', () => {
+      const result = handler.execute(makeParsed({
+        rounded: { sm: '8px' },
+        typography: { headline: { fontFamily: 'Roboto', fontSize: '3rem', letterSpacing: '-0.02em' } },
+      }));
+      expect(result.findings.filter(f => f.severity === 'error')).toEqual([]);
+    });
   });
   describe('typography validation', () => {
     it('emits diagnostic when fontFamily is a hex color', () => {
