@@ -327,6 +327,43 @@ describe('ModelHandler', () => {
       expect(result.designSystem.colors.has('bad')).toBe(false);
       expect(result.findings.some(f => f.path === 'colors.bad' && f.severity === 'error')).toBe(true);
     });
+
+    it('reads unitless hsl/hwb channels as percentages', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          hslBare: 'hsl(220 60 25)', hslPct: 'hsl(220 60% 25%)',
+          hwbBare: 'hwb(120 20 30)', hwbPct: 'hwb(120 20% 30%)',
+        },
+      }));
+      expect(result.findings.length).toBe(0);
+      // CSS Color 4 reads a bare number on these channels as the same percentage.
+      expect(result.designSystem.colors.get('hslBare')?.hex).toBe('#1a3366');
+      expect(result.designSystem.colors.get('hslBare')?.hex).toBe(result.designSystem.colors.get('hslPct')?.hex);
+      expect(result.designSystem.colors.get('hwbBare')?.hex).toBe('#33b333');
+      expect(result.designSystem.colors.get('hwbBare')?.hex).toBe(result.designSystem.colors.get('hwbPct')?.hex);
+    });
+
+    it('scales percentage a/b/chroma in lab, lch, oklab and oklch', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          // 100% is 125 for lab a/b, 150 for lch chroma, and 0.4 for oklab a/b and oklch chroma.
+          labPct: 'lab(50% 40% 30%)', labNum: 'lab(50% 50 37.5)',
+          lchPct: 'lch(50% 20% 120)', lchNum: 'lch(50% 30 120)',
+          oklabPct: 'oklab(50% 25% -25%)', oklabNum: 'oklab(50% 0.1 -0.1)',
+          oklchPct: 'oklch(45% 30% 260)', oklchNum: 'oklch(45% 0.12 260)',
+        },
+      }));
+      expect(result.findings.length).toBe(0);
+      const hex = (name: string) => result.designSystem.colors.get(name)?.hex;
+      expect(hex('labPct')).toBe('#c94c3a');
+      expect(hex('labPct')).toBe(hex('labNum'));
+      expect(hex('lchPct')).toBe('#697e49');
+      expect(hex('lchPct')).toBe(hex('lchNum'));
+      expect(hex('oklabPct')).toBe('#81459a');
+      expect(hex('oklabPct')).toBe(hex('oklabNum'));
+      expect(hex('oklchPct')).toBe('#2a5397');
+      expect(hex('oklchPct')).toBe(hex('oklchNum'));
+    });
   });
 
   // ── Cycle 10: Resolve single-level token reference ────────────────
