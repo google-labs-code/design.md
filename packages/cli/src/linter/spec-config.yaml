@@ -65,6 +65,7 @@ sections:
     aliases:
       - Motion & Micro-interactions
       - Motion
+  - canonical: Voice & Content Strategy
   - canonical: Components
   - canonical: "Do's and Don'ts"
 
