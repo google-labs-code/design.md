@@ -15,33 +15,49 @@
 import type { TailwindV4EmitterSpec, TailwindV4EmitterResult, TailwindV4ThemeData } from './spec.js';
 import type { DesignSystemState, ResolvedDimension } from '../../model/spec.js';
 
-const VALID_TOKEN_NAME = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+const VALID_TOKEN_SEGMENT = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
 
 /**
  * Pure function mapping DesignSystemState → Tailwind v4 theme data.
- * Token names are validated against CSS-identifier rules. Font-family values
- * are wrapped in double quotes, with embedded `"` and `\` escaped.
+ * Dot-separated group paths (e.g. `light.surface`) are collapsed to hyphens
+ * after validating each segment against CSS-identifier rules. Font-family
+ * values are wrapped in double quotes, with embedded `"` and `\` escaped.
  */
 export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
   execute(state: DesignSystemState): TailwindV4EmitterResult {
     const theme: TailwindV4ThemeData = {};
 
-    // Validate every token name before emitting anything.
-    const allNames: string[] = [
-      ...state.colors.keys(),
-      ...state.typography.keys(),
-      ...state.rounded.keys(),
-      ...state.spacing.keys(),
+    const categories: ReadonlyArray<readonly [string, Iterable<string>]> = [
+      ['colors', state.colors.keys()],
+      ['typography', state.typography.keys()],
+      ['rounded', state.rounded.keys()],
+      ['spacing', state.spacing.keys()],
     ];
-    for (const name of allNames) {
-      if (!VALID_TOKEN_NAME.test(name)) {
-        return {
-          success: false,
-          error: {
-            code: 'INVALID_TOKEN_NAME',
-            message: `Token name "${name}" is not a valid CSS identifier for Tailwind v4 export (must match /^[a-zA-Z0-9][a-zA-Z0-9-]*$/).`,
-          },
-        };
+
+    for (const [category, names] of categories) {
+      const seenCssKeys = new Map<string, string>();
+      for (const name of names) {
+        if (!isValidTokenPath(name)) {
+          return {
+            success: false,
+            error: {
+              code: 'INVALID_TOKEN_NAME',
+              message: `Token name "${name}" is not a valid CSS identifier for Tailwind v4 export (each dot-separated segment must match /^[a-zA-Z0-9][a-zA-Z0-9-]*$/).`,
+            },
+          };
+        }
+        const cssKey = toCssKey(name);
+        const existing = seenCssKeys.get(cssKey);
+        if (existing !== undefined) {
+          return {
+            success: false,
+            error: {
+              code: 'TOKEN_NAME_COLLISION',
+              message: `Tokens "${category}.${existing}" and "${category}.${name}" both flatten to CSS key "${cssKey}".`,
+            },
+          };
+        }
+        seenCssKeys.set(cssKey, name);
       }
     }
 
@@ -49,23 +65,24 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
     if (state.colors.size > 0) {
       const colors: Record<string, string> = {};
       for (const [name, color] of state.colors) {
-        colors[name] = color.hex;
+        colors[toCssKey(name)] = color.hex;
       }
       theme.colors = colors;
     }
 
-    // Typography — split into 4 sibling categories
+    // Typography — split into 5 sibling categories
     const fontFamily: Record<string, string> = {};
     const fontSize: Record<string, string> = {};
     const lineHeight: Record<string, string> = {};
     const letterSpacing: Record<string, string> = {};
     const fontWeight: Record<string, string> = {};
     for (const [name, typo] of state.typography) {
-      if (typo.fontFamily) fontFamily[name] = cssStringLiteral(typo.fontFamily);
-      if (typo.fontSize) fontSize[name] = dimToString(typo.fontSize);
-      if (typo.lineHeight) lineHeight[name] = dimToString(typo.lineHeight);
-      if (typo.letterSpacing) letterSpacing[name] = dimToString(typo.letterSpacing);
-      if (typo.fontWeight !== undefined) fontWeight[name] = String(typo.fontWeight);
+      const cssKey = toCssKey(name);
+      if (typo.fontFamily) fontFamily[cssKey] = cssStringLiteral(typo.fontFamily);
+      if (typo.fontSize) fontSize[cssKey] = dimToString(typo.fontSize);
+      if (typo.lineHeight) lineHeight[cssKey] = dimToString(typo.lineHeight);
+      if (typo.letterSpacing) letterSpacing[cssKey] = dimToString(typo.letterSpacing);
+      if (typo.fontWeight !== undefined) fontWeight[cssKey] = String(typo.fontWeight);
     }
     if (Object.keys(fontFamily).length > 0) theme.fontFamily = fontFamily;
     if (Object.keys(fontSize).length > 0) theme.fontSize = fontSize;
@@ -85,10 +102,19 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
   }
 }
 
+function isValidTokenPath(name: string): boolean {
+  const segments = name.split('.');
+  return segments.length > 0 && segments.every((segment) => VALID_TOKEN_SEGMENT.test(segment));
+}
+
+function toCssKey(name: string): string {
+  return name.replaceAll('.', '-');
+}
+
 function mapDimensions(dims: Map<string, ResolvedDimension>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [name, dim] of dims) {
-    out[name] = dimToString(dim);
+    out[toCssKey(name)] = dimToString(dim);
   }
   return out;
 }

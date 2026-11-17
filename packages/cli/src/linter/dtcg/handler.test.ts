@@ -378,4 +378,108 @@ typography:
     const c = (again.data['typography'] as Record<string, { $value: Record<string, unknown> }>)['c']!.$value['letterSpacing'];
     expect(c).toEqual({ value: 0, unit: 'px' });
   });
+
+  describe('grouped tokens', () => {
+    test('expands dot-separated paths into nested DTCG groups across color, spacing, rounded, and typography', () => {
+      const report = lint(`---
+name: Adaptive Design System
+colors:
+  primary: "#647D66"
+  light:
+    surface: "#FAFDF7"
+    on-surface: "#1A1C19"
+  brand:
+    primary:
+      base: "#4A6350"
+spacing:
+  base: 16px
+  sm:
+    gutter: 16px
+  lg:
+    gutter: 24px
+rounded:
+  sm: 4px
+  control:
+    pill: 9999px
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+  sm:
+    headline-lg:
+      fontFamily: Public Sans
+      fontSize: 32px
+      fontWeight: 600
+      lineHeight: 1.15
+---
+# Spec
+`);
+
+      const result = handler.execute(report.designSystem);
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+
+      const colorGroup = result.data['color'] as Record<string, unknown>;
+      expect(colorGroup['$type']).toBe('color');
+      expect(colorGroup['light.surface']).toBeUndefined();
+      const lightGroup = colorGroup['light'] as Record<string, Record<string, Record<string, unknown>>>;
+      expect(lightGroup['surface']!['$value']!['hex']).toBe('#fafdf7');
+      expect(lightGroup['on-surface']!['$value']!['hex']).toBe('#1a1c19');
+      const brandGroup = colorGroup['brand'] as Record<string, Record<string, Record<string, Record<string, unknown>>>>;
+      expect(brandGroup['primary']!['base']!['$value']!['hex']).toBe('#4a6350');
+
+      const spacingGroup = result.data['spacing'] as Record<string, unknown>;
+      expect(spacingGroup['$type']).toBe('dimension');
+      expect(spacingGroup['sm.gutter']).toBeUndefined();
+      expect((spacingGroup['sm'] as Record<string, Record<string, unknown>>)['gutter']!['$value']).toEqual({
+        value: 16,
+        unit: 'px',
+      });
+      expect((spacingGroup['lg'] as Record<string, Record<string, unknown>>)['gutter']!['$value']).toEqual({
+        value: 24,
+        unit: 'px',
+      });
+
+      const roundedGroup = result.data['rounded'] as Record<string, unknown>;
+      expect(roundedGroup['$type']).toBe('dimension');
+      expect(roundedGroup['control.pill']).toBeUndefined();
+      expect((roundedGroup['control'] as Record<string, Record<string, unknown>>)['pill']!['$value']).toEqual({
+        value: 9999,
+        unit: 'px',
+      });
+
+      const typoGroup = result.data['typography'] as Record<string, unknown>;
+      expect(typoGroup['sm.headline-lg']).toBeUndefined();
+      const smHeadline = (typoGroup['sm'] as Record<string, Record<string, unknown>>)['headline-lg']!;
+      expect(smHeadline['$type']).toBe('typography');
+      expect((smHeadline['$value'] as Record<string, unknown>)['fontSize']).toEqual({ value: 32, unit: 'px' });
+    });
+
+    test('returns TOKEN_GROUP_COLLISION when a token path collides with a group prefix', () => {
+      const state = emptyState({
+        colors: new Map([
+          ['brand', makeColor('#111111', 17, 17, 17)],
+          ['brand.light', makeColor('#222222', 34, 34, 34)],
+        ]),
+      });
+
+      const result = handler.execute(state);
+      expect(result.success).toBe(false);
+      if (result.success) return;
+      expect(result.error.code).toBe('TOKEN_GROUP_COLLISION');
+    });
+
+    test('returns INVALID_TOKEN_NAME when a segment uses reserved DTCG syntax', () => {
+      const state = emptyState({
+        colors: new Map([['light.$value', makeColor('#111111', 17, 17, 17)]]),
+      });
+
+      const result = handler.execute(state);
+      expect(result.success).toBe(false);
+      if (result.success) return;
+      expect(result.error.code).toBe('INVALID_TOKEN_NAME');
+    });
+  });
 });
