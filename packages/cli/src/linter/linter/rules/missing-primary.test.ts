@@ -29,6 +29,35 @@ describe('missingPrimary', () => {
     expect(missingPrimary(state)).toEqual([]);
   });
 
+  it('returns empty when primary is defined inside theme groups', () => {
+    const state = buildState({
+      colors: {
+        light: { primary: '#647D66', surface: '#FAFDF7' },
+        dark: { primary: '#819B83', surface: '#10130E' },
+      } as any,
+    });
+    expect(missingPrimary(state)).toEqual([]);
+  });
+
+  it('returns empty when primary is a nested palette group', () => {
+    const state = buildState({
+      colors: {
+        brand: { primary: { base: '#647D66' } },
+      } as any,
+    });
+    expect(missingPrimary(state)).toEqual([]);
+  });
+
+  it('emits warning when grouped colors omit primary', () => {
+    const state = buildState({
+      colors: {
+        light: { surface: '#FAFDF7' },
+        dark: { surface: '#10130E' },
+      } as any,
+    });
+    expect(missingPrimary(state)).toHaveLength(1);
+  });
+
   it('returns empty when no colors defined', () => {
     const state = buildState({});
     expect(missingPrimary(state)).toEqual([]);

@@ -93,19 +93,42 @@ describe('ModelHandler', () => {
       expect(result.designSystem.symbolTable.has('colors.background.light')).toBe(true);
     });
 
-    it('rejects color declarations nested deeper than 1 group level', () => {
+    it('successfully parses 3-level nested color declarations', () => {
       const result = handler.execute(makeParsed({
         colors: {
           background: {
             light: {
               primary: '#fbfaf1',
+              secondary: '#f0f0f0'
             }
           }
-        }
+        } as any
       }));
 
-      expect(result.findings.some(f => f.severity === 'error' && f.path === 'colors' && f.message.includes('nesting depth'))).toBe(true);
-      expect(result.designSystem.colors.has('background.light.primary')).toBe(false);
+      expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
+      expect(result.designSystem.colors.has('background.light.primary')).toBe(true);
+      expect(result.designSystem.colors.has('background.light.secondary')).toBe(true);
+      expect(result.designSystem.colors.get('background.light.primary')?.hex).toBe('#fbfaf1');
+      expect(result.designSystem.symbolTable.has('colors.background.light.primary')).toBe(true);
+    });
+
+    it('successfully parses 4-level nested color declarations', () => {
+      const result = handler.execute(makeParsed({
+        colors: {
+          theme: {
+            surface: {
+              background: {
+                base: '#fbfaf1'
+              }
+            }
+          }
+        } as any
+      }));
+
+      expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
+      expect(result.designSystem.colors.has('theme.surface.background.base')).toBe(true);
+      expect(result.designSystem.colors.get('theme.surface.background.base')?.hex).toBe('#fbfaf1');
+      expect(result.designSystem.symbolTable.has('colors.theme.surface.background.base')).toBe(true);
     });
 
     it('emits diagnostic for duplicate token path in colors', () => {
@@ -534,6 +557,49 @@ describe('ModelHandler', () => {
       expect(errors[0]!.path).toBe('typography.sm.headline-lg');
       expect(errors[0]!.message).toBe("Grouped typography token flattens to 'sm-headline-lg', which is already defined.");
     });
+
+    it('emits an error when a typography group contains a non-token child instead of parsing the group as a token', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          sm: {
+            'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+            note: 'compact',
+          },
+        } as any,
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.path).toBe('typography.sm.note');
+      expect(result.designSystem.typography.has('sm')).toBe(false);
+      expect(result.designSystem.typography.has('sm.headline-lg')).toBe(true);
+    });
+
+    it('emits an error for an empty typography group instead of parsing it as a single token', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          lg: {},
+        } as any,
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.path).toBe('typography.lg');
+      expect(result.designSystem.typography.has('lg')).toBe(false);
+    });
+
+    it('emits an error when a typography entry mixes token properties and nested objects', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          sm: {
+            fontFamily: 'Public Sans',
+            'headline-lg': { fontSize: '32px' },
+          },
+        } as any,
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.path).toBe('typography.sm');
+      expect(result.designSystem.typography.has('sm')).toBe(false);
+    });
   });
 
   describe('rounded validation', () => {
@@ -801,43 +867,40 @@ describe('ModelHandler', () => {
   });
 
   describe('token nesting depth limit', () => {
-    it('emits error when token nesting depth exceeds 1', () => {
+    it('emits error when token nesting depth exceeds 20', () => {
+      // 22 levels: Level 1..21 are objects, Level 22 is a leaf.
+      let colorsObj: Record<string, unknown> | string = '#ffffff';
+      let typoObj: Record<string, unknown> = { fontFamily: 'Public Sans', fontSize: '32px' };
+      for (let i = 22; i >= 1; i--) {
+        colorsObj = { [`level${i}`]: colorsObj };
+        typoObj = { [`level${i}`]: typoObj };
+      }
+
       const result = handler.execute(makeParsed({
-        colors: {
-          level1: {
-            level2: {
-              leaf: '#ffffff',
-            },
-          },
-        } as any,
-        typography: {
-          sm: {
-            mobile: {
-              'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
-            },
-          },
-        } as any,
+        colors: colorsObj as any,
+        typography: typoObj as any,
       }));
       expect(result.findings.some((f) => f.path === 'colors' && f.message.includes('nesting depth'))).toBe(true);
       expect(result.findings.some((f) => f.path === 'typography' && f.message.includes('nesting depth'))).toBe(true);
     });
 
-    it('allows 1 level of group nesting', () => {
+    it('allows nesting up to depth 20', () => {
+      // 21 levels: Level 1..20 are objects, Level 21 is a leaf.
+      let colorsObj: Record<string, unknown> | string = '#ffffff';
+      let typoObj: Record<string, unknown> = { fontFamily: 'Public Sans', fontSize: '32px' };
+      for (let i = 21; i >= 1; i--) {
+        colorsObj = { [`level${i}`]: colorsObj };
+        typoObj = { [`level${i}`]: typoObj };
+      }
+
       const result = handler.execute(makeParsed({
-        colors: {
-          light: {
-            surface: '#ffffff',
-          },
-        },
-        typography: {
-          sm: {
-            'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
-          },
-        } as any,
+        colors: colorsObj as any,
+        typography: typoObj as any,
       }));
       expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(false);
-      expect(result.designSystem.colors.has('light.surface')).toBe(true);
-      expect(result.designSystem.typography.has('sm.headline-lg')).toBe(true);
+      const path = Array.from({ length: 21 }, (_, i) => `level${i + 1}`).join('.');
+      expect(result.designSystem.colors.has(path)).toBe(true);
+      expect(result.designSystem.typography.has(path)).toBe(true);
     });
   });
 

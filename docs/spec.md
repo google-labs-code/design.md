@@ -143,7 +143,7 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
       reason: "No rounded corners defined in brand book"
   ```
 
-**Grouped Tokens**: Top-level token categories (`colors`, `typography`, `rounded`, and `spacing`) accept a single level of optional nested YAML sub-maps to organize tokens into logical groups. Grouped tokens are flattened internally to dot-separated paths (e.g., `<category>.<group-name>.<token-name>`); nesting beyond one group level is rejected as an error. Mixing flat hyphenated keys (e.g., `colors.primary-light`) and nested grouped keys (e.g., `colors.primary.light`) that produce identical flattened CSS custom property names (`--color-primary-light`) is also rejected as an error by the linter, as are duplicate token paths.
+**Grouped Tokens**: Top-level token categories (`colors`, `typography`, `rounded`, and `spacing`) accept optional nested YAML sub-maps to organize tokens into logical groups. Groups are organizational and carry no behavior. Names such as `light`, `dark`, `sm`, and `lg` are examples, not reserved words. Grouped tokens are flattened internally to dot-separated paths (e.g., `<category>.<group-name>.<token-name>`) and can be nested up to 20 levels deep. Mixing flat hyphenated keys (e.g., `colors.primary-light`) and nested grouped keys (e.g., `colors.primary.light`) that produce identical flattened CSS custom property names (`--color-primary-light`) is rejected as an error by the linter, as are duplicate token paths.
 
 **Token References**: A token reference must be wrapped in curly braces, and contain a dot-separated object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60` or `colors.light.surface`), not a group (e.g., `colors` or `colors.light`). Within the `components` section, references to composite values (e.g., `{typography.label-md}` or `{typography.sm.headline-lg}`) are permitted.
 
@@ -174,7 +174,7 @@ This section is a holistic description of a product's look and feel. It defines 
 
 This section defines the color palettes for the design system.
 
-At least the `primary` color palette must be defined, and additional color palettes may be defined as needed.
+At least the `primary` color palette must be defined (at the top level or within a group), and additional color palettes may be defined as needed.
 
 When there are multiple color palettes, the design system may assign a semantic role for each palette. A common convention is to name the palettes in this order: `primary`, `secondary`, `tertiary`, and `neutral`.
 
