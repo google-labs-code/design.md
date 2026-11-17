@@ -94,11 +94,11 @@ An external reference in `DESIGN.md` prose is an inline code span whose entire c
 
 - **Markdown (`.md`, `.markdown`):** A heading, matched by its slug (for example, `@guides/color.md#contrast`).
 - **HTML (`.html`, `.htm`):** An element `id`, or a `<!-- COMPONENT: name -->` marker (for example, `@components/button.html#button-primary`).
-- **Fallback:** A consumer that does not understand a fragment for a given file type ignores the fragment and uses the whole file; it must not treat the reference as broken.
+- **Fallback:** A consumer that does not understand a fragment for a given file type ignores the fragment, uses the whole file, and must not treat the reference as broken.
 
 Key paths in data files, exported names in source files, and named rules in stylesheets are reserved for future versions using the same syntax.
 
-Every reference, both in `DESIGN.md` and in any file it references, resolves from the directory containing `DESIGN.md` — never relative to the file the reference appears in:
+Every reference, both in `DESIGN.md` and in any file it references, resolves from the directory containing `DESIGN.md`, never relative to the file the reference appears in:
 
 ```text
 DESIGN.md
