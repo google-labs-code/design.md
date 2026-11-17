@@ -22,7 +22,7 @@ export function omittedRules(state: DesignSystemState): RuleFinding[] {
   const findings: RuleFinding[] = [];
   if (!state.omitted) return findings;
 
-  const validSections = new Set(['colors', 'typography', 'spacing', 'rounded', 'components']);
+  const validSections = new Set(['colors', 'typography', 'spacing', 'rounded', 'motion', 'components']);
 
   for (const item of state.omitted) {
     const sectionName = item.section.toLowerCase();
@@ -43,6 +43,7 @@ export function omittedRules(state: DesignSystemState): RuleFinding[] {
     if (sectionName === 'typography' && state.typography && state.typography.size > 0) isPresent = true;
     if (sectionName === 'spacing' && state.spacing && state.spacing.size > 0) isPresent = true;
     if (sectionName === 'rounded' && state.rounded && state.rounded.size > 0) isPresent = true;
+    if (sectionName === 'motion' && state.motion && state.motion.size > 0) isPresent = true;
     if (sectionName === 'components' && state.components && state.components.size > 0) isPresent = true;
 
     if (isPresent) {

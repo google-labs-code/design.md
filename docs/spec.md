@@ -101,6 +101,8 @@ spacing:
   <scale-level>: <Dimension | number>
   <group-name>:            # optional nested group
     <scale-level>: <Dimension | number>
+motion:
+  <token-name>: <Motion>
 components:
   <component-name>:
     <token-name>: <string|token reference>
@@ -132,7 +134,15 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
 
 **Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
 
-**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, components). Each entry can be:
+**Duration**: A duration value is a string with a `ms` unit suffix (e.g., `100ms`, `250ms`).
+
+**Motion**: A motion token is an object that maps a purpose-driven motion name to its timing properties:
+
+- `duration` (Duration) - The length of time a transition takes to complete (e.g., `100ms`, `250ms`).
+- `delay` (Duration) - The time to wait before a transition starts (e.g., `0ms`, `50ms`).
+- `timingFunction` (string) - A CSS easing function such as `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `steps(...)`, or `cubic-bezier(...)`.
+
+**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, motion, components). Each entry can be:
 
 * A string representing the section name (e.g., `spacing`)
 * An object of the form `{ section: string, reason?: string }` mapping a section to a documented reason for its omission:
@@ -159,8 +169,10 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 4. **Layout** (also: "Layout & Spacing")
 5. **Elevation & Depth** (also: "Elevation")
 6. **Shapes**
-7. **Components**
-8. **Do's and Don'ts**
+7. **Motion & Micro-interaction** (also: "Motion & Micro-interactions", "Motion")
+8. **Voice & Content Strategy**
+9. **Components**
+10. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -406,6 +418,71 @@ rounded:
   full: 9999px
 ```
 
+## Motion & Micro-interaction
+
+Also known as "Motion & Micro-interactions" or "Motion".
+
+This section describes how the interface moves. It pairs prose choreography rules with structured `motion` tokens so transitions feel consistent and respect user motion preferences:
+
+* **What moves**: State changes on interactive elements, surfaces entering and leaving, and content loading, as well as what deliberately does not move.
+* **Duration rhythm**: Small, local changes are faster than large structural transitions.
+* **Easing intent**: Elements entering the screen decelerate, elements leaving accelerate, and elements staying on screen use a symmetric curve.
+* **Restraint**: Honor `prefers-reduced-motion` and avoid animating properties that force layout recalculation (prefer `transform` and `opacity`).
+
+Example:
+
+```markdown
+## Motion & Micro-interaction
+
+Motion is quick and understated. Interactive feedback lands within a tenth of a second so the interface feels immediate, while surfaces that enter the screen take longer and decelerate. Nothing loops, and nothing moves purely for decoration. Honor `prefers-reduced-motion`.
+```
+
+### Design Tokens
+
+The `motion` section defines purpose-named motion tokens (such as `state-change`, `surface-enter`, and `surface-exit`) rather than raw speed labels. Each entry maps a semantic motion name to its timing properties (`duration`, `delay`, and `timingFunction`).
+
+It is a map\<string, Motion>.
+
+```yaml
+motion:
+  state-change:
+    duration: 100ms
+    delay: 0ms
+    timingFunction: ease-out
+  surface-enter:
+    duration: 250ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.2, 0, 0, 1)
+  surface-exit:
+    duration: 150ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.3, 0, 1, 1)
+```
+
+## Voice & Content Strategy
+
+This section defines how the product writes. Interface copy is part of the design system: inconsistent tense, capitalization, or terminology degrades visual cohesion just as clearly as inconsistent spacing does. This section is prose-only and covers:
+
+* **Tone of voice**: Two or three adjectives describing the brand voice, with a short explanation of what they sound like in practice and what they rule out.
+* **Capitalization**: Sentence case or title case, applied consistently across headings, buttons, form labels, and menu items.
+* **Terminology**: The product's canonical names for its own concepts and the synonyms to avoid.
+* **Button and action labels**: The grammar of interactive labels (e.g., verb phrases naming the outcome rather than generic labels like "OK" or "Submit").
+* **Empty, loading, and error states**: What an empty list says, what an error message says, and whether an error suggests a specific next action.
+* **Numbers, dates, and units**: Conventions for date/time formats, relative time, number rounding, and unit spacing.
+
+Example:
+
+```markdown
+## Voice & Content Strategy
+
+- **Tone of voice:** Precise, calm, and utilitarian. Avoid exclamation marks, marketing hyperbole, and conversational filler.
+- **Capitalization:** Sentence case applied consistently across all headings, buttons, form labels, and menu items.
+- **Terminology:** Use "Workspace" (never "Project" or "Repo") and "Member" (never "User" or "Collaborator"). Pick one word per concept and keep it.
+- **Button and action labels:** Use a verb phrase naming the outcome (e.g., "Save changes", "Create workspace"), never vague labels like "OK" or "Submit".
+- **Empty, loading, and error states:** Empty states explain what belongs in the list and provide a direct creation CTA. Error messages state what failed and suggest a specific next action.
+- **Numbers, dates, and units:** Format dates as `YYYY-MM-DD` in tables, use relative time ("3m ago") in activity feeds, and separate numeric values from units with a space (`16 px`).
+```
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -473,6 +550,8 @@ The following names are commonly used across design systems. They are not requir
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
+**Motion:** `state-change`, `surface-enter`, `surface-exit`
+
 **Theme Mode Groups:** `light`, `dark`
 
 **Responsive Breakpoint Groups:** `sm` (mobile), `md` (tablet), `lg` (laptop), `xl` (desktop)
@@ -486,6 +565,7 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown section heading | Preserve; do not error | `## Iconography` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
+| Unknown motion token name | Accept as valid motion | `page-transition` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Grouped token sub-map | Flatten to dot-separated token path | `colors.light.surface`, `typography.sm.headline-lg` |
 | Flat and grouped token name collision | Error; reject the conflicting token | `colors.primary-light` and `colors.primary.light` |

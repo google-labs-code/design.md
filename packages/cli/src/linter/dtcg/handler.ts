@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue } from './spec.js';
+import type { DtcgEmitterSpec, DtcgEmitterResult, DtcgEmitterWarning, DtcgTokenFile, DtcgToken, DtcgGroup, DtcgColorValue, DtcgDimensionValue, DtcgTypographyValue } from './spec.js';
 import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography } from '../model/spec.js';
 
 const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.json';
+
+/** DESIGN.md has no required letterSpacing field; DTCG typography requires one. */
+const DEFAULT_LETTER_SPACING: Readonly<DtcgDimensionValue> = Object.freeze({ value: 0, unit: 'px' });
+
+/** Root font size assumed when converting between px and rem. */
+const ROOT_FONT_SIZE_PX = 16;
 
 /**
  * Pure function mapping DesignSystemState → DTCG tokens.json (W3C Design Tokens Format Module 2025.10).
@@ -23,6 +29,7 @@ const DTCG_SCHEMA_URL = 'https://www.designtokens.org/schemas/2025.10/format.jso
  */
 export class DtcgEmitterHandler implements DtcgEmitterSpec {
   execute(state: DesignSystemState): DtcgEmitterResult {
+    const warnings: DtcgEmitterWarning[] = [];
     const file: DtcgTokenFile = {
       $schema: DTCG_SCHEMA_URL,
     };
@@ -40,10 +47,14 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     const roundedGroup = this.mapDimensionGroup(state.rounded);
     if (roundedGroup) file['rounded'] = roundedGroup;
 
-    const typographyGroup = this.mapTypography(state);
+    const typographyGroup = this.mapTypography(state, warnings);
     if (typographyGroup) file['typography'] = typographyGroup;
 
-    return { success: true, data: file as Record<string, unknown> };
+    return {
+      success: true,
+      data: file as Record<string, unknown>,
+      ...(warnings.length > 0 ? { warnings } : {}),
+    };
   }
 
   private mapColors(state: DesignSystemState): DtcgGroup | null {
@@ -84,31 +95,74 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     return { value: dim.value, unit: dim.unit };
   }
 
-  private mapTypography(state: DesignSystemState): DtcgGroup | null {
+  private mapTypography(state: DesignSystemState, warnings: DtcgEmitterWarning[]): DtcgGroup | null {
     if (state.typography.size === 0) return null;
     const group: DtcgGroup = {};
     for (const [name, typo] of state.typography) {
       group[name] = {
         $type: 'typography',
-        $value: this.typographyToValue(typo),
+        $value: this.typographyToValue(typo, `typography.${name}`, warnings),
       } as DtcgToken;
     }
     return group;
   }
 
-  private typographyToValue(typo: ResolvedTypography): DtcgTypographyValue {
+  private typographyToValue(
+    typo: ResolvedTypography,
+    path: string,
+    warnings: DtcgEmitterWarning[],
+  ): DtcgTypographyValue {
     const value: DtcgTypographyValue = {};
     if (typo.fontFamily) value.fontFamily = typo.fontFamily;
     if (typo.fontSize) value.fontSize = this.dimToValue(typo.fontSize);
     if (typo.fontWeight !== undefined) value.fontWeight = typo.fontWeight;
-    if (typo.letterSpacing) value.letterSpacing = this.dimToValue(typo.letterSpacing);
+    value.letterSpacing = typo.letterSpacing
+      ? this.dimToValue(typo.letterSpacing)
+      : { ...DEFAULT_LETTER_SPACING };
     if (typo.lineHeight) {
-      // DTCG lineHeight is a unitless multiplier of fontSize.
-      // Our model stores it as a ResolvedDimension. Convert if possible.
-      // If unit is a relative unit, just use the numeric value as a multiplier.
-      value.lineHeight = typo.lineHeight.value;
+      const lineHeight = this.lineHeightToMultiplier(typo.lineHeight, typo.fontSize);
+      if (lineHeight !== null) {
+        value.lineHeight = lineHeight;
+      } else {
+        // Never guess: a dimension lineHeight read as a multiplier (e.g. 22px → 22)
+        // is silently wrong. Omit it and tell the caller instead.
+        const fontSizeDesc = typo.fontSize
+          ? `fontSize '${typo.fontSize.value}${typo.fontSize.unit}'`
+          : 'no fontSize';
+        warnings.push({
+          code: 'LINE_HEIGHT_NOT_CONVERTIBLE',
+          path: `${path}.lineHeight`,
+          message: `lineHeight '${typo.lineHeight.value}${typo.lineHeight.unit}' cannot be converted to a unitless DTCG multiplier with ${fontSizeDesc}; lineHeight was omitted.`,
+        });
+      }
     }
     return value;
+  }
+
+  /**
+   * DTCG lineHeight is a unitless multiplier of fontSize. Convert the model's
+   * lineHeight dimension, or return null if that cannot be done reliably.
+   * px ↔ rem conversions assume a 16px root font size.
+   */
+  private lineHeightToMultiplier(
+    lineHeight: ResolvedDimension,
+    fontSize: ResolvedDimension | undefined,
+  ): number | null {
+    // Unitless and em values are already relative to the element's font size.
+    if (lineHeight.unit === '' || lineHeight.unit === 'em') return lineHeight.value;
+
+    const fontSizePx = this.toPx(fontSize);
+    const lineHeightPx = this.toPx(lineHeight);
+    if (fontSizePx === null || lineHeightPx === null || fontSizePx === 0) return null;
+    return this.round(lineHeightPx / fontSizePx);
+  }
+
+  /** Absolute size in px for px/rem dimensions; null for anything else. */
+  private toPx(dim: ResolvedDimension | undefined): number | null {
+    if (!dim) return null;
+    if (dim.unit === 'px') return dim.value;
+    if (dim.unit === 'rem') return dim.value * ROOT_FONT_SIZE_PX;
+    return null;
   }
 
   /** Round to 3 decimal places for clean output. */

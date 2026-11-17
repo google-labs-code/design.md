@@ -322,5 +322,128 @@ Adaptive design system with grouped theme and responsive tokens.
     expect(result.designSystem.spacing.get('sm.gutter')?.value).toBe(16);
     expect(result.designSystem.spacing.get('lg.gutter')?.value).toBe(24);
   });
+
+  it('processes a DESIGN.md with Motion & Micro-interaction section and purpose-named motion tokens', () => {
+    const content = `---
+name: Daylight Prestige
+
+colors:
+  primary: "#1A1C1E"
+
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+
+motion:
+  state-change:
+    duration: 100ms
+    delay: 0ms
+    timingFunction: ease-out
+  surface-enter:
+    duration: 250ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.2, 0, 0, 1)
+  surface-exit:
+    duration: 150ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.3, 0, 1, 1)
+---
+
+## Overview
+
+Editorial design system with high-contrast neutrals.
+
+## Colors
+
+Primary ink palette.
+
+## Typography
+
+Public Sans for body text.
+
+## Motion & Micro-interaction
+
+Motion is quick and understated. Interactive feedback lands within a tenth of a second so the interface feels immediate, while surfaces that enter the screen take longer and decelerate. Nothing loops, and nothing moves purely for decoration. Honor \`prefers-reduced-motion\`.
+
+## Components
+
+Core component library.
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.designSystem.motion?.size).toBe(3);
+    expect(result.designSystem.motion?.get('state-change')).toEqual({
+      type: 'motion',
+      duration: '100ms',
+      delay: '0ms',
+      timingFunction: 'ease-out',
+    });
+
+    expect(result.tailwindConfig.success).toBe(true);
+    if (result.tailwindConfig.success) {
+      const extend = result.tailwindConfig.data.theme.extend;
+      expect(extend.transitionDuration?.['surface-enter']).toBe('250ms');
+      expect(extend.transitionDelay?.['surface-enter']).toBe('0ms');
+      expect(extend.transitionTimingFunction?.['surface-enter']).toBe('cubic-bezier(0.2, 0, 0, 1)');
+    }
+  });
+
+  it('processes a DESIGN.md with a prose-only Voice & Content Strategy section in canonical order', () => {
+    const content = `---
+name: Daylight Prestige
+
+colors:
+  primary: "#1A1C1E"
+
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+---
+
+## Overview
+
+Editorial design system with high-contrast neutrals.
+
+## Colors
+
+Primary ink palette.
+
+## Typography
+
+Public Sans for body text.
+
+## Shapes
+
+Sharp 4px corner radius.
+
+## Voice & Content Strategy
+
+- **Tone of voice:** Precise, calm, and utilitarian. Avoid exclamation marks, marketing hyperbole, and conversational filler.
+- **Capitalization:** Sentence case applied consistently across all headings, buttons, form labels, and menu items.
+- **Terminology:** Use "Workspace" (never "Project" or "Repo") and "Member" (never "User" or "Collaborator"). Pick one word per concept and keep it.
+- **Button and action labels:** Use a verb phrase naming the outcome (e.g., "Save changes", "Create workspace"), never vague labels like "OK" or "Submit".
+- **Empty, loading, and error states:** Empty states explain what belongs in the list and provide a direct creation CTA. Error messages state what failed and suggest a specific next action.
+- **Numbers, dates, and units:** Format dates as \`YYYY-MM-DD\` in tables, use relative time ("3m ago") in activity feeds, and separate numeric values from units with a space (\`16 px\`).
+
+## Components
+
+Core component library.
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.designSystem.sections).toContain('Voice & Content Strategy');
+    const orderFindings = result.findings.filter(f => f.rule === 'section-order');
+    expect(orderFindings).toEqual([]);
+  });
 });
 

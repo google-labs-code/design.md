@@ -88,7 +88,7 @@ export function tokenLikeIgnored(state: DesignSystemState): RuleFinding[] {
         path: key,
         message:
           `"${key}" looks like a design-token map but is not a recognized schema key ` +
-          `(colors, typography, spacing, rounded, components). ` +
+          `(colors, typography, spacing, rounded, motion, components). ` +
           `It will be silently ignored by export commands. ` +
           `Rename it to a supported key or move its values under a recognized section.`,
       });
