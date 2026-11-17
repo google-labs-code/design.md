@@ -23,6 +23,9 @@ export const TailwindThemeExtendSchema = z.object({
   fontSize: z.record(z.string(), z.tuple([z.string(), z.record(z.string(), z.string())])).optional(),
   borderRadius: z.record(z.string(), z.string()).optional(),
   spacing: z.record(z.string(), z.string()).optional(),
+  transitionDuration: z.record(z.string(), z.string()).optional(),
+  transitionDelay: z.record(z.string(), z.string()).optional(),
+  transitionTimingFunction: z.record(z.string(), z.string()).optional(),
 });
 
 export type TailwindThemeExtend = z.infer<typeof TailwindThemeExtendSchema>;
