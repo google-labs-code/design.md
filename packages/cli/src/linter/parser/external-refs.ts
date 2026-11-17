@@ -27,11 +27,7 @@ export interface ExternalReference {
 }
 
 const FILE_EXT_RE = /^[a-zA-Z][a-zA-Z0-9]*$/;
-const COMPONENT_MARKER_RE = /<!--\s*COMPONENT:\s*(\S+?)\s*-->/g;
-const HTML_COMMENT_RE = /<!--[\s\S]*?-->/g;
-const SCRIPT_STYLE_BLOCK_RE = /<(?:script|style)\b[^>]*>[\s\S]*?<\/(?:script|style)>/gi;
-const HTML_OPEN_TAG_RE = /<[a-zA-Z](?:"[^"]*"|'[^']*'|[^>"'])*>/g;
-const HTML_ID_ATTR_RE = /\bid\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s"'=<>`]+))/gi;
+const COMPONENT_BODY_RE = /^\s*COMPONENT:\s*(\S+?)\s*$/;
 
 export function extractNodeText(node: unknown): string {
   if (!node || typeof node !== 'object') return '';
@@ -123,15 +119,160 @@ export function extractExternalReferencesFromMarkdown(content: string): External
   return extractExternalReferencesFromAst(ast);
 }
 
-function addHtmlTagIds(markup: string, anchors: Set<string>): void {
-  const tags = markup.match(HTML_OPEN_TAG_RE);
-  if (!tags) return;
-  for (const tag of tags) {
-    HTML_ID_ATTR_RE.lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = HTML_ID_ATTR_RE.exec(tag)) !== null) {
-      const id = match[1] || match[2] || match[3];
-      if (id) anchors.add(id);
+function isAsciiLetter(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function isTagNameChar(ch: string): boolean {
+  if (isAsciiLetter(ch)) return true;
+  const code = ch.charCodeAt(0);
+  return (code >= 48 && code <= 57) || ch === '-' || ch === ':' || ch === '_';
+}
+
+function isWhitespace(ch: string): boolean {
+  return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f';
+}
+
+function findTagClose(markup: string, start: number): number {
+  let quote: string | null = null;
+  for (let i = start; i < markup.length; i++) {
+    const ch = markup[i]!;
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === '>') {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function extractIdFromAttributes(attrSlice: string, anchors: Set<string>): void {
+  let i = 0;
+  const len = attrSlice.length;
+
+  while (i < len) {
+    while (i < len && (isWhitespace(attrSlice[i]!) || attrSlice[i] === '/')) i++;
+    if (i >= len) break;
+
+    const nameStart = i;
+    while (
+      i < len &&
+      !isWhitespace(attrSlice[i]!) &&
+      attrSlice[i] !== '=' &&
+      attrSlice[i] !== '/'
+    ) {
+      i++;
+    }
+    const attrName = attrSlice.slice(nameStart, i).toLowerCase();
+
+    while (i < len && isWhitespace(attrSlice[i]!)) i++;
+    if (i >= len || attrSlice[i] !== '=') continue;
+    i++; // skip '='
+    while (i < len && isWhitespace(attrSlice[i]!)) i++;
+    if (i >= len) break;
+
+    let attrValue = '';
+    const quote = attrSlice[i]!;
+    if (quote === '"' || quote === "'") {
+      i++;
+      const valStart = i;
+      while (i < len && attrSlice[i] !== quote) i++;
+      attrValue = attrSlice.slice(valStart, i);
+      if (i < len) i++;
+    } else {
+      const valStart = i;
+      while (i < len && !isWhitespace(attrSlice[i]!)) i++;
+      attrValue = attrSlice.slice(valStart, i);
+    }
+
+    if (attrName === 'id' && attrValue.length > 0) {
+      anchors.add(attrValue);
+    }
+  }
+}
+
+function skipRawTextElement(markup: string, start: number, tagNameLower: string): number {
+  const lowerMarkup = markup.toLowerCase();
+  const closeNeedle = `</${tagNameLower}`;
+  let searchFrom = start;
+
+  while (searchFrom < markup.length) {
+    const idx = lowerMarkup.indexOf(closeNeedle, searchFrom);
+    if (idx === -1) return markup.length;
+    const afterName = markup[idx + closeNeedle.length];
+    if (
+      afterName === '>' ||
+      afterName === '/' ||
+      (afterName !== undefined && isWhitespace(afterName))
+    ) {
+      const gt = markup.indexOf('>', idx + closeNeedle.length);
+      return gt === -1 ? markup.length : gt + 1;
+    }
+    searchFrom = idx + closeNeedle.length;
+  }
+
+  return markup.length;
+}
+
+function scanHtmlAnchors(
+  markup: string,
+  anchors: Set<string>,
+  includeComponentMarkers: boolean,
+): void {
+  let i = 0;
+  while (i < markup.length) {
+    const lt = markup.indexOf('<', i);
+    if (lt === -1) break;
+
+    if (markup.startsWith('<!--', lt)) {
+      const endComment = markup.indexOf('-->', lt + 4);
+      const commentBody =
+        endComment === -1 ? markup.slice(lt + 4) : markup.slice(lt + 4, endComment);
+      if (includeComponentMarkers) {
+        const match = COMPONENT_BODY_RE.exec(commentBody);
+        if (match?.[1]) {
+          anchors.add(match[1]);
+        }
+      }
+      if (endComment === -1) break;
+      i = endComment + 3;
+      continue;
+    }
+
+    const nextChar = markup[lt + 1];
+    if (!nextChar) break;
+
+    if (nextChar === '/' || nextChar === '!' || nextChar === '?') {
+      const gt = markup.indexOf('>', lt + 2);
+      if (gt === -1) break;
+      i = gt + 1;
+      continue;
+    }
+
+    if (!isAsciiLetter(nextChar)) {
+      i = lt + 1;
+      continue;
+    }
+
+    let nameEnd = lt + 2;
+    while (nameEnd < markup.length && isTagNameChar(markup[nameEnd]!)) {
+      nameEnd++;
+    }
+    const tagNameLower = markup.slice(lt + 1, nameEnd).toLowerCase();
+    const tagClose = findTagClose(markup, nameEnd);
+    if (tagClose === -1) break;
+
+    const attrSlice = markup.slice(nameEnd, tagClose);
+    extractIdFromAttributes(attrSlice, anchors);
+
+    const selfClosing = attrSlice.trimEnd().endsWith('/');
+    if (!selfClosing && (tagNameLower === 'script' || tagNameLower === 'style')) {
+      i = skipRawTextElement(markup, tagClose + 1, tagNameLower);
+    } else {
+      i = tagClose + 1;
     }
   }
 }
@@ -168,8 +309,7 @@ export function extractMarkdownAnchors(content: string): Set<string> {
     }
 
     if (node.type === 'html') {
-      const cleaned = (node as Html).value.replace(HTML_COMMENT_RE, '');
-      addHtmlTagIds(cleaned, anchors);
+      scanHtmlAnchors((node as Html).value, anchors, false);
     }
   });
 
@@ -178,18 +318,6 @@ export function extractMarkdownAnchors(content: string): Set<string> {
 
 export function extractHtmlAnchors(content: string): Set<string> {
   const anchors = new Set<string>();
-
-  COMPONENT_MARKER_RE.lastIndex = 0;
-  let markerMatch: RegExpExecArray | null;
-  while ((markerMatch = COMPONENT_MARKER_RE.exec(content)) !== null) {
-    const markerName = markerMatch[1];
-    if (markerName) anchors.add(markerName);
-  }
-
-  const stripped = content
-    .replace(HTML_COMMENT_RE, '')
-    .replace(SCRIPT_STYLE_BLOCK_RE, '');
-  addHtmlTagIds(stripped, anchors);
-
+  scanHtmlAnchors(content, anchors, true);
   return anchors;
 }

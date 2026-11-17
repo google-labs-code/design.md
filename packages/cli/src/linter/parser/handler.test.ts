@@ -293,7 +293,7 @@ CSS at-rules like \`@media\` and \`@font-face\` and npm packages like \`@scope/p
 <span id=unquoted-id></span>
 <button data-label="Next ->" id="after-gt-in-attr">Next</button>
 <!-- <div id="commented-out"></div> -->
-<script>const x = '<div id="in-script"></div>';</script>
+<script>const x = '<div id="in-script"></div>';</script >
 `;
       const htmlAnchors = extractHtmlAnchors(html);
       expect(htmlAnchors.has('button-primary')).toBe(true);
