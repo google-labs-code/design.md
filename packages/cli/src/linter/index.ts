@@ -15,6 +15,11 @@
 // ── Primary API ────────────────────────────────────────────────────
 export { lint } from './lint.js';
 export type { LintReport, LintOptions } from './lint.js';
+export {
+  parseExternalReference,
+  extractExternalReferencesFromMarkdown,
+  type ExternalReference,
+} from './parser/external-refs.js';
 
 
 // ── Result types ───────────────────────────────────────────────────

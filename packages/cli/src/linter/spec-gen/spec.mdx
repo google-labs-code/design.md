@@ -80,7 +80,39 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
 
 # External References
 
-Any prose in `DESIGN.md` may reference external files using the `@<relative-path>` syntax (for example, `@components/button.html` or `@tokens.json`), where `<relative-path>` is resolved relative to the directory containing `DESIGN.md`.
+An external reference in `DESIGN.md` prose is an inline code span whose entire content matches `@<path>[#<fragment>]`. `<path>` uses `/` separators, contains no whitespace, and ends in a file extension. Anything else is ordinary code or prose.
+
+| Text | Reference? |
+|---|---|
+| `@components/button.html` | Yes |
+| `@tokens.json` | Yes |
+| `@media`, `@font-face` | No: no file extension |
+| `@scope/package` | No: no file extension |
+| @components/button.html with no code span | No: avoids trailing punctuation and user mentions |
+
+`#<fragment>` names one part of the target file. A fragment is an opaque name with no whitespace whose meaning depends on the target's file type:
+
+- **Markdown (`.md`, `.markdown`):** A heading, matched by its slug (for example, `@guides/color.md#contrast`).
+- **HTML (`.html`, `.htm`):** An element `id`, or a `<!-- COMPONENT: name -->` marker (for example, `@components/button.html#button-primary`).
+- **Fallback:** A consumer that does not understand a fragment for a given file type ignores the fragment and uses the whole file; it must not treat the reference as broken.
+
+Key paths in data files, exported names in source files, and named rules in stylesheets are reserved for future versions using the same syntax.
+
+Every reference, both in `DESIGN.md` and in any file it references, resolves from the directory containing `DESIGN.md` — never relative to the file the reference appears in:
+
+```text
+DESIGN.md
+guides/color.md          contains `@components/card.html`
+components/card.html     <- resolves here, not guides/components/card.html
+```
+
+The same string names the same file everywhere, keeping the reference graph stable regardless of which file an agent reads from. A leading `/` or any path that resolves outside the `DESIGN.md` directory is an error.
+
+The `broken-ref` rule validates external `@`-references alongside token references:
+
+- A leading `/` or a path that resolves outside the `DESIGN.md` directory is an `error`.
+- A missing target file or a missing Markdown or HTML fragment anchor is a `warning`.
+- A fragment on any other file type is noted (`info`) without warning.
 
 # Sections
 
@@ -348,5 +380,6 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Unknown component property | Accept with warning | `borderColor` |
 | External `@`-reference in prose | Preserve; resolve referenced file on demand | `@components/button.html`, `@tokens.json` |
+| External `@`-reference fragment for unsupported file type | Ignore fragment and use whole file; do not treat as broken | `@src/button.tsx#Button` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |
 | Duplicate top-level YAML key | Error; reject the file | `colors` defined in both front matter and a code block |

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { z } from 'zod';
-import type { ParsedDesignSystem, OmittedSection } from '../parser/spec.js';
+import type { ParsedDesignSystem, OmittedSection, ExternalReference } from '../parser/spec.js';
 import {
   STANDARD_UNITS as _STANDARD_UNITS,
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
@@ -96,6 +96,12 @@ export interface DesignSystemState {
   unknownKeys?: string[] | undefined;
   /** Raw YAML values for unknown top-level keys, keyed by the unknown key name */
   unknownKeyValues?: Record<string, unknown> | undefined;
+  /** External @-references extracted from inline code spans in markdown prose */
+  externalReferences?: ExternalReference[] | undefined;
+  /** Base directory for resolving external @-references (directory containing DESIGN.md) */
+  baseDir?: string | undefined;
+  /** File path of the root DESIGN.md file on disk, when known */
+  filePath?: string | undefined;
 }
 
 export interface ComponentDef {

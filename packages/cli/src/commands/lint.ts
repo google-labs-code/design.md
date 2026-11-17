@@ -45,7 +45,7 @@ export default defineCommand({
       }
       throw error;
     }
-    const report = lint(content);
+    const report = lint(content, args.file === '-' ? undefined : { filePath: args.file });
 
     const output = {
       findings: report.findings,
