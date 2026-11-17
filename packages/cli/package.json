@@ -1,6 +1,6 @@
 {
   "name": "@google/design.md",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Bridging design systems and code: a linter and exporter for the DESIGN.md format",
   "keywords": [
     "design.md"
@@ -57,7 +57,7 @@
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
     "yaml": "^2.7.1",
-    "zod": "^3.24.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bun": "latest",

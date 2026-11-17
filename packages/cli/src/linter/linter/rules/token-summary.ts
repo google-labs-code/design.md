@@ -25,6 +25,7 @@ export function tokenSummary(state: DesignSystemState): RuleFinding[] {
   if (state.typography.size > 0) parts.push(`${state.typography.size} typography scale${state.typography.size !== 1 ? 's' : ''}`);
   if (state.rounded.size > 0) parts.push(`${state.rounded.size} rounding level${state.rounded.size !== 1 ? 's' : ''}`);
   if (state.spacing.size > 0) parts.push(`${state.spacing.size} spacing token${state.spacing.size !== 1 ? 's' : ''}`);
+  if (state.motion && state.motion.size > 0) parts.push(`${state.motion.size} motion token${state.motion.size !== 1 ? 's' : ''}`);
   if (state.components.size > 0) parts.push(`${state.components.size} component${state.components.size !== 1 ? 's' : ''}`);
 
   if (parts.length > 0) {

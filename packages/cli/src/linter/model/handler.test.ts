@@ -476,6 +476,28 @@ describe('ModelHandler', () => {
       expect(headline?.fontWeight).toBe(700);
     });
 
+    it('keeps unquoted YAML numeric lineHeight as a unitless multiplier', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': { fontFamily: 'Inter', fontSize: '16px', fontWeight: 400, lineHeight: 1.6 },
+        },
+      }));
+      const body = result.designSystem.typography.get('body-md');
+      expect(body?.lineHeight?.value).toBe(1.6);
+      expect(body?.lineHeight?.unit).toBe('');
+      expect(result.findings.filter((f) => f.path?.includes('lineHeight') === true)).toHaveLength(0);
+    });
+
+    it('rejects unquoted YAML numeric fontSize because a unit is required', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': { fontFamily: 'Inter', fontSize: 16, fontWeight: 400 },
+        },
+      }));
+      expect(result.designSystem.typography.get('body-md')?.fontSize).toBeUndefined();
+      expect(result.findings.some((f) => f.path === 'typography.body-md.fontSize' && f.severity === 'error')).toBe(true);
+    });
+
     it('warns about unrecognized typography sub-properties that are silently dropped', () => {
       const result = handler.execute(makeParsed({
         typography: {
@@ -802,6 +824,49 @@ describe('ModelHandler', () => {
       expect(result.findings.some(f => f.path === 'colors.deep' && f.severity === 'error')).toBe(true);
       // Other valid tokens are unaffected.
       expect(result.designSystem.colors.get('ok')?.hex).toBe('#ffffff');
+    });
+  });
+
+  describe('motion validation', () => {
+    it('resolves valid motion tokens into designSystem.motion and symbolTable', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          'state-change': {
+            duration: '100ms',
+            delay: '0ms',
+            timingFunction: 'ease-out',
+          },
+          'surface-enter': {
+            duration: '250ms',
+            delay: '0ms',
+            timingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+          },
+        },
+      }));
+      expect(result.findings).toEqual([]);
+      expect(result.designSystem.motion?.size).toBe(2);
+      expect(result.designSystem.motion?.get('state-change')).toEqual({
+        type: 'motion',
+        duration: '100ms',
+        delay: '0ms',
+        timingFunction: 'ease-out',
+      });
+      expect(result.designSystem.symbolTable.has('motion.surface-enter')).toBe(true);
+    });
+
+    it('emits error for invalid duration or timingFunction and warning for unknown property', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          'bad-motion': {
+            duration: '2s',
+            timingFunction: 'invalid-easing',
+            extraProp: 'foo',
+          },
+        },
+      }));
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.duration' && f.severity === 'error')).toBe(true);
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.timingFunction' && f.severity === 'error')).toBe(true);
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.extraProp' && f.severity === 'warning')).toBe(true);
     });
   });
 });
