@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import { describe, it, expect } from 'bun:test';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { lint } from './index.js';
 
 describe('Integration: full pipeline', () => {
@@ -367,4 +370,131 @@ Core component library.
     const orderFindings = result.findings.filter(f => f.rule === 'section-order');
     expect(orderFindings).toEqual([]);
   });
+
+  it('processes a DESIGN.md with external @components/*.html references without errors or orphaned-token warnings', () => {
+    const content = `---
+name: Kindred Spirit
+
+colors:
+  primary: "#647D66"
+  secondary: "#A3B8A5"
+
+typography:
+  headline-lg:
+    fontFamily: Google Sans Display
+    fontSize: 42px
+    fontWeight: 500
+    lineHeight: 50px
+---
+
+## Overview
+
+The palette uses a deep "Evergreen" primary for health-sector credibility.
+
+## Colors
+
+- **Primary (#647D66):** Deep Evergreen for primary actions.
+- **Secondary (#A3B8A5):** Soft sage for secondary surfaces.
+
+## Typography
+
+- **Headline Large:** Google Sans Display at 42px.
+
+## Components
+
+Component implementations live as individual HTML sticker sheet files in \`components/\`. Each file contains the canonical, styled HTML components with \`<!-- COMPONENT: name -->\` comment markers. Read each file before use.
+
+- **Buttons** → \`@components/button.html\` — \`button-primary\`, \`button-secondary\`, \`button-tertiary\`, \`button-icon\`
+- **Cards** → \`@components/card.html\` — \`card-elevated\`, \`card-outlined\`
+- **Input Fields** → \`@components/input-field.html\` — \`input-default\`, \`input-error\`, \`input-disabled\`
+`;
+
+    const result = lint(content);
+
+    expect(result.summary.errors).toBe(0);
+    expect(result.summary.warnings).toBe(0);
+    expect(result.designSystem.sections).toEqual(['Overview', 'Colors', 'Typography', 'Components']);
+  });
+
+  it('validates external @-references against the filesystem when filePath is provided', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'design-md-pipeline-'));
+    try {
+      mkdirSync(join(tempDir, 'components'), { recursive: true });
+      mkdirSync(join(tempDir, 'src'), { recursive: true });
+      writeFileSync(
+        join(tempDir, 'components/button.html'),
+        '<!-- COMPONENT: button-primary -->\n<button class="btn">Primary</button>\n',
+      );
+      writeFileSync(join(tempDir, 'src/button.tsx'), 'export const Button = () => null;\n');
+
+      const designMdPath = join(tempDir, 'DESIGN.md');
+      const content = `---
+name: Kindred Spirit
+colors:
+  primary: "#647D66"
+typography:
+  body-md:
+    fontFamily: Roboto
+    fontSize: 16px
+---
+
+## Overview
+
+Uses \`@../shared/tokens.json\` and \`@src/button.tsx#Button\`.
+
+## Components
+
+- **Buttons** → \`@components/button.html#button-primary\`
+- **Missing Anchor** → \`@components/button.html#card-flat\`
+- **Typo File** → \`@components/buton.html\`
+`;
+      writeFileSync(designMdPath, content);
+
+      const result = lint(content, { filePath: designMdPath });
+      const brokenRefFindings = result.findings.filter(f => f.rule === 'broken-ref');
+
+      expect(brokenRefFindings).toEqual([
+        {
+          severity: 'error',
+          path: 'Overview',
+          message: 'External reference `@../shared/tokens.json` resolves outside the DESIGN.md directory.',
+          rule: 'broken-ref',
+        },
+        {
+          severity: 'info',
+          path: 'Overview',
+          message: 'External reference `@src/button.tsx#Button` fragment `#Button` is not checked for this file type.',
+          rule: 'broken-ref',
+        },
+        {
+          severity: 'warning',
+          path: 'Components',
+          message: 'External reference `@components/button.html#card-flat` has no matching anchor `#card-flat`.',
+          rule: 'broken-ref',
+        },
+        {
+          severity: 'warning',
+          path: 'Components',
+          message: 'External reference `@components/buton.html` does not exist.',
+          rule: 'broken-ref',
+        },
+      ]);
+      expect(result.summary.errors).toBe(1);
+      expect(result.summary.warnings).toBe(2);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('validates external @-references even in prose-only DESIGN.md files without YAML', () => {
+    const content = `## Overview
+
+Escaping path \`@../outside.json\` in a prose-only file.
+`;
+    const result = lint(content);
+    expect(result.summary.errors).toBe(1);
+    expect(result.summary.warnings).toBe(1);
+    expect(result.findings.some(f => f.message.includes('resolves outside the DESIGN.md directory'))).toBe(true);
+  });
 });
+

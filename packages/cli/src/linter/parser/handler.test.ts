@@ -14,6 +14,12 @@
 
 import { describe, it, expect } from 'bun:test';
 import { ParserHandler } from './handler.js';
+import {
+  parseExternalReference,
+  extractExternalReferencesFromMarkdown,
+  extractMarkdownAnchors,
+  extractHtmlAnchors,
+} from './external-refs.js';
 
 const handler = new ParserHandler();
 
@@ -151,6 +157,152 @@ Some markdown text with no YAML blocks.
       if (!result.success) {
         expect(result.error.code).toBe('NO_YAML_FOUND');
       }
+    });
+  });
+
+  // ── Cycle 7: External @-reference extraction ──────────────────────
+  describe('external @-reference extraction', () => {
+    it('recognizes valid inline code span @<path>[#<fragment>] references and rejects non-references', () => {
+      expect(parseExternalReference('@components/button.html')).toEqual({
+        raw: '@components/button.html',
+        path: 'components/button.html',
+      });
+      expect(parseExternalReference('@tokens.json')).toEqual({
+        raw: '@tokens.json',
+        path: 'tokens.json',
+      });
+      expect(parseExternalReference('@guides/color.md#contrast')).toEqual({
+        raw: '@guides/color.md#contrast',
+        path: 'guides/color.md',
+        fragment: 'contrast',
+      });
+      expect(parseExternalReference('@src/button.tsx#Button')).toEqual({
+        raw: '@src/button.tsx#Button',
+        path: 'src/button.tsx',
+        fragment: 'Button',
+      });
+      expect(parseExternalReference('@../shared/tokens.json')).toEqual({
+        raw: '@../shared/tokens.json',
+        path: '../shared/tokens.json',
+      });
+      expect(parseExternalReference('@/abs/tokens.json')).toEqual({
+        raw: '@/abs/tokens.json',
+        path: '/abs/tokens.json',
+      });
+
+      expect(parseExternalReference('@media')).toBeNull();
+      expect(parseExternalReference('@font-face')).toBeNull();
+      expect(parseExternalReference('@scope/package')).toBeNull();
+      expect(parseExternalReference('@scope/pkg@1.2.3')).toBeNull();
+      expect(parseExternalReference('@.gitignore')).toBeNull();
+      expect(parseExternalReference('@..')).toBeNull();
+      expect(parseExternalReference('@components/')).toBeNull();
+      expect(parseExternalReference('@components/button.html#')).toBeNull();
+      expect(parseExternalReference('@components/button.html#a#b')).toBeNull();
+      expect(parseExternalReference('@components\\button.html')).toBeNull();
+      expect(parseExternalReference('@components/button .html')).toBeNull();
+      expect(parseExternalReference('components/button.html')).toBeNull();
+    });
+
+    it('extracts only inline code span references from prose and ignores bare prose, fenced code blocks, and YAML', () => {
+      const input = `---
+name: Test System
+description: "@frontmatter/ignored.json"
+colors:
+  primary: "#1A1C1E"
+---
+
+Introductory note referencing \`@tokens.json\`.
+
+## Overview
+
+Bare prose mention @components/bare-ignored.html and user mention @davideast.
+CSS at-rules like \`@media\` and \`@font-face\` and npm packages like \`@scope/package\` have no extension.
+
+\`\`\`html
+<!-- Fenced code block should be ignored -->
+<link href="@components/in-code-block.html" />
+\`\`\`
+
+## Components
+
+- **Buttons** → \`@components/button.html#button-primary\`
+- **Color Guide** → \`@guides/color.md#contrast\`
+`;
+      const result = handler.execute({ content: input });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.externalReferences).toEqual([
+          {
+            raw: '@tokens.json',
+            path: 'tokens.json',
+            section: undefined,
+            line: 8,
+          },
+          {
+            raw: '@components/button.html#button-primary',
+            path: 'components/button.html',
+            fragment: 'button-primary',
+            section: 'Components',
+            line: 22,
+          },
+          {
+            raw: '@guides/color.md#contrast',
+            path: 'guides/color.md',
+            fragment: 'contrast',
+            section: 'Components',
+            line: 23,
+          },
+        ]);
+      }
+
+      const directRefs = extractExternalReferencesFromMarkdown(input);
+      expect(directRefs.map(r => r.raw)).toEqual([
+        '@tokens.json',
+        '@components/button.html#button-primary',
+        '@guides/color.md#contrast',
+      ]);
+    });
+
+    it('extracts Markdown heading slugs and HTML element id / COMPONENT anchors', () => {
+      const md = `# Color Guide
+
+## Contrast
+
+### Color & Contrast
+
+## Usage
+
+## Usage
+
+<div id="custom-html-anchor"></div>
+`;
+      const mdAnchors = extractMarkdownAnchors(md);
+      expect(mdAnchors.has('color-guide')).toBe(true);
+      expect(mdAnchors.has('contrast')).toBe(true);
+      expect(mdAnchors.has('color--contrast')).toBe(true);
+      expect(mdAnchors.has('color-contrast')).toBe(true);
+      expect(mdAnchors.has('usage')).toBe(true);
+      expect(mdAnchors.has('usage-1')).toBe(true);
+      expect(mdAnchors.has('custom-html-anchor')).toBe(true);
+
+      const html = `
+<!-- COMPONENT: button-primary -->
+<button id="btn-main" class="primary">Click</button>
+<div id='single-quoted'></div>
+<span id=unquoted-id></span>
+<button data-label="Next ->" id="after-gt-in-attr">Next</button>
+<!-- <div id="commented-out"></div> -->
+<script>const x = '<div id="in-script"></div>';</script >
+`;
+      const htmlAnchors = extractHtmlAnchors(html);
+      expect(htmlAnchors.has('button-primary')).toBe(true);
+      expect(htmlAnchors.has('btn-main')).toBe(true);
+      expect(htmlAnchors.has('single-quoted')).toBe(true);
+      expect(htmlAnchors.has('unquoted-id')).toBe(true);
+      expect(htmlAnchors.has('after-gt-in-attr')).toBe(true);
+      expect(htmlAnchors.has('commented-out')).toBe(false);
+      expect(htmlAnchors.has('in-script')).toBe(false);
     });
   });
 });

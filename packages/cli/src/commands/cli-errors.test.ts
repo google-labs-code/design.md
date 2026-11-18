@@ -13,6 +13,8 @@
 // limitations under the License.
 
 import { describe, it, expect } from 'bun:test';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const CLI = join(import.meta.dir, '../index.ts');
@@ -45,5 +47,51 @@ describe('CLI error output', () => {
     const err = JSON.parse(stderr.trim());
     expect(err.error).toBe('INVALID_FORMAT');
     expect(err.message).toContain('Invalid format');
+  });
+
+  it('resolves external @-references relative to the file path on disk vs stdin', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'design-md-cli-lint-'));
+    try {
+      mkdirSync(join(tempDir, 'components'), { recursive: true });
+      writeFileSync(
+        join(tempDir, 'components/button.html'),
+        '<!-- COMPONENT: button-primary -->\n<button>Primary</button>\n',
+      );
+      const designMdPath = join(tempDir, 'DESIGN.md');
+      const content = `---
+name: Test
+colors:
+  primary: "#1A1C1E"
+typography:
+  body:
+    fontFamily: Inter
+    fontSize: 16px
+---
+
+## Components
+
+- \`@components/button.html#button-primary\`
+- \`@components/missing.html\`
+`;
+      writeFileSync(designMdPath, content);
+
+      const fileRes = runCli(['lint', designMdPath]);
+      expect(fileRes.code).toBe(0);
+      const fileReport = JSON.parse(fileRes.stdout);
+      expect(fileReport.findings.some((f: any) => f.message.includes('@components/missing.html') && f.severity === 'warning')).toBe(true);
+      expect(fileReport.findings.some((f: any) => f.message.includes('@components/button.html'))).toBe(false);
+
+      // Stdin ("-") runs in string-only mode: does not warn on missing files, but still errors on path escape
+      const stdinProc = Bun.spawnSync(['bun', 'run', CLI, 'lint', '--', '-'], {
+        stdin: Buffer.from(content, 'utf-8'),
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+      expect(stdinProc.exitCode).toBe(0);
+      const stdinReport = JSON.parse(Buffer.from(stdinProc.stdout).toString('utf-8'));
+      expect(stdinReport.findings.some((f: any) => f.message.includes('@components/missing.html'))).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

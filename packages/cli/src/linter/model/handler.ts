@@ -241,6 +241,9 @@ export class ModelHandler implements ModelSpec {
           sections: input.sections,
           unknownKeys,
           unknownKeyValues,
+          externalReferences: input.externalReferences,
+          baseDir: input.baseDir,
+          filePath: input.filePath,
         },
         findings,
       };

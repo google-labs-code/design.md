@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import { z } from 'zod';
+import type { ExternalReference } from './external-refs.js';
+
+export type { ExternalReference } from './external-refs.js';
 
 // ── INPUT ──────────────────────────────────────────────────────────
 export const ParserInputSchema = z.object({
@@ -61,6 +64,12 @@ export interface ParsedDesignSystem {
   documentSections?: Array<{ heading: string; content: string }> | undefined;
   /** Raw YAML values for all top-level keys (known and unknown), used by lint rules. */
   rawValues?: Record<string, unknown> | undefined;
+  /** External @-references extracted from inline code spans in markdown prose. */
+  externalReferences?: ExternalReference[] | undefined;
+  /** Optional base directory for resolving external @-references. */
+  baseDir?: string | undefined;
+  /** Optional file path of the root DESIGN.md file on disk. */
+  filePath?: string | undefined;
 }
 
 /** Canonical top-level YAML keys per the DESIGN.md schema. */

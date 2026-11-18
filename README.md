@@ -176,6 +176,15 @@ Valid component properties: `backgroundColor`, `textColor`, `typography`, `round
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 
+The components section may use external references (`@<path>[#<fragment>]` in inline code spans) to point to further elaboration of the component kit, such as component templates in HTML or component source code in JSX:
+
+```markdown
+## Components
+
+- **Buttons** → `@components/button.html` — `button-primary`, `button-secondary`, `button-tertiary`, `button-icon`
+- **Cards** → `@components/card.html` — `card-elevated`, `card-outlined`
+```
+
 ### Consumer Behavior for Unknown Content
 
 | Scenario | Behavior |
@@ -185,6 +194,8 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 | Unknown typography token name | Accept as valid typography |
 | Unknown motion token name | Accept as valid motion |
 | Unknown component property | Accept with warning |
+| External `@`-reference in prose | Preserve; resolve referenced file on demand |
+| External `@`-reference fragment for unsupported file type | Ignore fragment and use whole file; do not treat as broken |
 | Duplicate section heading | Error; reject the file |
 | Duplicate top-level YAML key | Error; reject the file |
 
@@ -329,7 +340,7 @@ The linter runs eleven rules against a parsed DESIGN.md. Each rule produces find
 
 | Rule | Severity | What it checks |
 |:-----|:---------|:---------------|
-| `broken-ref` | error | Token references (`{colors.primary}`) that don't resolve to any defined token |
+| `broken-ref` | error | Unresolved token references (`{colors.primary}`), unknown component sub-tokens, and broken or out-of-bounds external `@`-references |
 | `missing-primary` | warning | Colors are defined but no `primary` color exists — agents will auto-generate one |
 | `contrast-ratio` | warning | Component `backgroundColor`/`textColor` pairs below WCAG AA minimum (4.5:1) |
 | `orphaned-tokens` | warning | Color tokens defined but never referenced by any component |

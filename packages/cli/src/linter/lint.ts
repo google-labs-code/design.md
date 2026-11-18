@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { dirname, resolve } from 'node:path';
 import { ParserHandler } from './parser/handler.js';
+import { extractExternalReferencesFromMarkdown } from './parser/external-refs.js';
 import type { ParsedDesignSystem } from './parser/spec.js';
 import { ModelHandler } from './model/handler.js';
 import { runLinter } from './linter/runner.js';
+import { brokenRefRule } from './linter/rules/broken-ref.js';
 import { TailwindEmitterHandler } from './tailwind/handler.js';
 import type { DesignSystemState } from './model/spec.js';
 import type { Finding } from './linter/spec.js';
@@ -25,6 +28,10 @@ import type { TailwindEmitterResult } from './tailwind/spec.js';
 export interface LintOptions {
   /** Custom lint rules. Defaults to DEFAULT_RULES if omitted. */
   rules?: LintRule[];
+  /** File path of the DESIGN.md file, used to derive the base directory for external @-references. */
+  filePath?: string;
+  /** Explicit base directory for resolving external @-references. Overrides filePath if both are provided. */
+  baseDir?: string;
 }
 
 export interface LintReport {
@@ -58,6 +65,13 @@ export function lint(content: string, options?: LintOptions): LintReport {
   const model = new ModelHandler();
   const tailwind = new TailwindEmitterHandler();
 
+  const resolvedFilePath = options?.filePath ? resolve(options.filePath) : undefined;
+  const resolvedBaseDir = options?.baseDir
+    ? resolve(options.baseDir)
+    : resolvedFilePath
+      ? dirname(resolvedFilePath)
+      : undefined;
+
   const parseResult = parser.execute({ content });
 
   // Handle parse failures gracefully
@@ -65,19 +79,41 @@ export function lint(content: string, options?: LintOptions): LintReport {
     // For recoverable errors (e.g. no YAML found), return a report
     // with an empty design system and a finding instead of throwing.
     if (parseResult.error.recoverable) {
-      const emptyParsed: ParsedDesignSystem = { sourceMap: new Map() };
+      const externalReferences = extractExternalReferencesFromMarkdown(content);
+      const emptyParsed: ParsedDesignSystem = {
+        sourceMap: new Map(),
+        externalReferences,
+        baseDir: resolvedBaseDir,
+        filePath: resolvedFilePath,
+      };
       const { designSystem } = model.execute(emptyParsed);
 
       // Still extract sections from the raw content even without YAML
       const sections = extractSectionsFromContent(content);
+      const refFindings: Finding[] = externalReferences.length > 0
+        ? brokenRefRule.run(designSystem).map(f => ({
+            severity: f.severity ?? brokenRefRule.severity,
+            path: f.path,
+            message: f.message,
+            rule: f.rule ?? brokenRefRule.name,
+          }))
+        : [];
+      const findings: Finding[] = [
+        {
+          severity: 'warning',
+          message: parseResult.error.message,
+        },
+        ...refFindings,
+      ];
 
       return {
         designSystem,
-        findings: [{
-          severity: 'warning',
-          message: parseResult.error.message,
-        }],
-        summary: { errors: 0, warnings: 1, infos: 0 },
+        findings,
+        summary: {
+          errors: findings.filter(d => d.severity === 'error').length,
+          warnings: findings.filter(d => d.severity === 'warning').length,
+          infos: findings.filter(d => d.severity === 'info').length,
+        },
         tailwindConfig: tailwind.execute(designSystem),
         sections: sections.map(s => s.heading).filter(Boolean),
         documentSections: sections,
@@ -88,7 +124,11 @@ export function lint(content: string, options?: LintOptions): LintReport {
     throw new Error(`Parse failed: ${parseResult.error.message}`);
   }
 
-  const { designSystem, findings: modelFindings } = model.execute(parseResult.data);
+  const { designSystem, findings: modelFindings } = model.execute({
+    ...parseResult.data,
+    baseDir: resolvedBaseDir ?? parseResult.data.baseDir,
+    filePath: resolvedFilePath ?? parseResult.data.filePath,
+  });
   const lintResult = runLinter(designSystem, options?.rules);
   const tailwindConfig = tailwind.execute(designSystem);
 
