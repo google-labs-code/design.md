@@ -1,0 +1,96 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "$description": "An editorial UI quality system for coding agents. Clear hierarchy, concrete product language, and visible states help teams ship interfaces with a point of view.",
+  "color": {
+    "$type": "color",
+    "primary": { "$value": "#0a0a0a" },
+    "secondary": { "$value": "#3476d8" },
+    "tertiary": { "$value": "#f8c808" },
+    "surface": { "$value": "#ffffff" },
+    "surface-dim": { "$value": "#f5f5f5" },
+    "surface-container-low": { "$value": "#fafafa" },
+    "surface-container": { "$value": "#f5f5f5" },
+    "surface-container-high": { "$value": "#ededed" },
+    "surface-container-highest": { "$value": "#e5e5e5" },
+    "on-surface": { "$value": "#0a0a0a" },
+    "on-surface-variant": { "$value": "#737373" },
+    "outline": { "$value": "#a3a3a3" },
+    "outline-variant": { "$value": "#e5e5e5" },
+    "background": { "$value": "#ffffff" },
+    "on-background": { "$value": "#0a0a0a" },
+    "secondary-container": { "$value": "#eaf2ff" },
+    "on-secondary-container": { "$value": "#173b72" },
+    "tertiary-container": { "$value": "#fff7cc" },
+    "on-tertiary-container": { "$value": "#5c4700" },
+    "error": { "$value": "#b91c1c" },
+    "on-error": { "$value": "#ffffff" },
+    "error-container": { "$value": "#fee2e2" },
+    "on-error-container": { "$value": "#7f1d1d" }
+  },
+  "typography": {
+    "display-lg": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Figtree",
+        "fontSize": "64px",
+        "fontWeight": "800",
+        "lineHeight": "72px",
+        "letterSpacing": "-0.04em"
+      }
+    },
+    "headline-lg": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Figtree",
+        "fontSize": "36px",
+        "fontWeight": "800",
+        "lineHeight": "44px",
+        "letterSpacing": "-0.02em"
+      }
+    },
+    "headline-md": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Figtree",
+        "fontSize": "24px",
+        "fontWeight": "700",
+        "lineHeight": "32px"
+      }
+    },
+    "body-md": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Figtree",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "lineHeight": "24px"
+      }
+    },
+    "label-md": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Geist Mono",
+        "fontSize": "13px",
+        "fontWeight": "500",
+        "lineHeight": "20px",
+        "letterSpacing": "0.01em"
+      }
+    }
+  },
+  "rounded": {
+    "sm": { "$type": "dimension", "$value": "0.375rem" },
+    "md": { "$type": "dimension", "$value": "0.5rem" },
+    "lg": { "$type": "dimension", "$value": "0.75rem" },
+    "xl": { "$type": "dimension", "$value": "1.5rem" },
+    "full": { "$type": "dimension", "$value": "9999px" }
+  },
+  "spacing": {
+    "xs": { "$type": "dimension", "$value": "4px" },
+    "sm": { "$type": "dimension", "$value": "8px" },
+    "md": { "$type": "dimension", "$value": "16px" },
+    "lg": { "$type": "dimension", "$value": "24px" },
+    "xl": { "$type": "dimension", "$value": "48px" },
+    "section": { "$type": "dimension", "$value": "80px" },
+    "container": { "$type": "dimension", "$value": "1200px" }
+  }
+}
