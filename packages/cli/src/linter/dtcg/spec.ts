@@ -20,6 +20,9 @@ import type { DesignSystemState } from '../model/spec.js';
 export interface DtcgColorValue {
   colorSpace: 'srgb';
   components: [number, number, number];
+  /** Opacity from 0 (transparent) to 1 (opaque). Omitted means 1. */
+  alpha?: number;
+  /** 6-digit `#rrggbb` fallback; never carries alpha. */
   hex?: string;
 }
 

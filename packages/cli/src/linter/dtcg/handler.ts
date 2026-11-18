@@ -85,15 +85,19 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
   }
 
   private colorToValue(color: ResolvedColor): DtcgColorValue {
-    return {
+    const value: DtcgColorValue = {
       colorSpace: 'srgb',
       components: [
         this.round(color.r / 255),
         this.round(color.g / 255),
         this.round(color.b / 255),
       ],
-      hex: color.hex.toLowerCase(),
+      // DTCG `hex` is a 6-digit fallback; transparency belongs in `alpha`.
+      hex: color.hex.toLowerCase().slice(0, 7),
     };
+    // `alpha` defaults to 1 in DTCG, so only emit it for translucent colors.
+    if (color.a !== undefined && color.a < 1) value.alpha = this.round(color.a);
+    return value;
   }
 
   private mapDimensionGroup(
