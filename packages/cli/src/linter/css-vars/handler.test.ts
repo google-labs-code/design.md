@@ -97,9 +97,13 @@ describe('CssVarsEmitterHandler', () => {
     const state = emptyState({
       colors: new Map([
         ['background.light', makeColor('#FFFFFF', 255, 255, 255)],
+        ['brand.primary.base', makeColor('#647D66', 0x64, 0x7D, 0x66)],
       ]),
       spacing: new Map([
         ['gap.lg', makeDim(24, 'px')],
+      ]),
+      rounded: new Map([
+        ['control.pill', makeDim(9999, 'px')],
       ]),
     });
 
@@ -110,7 +114,9 @@ describe('CssVarsEmitterHandler', () => {
     expect(serializeCssVars(result.data.declarations)).toBe(
       ':root {\n'
       + '  --color-background-light: #ffffff;\n'
+      + '  --color-brand-primary-base: #647d66;\n'
       + '  --spacing-gap-lg: 24px;\n'
+      + '  --rounded-control-pill: 9999px;\n'
       + '}\n',
     );
   });

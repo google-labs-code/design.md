@@ -14,6 +14,7 @@
 
 import { describe, test, expect } from 'bun:test';
 import { DtcgEmitterHandler } from './handler.js';
+import { lint } from '../lint.js';
 import type { DesignSystemState, ResolvedColor, ResolvedDimension, ResolvedTypography } from '../model/spec.js';
 
 function emptyState(overrides?: Partial<DesignSystemState>): DesignSystemState {
@@ -170,7 +171,28 @@ describe('DtcgEmitterHandler', () => {
     expect(value['letterSpacing']).toEqual({ value: 0.5, unit: 'px' });
   });
 
-  test('typography with missing fields omits them from $value', () => {
+  test('typography without letterSpacing emits a 0px default', () => {
+    const body: ResolvedTypography = {
+      type: 'typography',
+      fontFamily: 'Manrope, Arial, sans-serif',
+      fontSize: makeDim(16, 'px'),
+      fontWeight: 400,
+      lineHeight: makeDim(1.6, ''),
+    };
+
+    const state = emptyState({
+      typography: new Map([['body-md', body]]),
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
+  });
+
+  test('typography with missing fields omits them from $value except default letterSpacing', () => {
     const minimal: ResolvedTypography = {
       type: 'typography',
       fontFamily: 'Roboto',
@@ -189,6 +211,275 @@ describe('DtcgEmitterHandler', () => {
     expect(value['fontSize']).toBeUndefined();
     expect(value['fontWeight']).toBeUndefined();
     expect(value['lineHeight']).toBeUndefined();
-    expect(value['letterSpacing']).toBeUndefined();
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
+  });
+
+  test('exported typography includes all DTCG required properties', () => {
+    const body: ResolvedTypography = {
+      type: 'typography',
+      fontFamily: 'Manrope',
+      fontSize: makeDim(16, 'px'),
+      fontWeight: 400,
+      lineHeight: makeDim(1.6, ''),
+    };
+
+    const state = emptyState({
+      typography: new Map([['body-md', body]]),
+    });
+
+    const result = handler.execute(state);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+    expect(Object.keys(value).sort()).toEqual(
+      ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight'].sort(),
+    );
+    expect(value['fontFamily']).toBe('Manrope');
+    expect(value['fontSize']).toEqual({ value: 16, unit: 'px' });
+    expect(value['fontWeight']).toBe(400);
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
+    expect(value['lineHeight']).toBe(1.6);
+  });
+
+  test('YAML numeric lineHeight round-trips through lint into required DTCG typography props', () => {
+    const report = lint(`---
+typography:
+  body-md:
+    fontFamily: Manrope
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+---
+# Spec
+`);
+    const result = handler.execute(report.designSystem);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+    expect(Object.keys(value).sort()).toEqual(
+      ['fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight'].sort(),
+    );
+    expect(value['lineHeight']).toBe(1.6);
+    expect(value['letterSpacing']).toEqual({ value: 0, unit: 'px' });
+  });
+  describe('lineHeight conversion to a unitless multiplier', () => {
+    function typoValue(
+      lineHeight: ResolvedDimension,
+      fontSize?: ResolvedDimension,
+    ): { value: Record<string, unknown>; warnings: unknown[] | undefined } {
+      const typo: ResolvedTypography = {
+        type: 'typography',
+        fontFamily: 'Inter',
+        fontWeight: 400,
+        lineHeight,
+        ...(fontSize ? { fontSize } : {}),
+      };
+      const result = handler.execute(emptyState({ typography: new Map([['body', typo]]) }));
+      if (!result.success) throw new Error('expected success');
+      const value = ((result.data['typography'] as Record<string, unknown>)['body'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+      return { value, warnings: result.warnings };
+    }
+
+    test('px lineHeight with px fontSize: 22px @ 16px → 1.375', () => {
+      const { value, warnings } = typoValue(makeDim(22, 'px'), makeDim(16, 'px'));
+      expect(value['lineHeight']).toBe(1.375);
+      expect(warnings).toBeUndefined();
+    });
+
+    test('rem lineHeight with rem fontSize: 1.5rem @ 1rem → 1.5', () => {
+      const { value } = typoValue(makeDim(1.5, 'rem'), makeDim(1, 'rem'));
+      expect(value['lineHeight']).toBe(1.5);
+    });
+
+    test('px lineHeight with rem fontSize assumes a 16px root: 24px @ 1rem → 1.5', () => {
+      const { value } = typoValue(makeDim(24, 'px'), makeDim(1, 'rem'));
+      expect(value['lineHeight']).toBe(1.5);
+    });
+
+    test('rem lineHeight with px fontSize assumes a 16px root: 1.5rem @ 12px → 2', () => {
+      const { value } = typoValue(makeDim(1.5, 'rem'), makeDim(12, 'px'));
+      expect(value['lineHeight']).toBe(2);
+    });
+
+    test('rounds to 3 decimal places: 20px @ 14px → 1.429', () => {
+      const { value } = typoValue(makeDim(20, 'px'), makeDim(14, 'px'));
+      expect(value['lineHeight']).toBe(1.429);
+    });
+
+    test('em lineHeight passes through as a multiplier, regardless of fontSize unit', () => {
+      expect(typoValue(makeDim(1.4, 'em'), makeDim(16, 'px')).value['lineHeight']).toBe(1.4);
+      expect(typoValue(makeDim(1.4, 'em')).value['lineHeight']).toBe(1.4);
+    });
+
+    test('unitless lineHeight passes through even without a fontSize', () => {
+      const { value, warnings } = typoValue(makeDim(1.6, ''));
+      expect(value['lineHeight']).toBe(1.6);
+      expect(warnings).toBeUndefined();
+    });
+
+    test('px lineHeight without a fontSize is omitted with a warning', () => {
+      const { value, warnings } = typoValue(makeDim(22, 'px'));
+      expect(value['lineHeight']).toBeUndefined();
+      expect(warnings).toEqual([
+        expect.objectContaining({ code: 'LINE_HEIGHT_NOT_CONVERTIBLE', path: 'typography.body.lineHeight' }),
+      ]);
+    });
+
+    test('px lineHeight with an em fontSize is omitted with a warning', () => {
+      const { value, warnings } = typoValue(makeDim(22, 'px'), makeDim(1.2, 'em'));
+      expect(value['lineHeight']).toBeUndefined();
+      expect(warnings).toHaveLength(1);
+      expect((warnings as Array<{ message: string }>)[0]!.message).toContain("'22px'");
+    });
+
+    test('lint → export: YAML `lineHeight: 22px` with `fontSize: 16px` exports 1.375', () => {
+      const report = lint(`---
+typography:
+  body-md:
+    fontFamily: Inter
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 22px
+---
+# Spec
+`);
+      const result = handler.execute(report.designSystem);
+      if (!result.success) throw new Error('expected success');
+      const value = ((result.data['typography'] as Record<string, unknown>)['body-md'] as Record<string, unknown>)['$value'] as Record<string, unknown>;
+      expect(value['lineHeight']).toBe(1.375);
+    });
+  });
+
+  test('each typography token gets its own default letterSpacing object', () => {
+    const typo = (): ResolvedTypography => ({
+      type: 'typography',
+      fontFamily: 'Inter',
+      fontSize: makeDim(16, 'px'),
+      fontWeight: 400,
+      lineHeight: makeDim(1.5, ''),
+    });
+    const result = handler.execute(emptyState({
+      typography: new Map([['a', typo()], ['b', typo()]]),
+    }));
+    if (!result.success) throw new Error('expected success');
+    const group = result.data['typography'] as Record<string, { $value: Record<string, unknown> }>;
+    const a = group['a']!.$value['letterSpacing'] as { value: number; unit: string };
+    const b = group['b']!.$value['letterSpacing'] as { value: number; unit: string };
+    expect(a).toEqual({ value: 0, unit: 'px' });
+    expect(b).toEqual({ value: 0, unit: 'px' });
+    expect(a).not.toBe(b);
+    a.value = 99;
+    expect(b.value).toBe(0);
+    // A later export is unaffected by mutating an earlier result.
+    const again = handler.execute(emptyState({ typography: new Map([['c', typo()]]) }));
+    if (!again.success) throw new Error('expected success');
+    const c = (again.data['typography'] as Record<string, { $value: Record<string, unknown> }>)['c']!.$value['letterSpacing'];
+    expect(c).toEqual({ value: 0, unit: 'px' });
+  });
+
+  describe('grouped tokens', () => {
+    test('expands dot-separated paths into nested DTCG groups across color, spacing, rounded, and typography', () => {
+      const report = lint(`---
+name: Adaptive Design System
+colors:
+  primary: "#647D66"
+  light:
+    surface: "#FAFDF7"
+    on-surface: "#1A1C19"
+  brand:
+    primary:
+      base: "#4A6350"
+spacing:
+  base: 16px
+  sm:
+    gutter: 16px
+  lg:
+    gutter: 24px
+rounded:
+  sm: 4px
+  control:
+    pill: 9999px
+typography:
+  body-md:
+    fontFamily: Public Sans
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+  sm:
+    headline-lg:
+      fontFamily: Public Sans
+      fontSize: 32px
+      fontWeight: 600
+      lineHeight: 1.15
+---
+# Spec
+`);
+
+      const result = handler.execute(report.designSystem);
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+
+      const colorGroup = result.data['color'] as Record<string, unknown>;
+      expect(colorGroup['$type']).toBe('color');
+      expect(colorGroup['light.surface']).toBeUndefined();
+      const lightGroup = colorGroup['light'] as Record<string, Record<string, Record<string, unknown>>>;
+      expect(lightGroup['surface']!['$value']!['hex']).toBe('#fafdf7');
+      expect(lightGroup['on-surface']!['$value']!['hex']).toBe('#1a1c19');
+      const brandGroup = colorGroup['brand'] as Record<string, Record<string, Record<string, Record<string, unknown>>>>;
+      expect(brandGroup['primary']!['base']!['$value']!['hex']).toBe('#4a6350');
+
+      const spacingGroup = result.data['spacing'] as Record<string, unknown>;
+      expect(spacingGroup['$type']).toBe('dimension');
+      expect(spacingGroup['sm.gutter']).toBeUndefined();
+      expect((spacingGroup['sm'] as Record<string, Record<string, unknown>>)['gutter']!['$value']).toEqual({
+        value: 16,
+        unit: 'px',
+      });
+      expect((spacingGroup['lg'] as Record<string, Record<string, unknown>>)['gutter']!['$value']).toEqual({
+        value: 24,
+        unit: 'px',
+      });
+
+      const roundedGroup = result.data['rounded'] as Record<string, unknown>;
+      expect(roundedGroup['$type']).toBe('dimension');
+      expect(roundedGroup['control.pill']).toBeUndefined();
+      expect((roundedGroup['control'] as Record<string, Record<string, unknown>>)['pill']!['$value']).toEqual({
+        value: 9999,
+        unit: 'px',
+      });
+
+      const typoGroup = result.data['typography'] as Record<string, unknown>;
+      expect(typoGroup['sm.headline-lg']).toBeUndefined();
+      const smHeadline = (typoGroup['sm'] as Record<string, Record<string, unknown>>)['headline-lg']!;
+      expect(smHeadline['$type']).toBe('typography');
+      expect((smHeadline['$value'] as Record<string, unknown>)['fontSize']).toEqual({ value: 32, unit: 'px' });
+    });
+
+    test('returns TOKEN_GROUP_COLLISION when a token path collides with a group prefix', () => {
+      const state = emptyState({
+        colors: new Map([
+          ['brand', makeColor('#111111', 17, 17, 17)],
+          ['brand.light', makeColor('#222222', 34, 34, 34)],
+        ]),
+      });
+
+      const result = handler.execute(state);
+      expect(result.success).toBe(false);
+      if (result.success) return;
+      expect(result.error.code).toBe('TOKEN_GROUP_COLLISION');
+    });
+
+    test('returns INVALID_TOKEN_NAME when a segment uses reserved DTCG syntax', () => {
+      const state = emptyState({
+        colors: new Map([['light.$value', makeColor('#111111', 17, 17, 17)]]),
+      });
+
+      const result = handler.execute(state);
+      expect(result.success).toBe(false);
+      if (result.success) return;
+      expect(result.error.code).toBe('INVALID_TOKEN_NAME');
+    });
   });
 });

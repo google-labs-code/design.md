@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import { z } from 'zod';
+import type { ExternalReference } from './external-refs.js';
+
+export type { ExternalReference } from './external-refs.js';
 
 // ── INPUT ──────────────────────────────────────────────────────────
 export const ParserInputSchema = z.object({
@@ -52,6 +55,7 @@ export interface ParsedDesignSystem {
   typography?: Record<string, Record<string, any>> | undefined;
   rounded?: Record<string, any> | undefined;
   spacing?: Record<string, any> | undefined;
+  motion?: Record<string, Record<string, any>> | undefined;
   components?: Record<string, Record<string, any>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
@@ -60,6 +64,12 @@ export interface ParsedDesignSystem {
   documentSections?: Array<{ heading: string; content: string }> | undefined;
   /** Raw YAML values for all top-level keys (known and unknown), used by lint rules. */
   rawValues?: Record<string, unknown> | undefined;
+  /** External @-references extracted from inline code spans in markdown prose. */
+  externalReferences?: ExternalReference[] | undefined;
+  /** Optional base directory for resolving external @-references. */
+  baseDir?: string | undefined;
+  /** Optional file path of the root DESIGN.md file on disk. */
+  filePath?: string | undefined;
 }
 
 /** Canonical top-level YAML keys per the DESIGN.md schema. */
@@ -72,6 +82,7 @@ export const SCHEMA_KEYS = [
   'typography',
   'rounded',
   'spacing',
+  'motion',
   'components',
 ] as const;
 

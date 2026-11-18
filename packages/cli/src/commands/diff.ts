@@ -53,8 +53,8 @@ export default defineCommand({
       throw error;
     }
 
-    const beforeReport = lint(beforeContent);
-    const afterReport = lint(afterContent);
+    const beforeReport = lint(beforeContent, args.before === '-' ? undefined : { filePath: args.before });
+    const afterReport = lint(afterContent, args.after === '-' ? undefined : { filePath: args.after });
 
     const diff = {
       tokens: {

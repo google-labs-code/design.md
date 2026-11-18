@@ -14,6 +14,7 @@
 
 import YAML from 'yaml';
 import type { ParserSpec, ParserInput, ParserResult, ParsedDesignSystem, SourceLocation } from './spec.js';
+import { extractExternalReferencesFromAst, extractNodeText, type ExternalReference } from './external-refs.js';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkFrontmatter from 'remark-frontmatter';
@@ -120,7 +121,8 @@ export class ParserHandler implements ParserSpec {
         };
       }
 
-      return this.mergeCodeBlocks(blocks, sections, documentSections);
+      const externalReferences = extractExternalReferencesFromAst(ast);
+      return this.mergeCodeBlocks(blocks, sections, documentSections, externalReferences);
     } catch (error) {
       return {
         success: false,
@@ -137,7 +139,12 @@ export class ParserHandler implements ParserSpec {
    * Merge multiple code blocks into a single ParsedDesignSystem.
    * Detects duplicate top-level sections across blocks.
    */
-  private mergeCodeBlocks(blocks: Array<{ yaml: string; block: 'frontmatter' | number; startLine: number }>, sections: string[], documentSections: Array<{ heading: string; content: string }>): ParserResult {
+  private mergeCodeBlocks(
+    blocks: Array<{ yaml: string; block: 'frontmatter' | number; startLine: number }>,
+    sections: string[],
+    documentSections: Array<{ heading: string; content: string }>,
+    externalReferences: ExternalReference[],
+  ): ParserResult {
     const merged: Record<string, unknown> = {};
     const sourceMap = new Map<string, SourceLocation>();
     const seenSections = new Map<string, 'frontmatter' | number>();
@@ -182,14 +189,20 @@ export class ParserHandler implements ParserSpec {
 
     return {
       success: true,
-      data: this.toDesignSystem(merged, sourceMap, sections, documentSections),
+      data: this.toDesignSystem(merged, sourceMap, sections, documentSections, externalReferences),
     };
   }
 
   /**
    * Map a raw parsed object to the ParsedDesignSystem interface.
    */
-  private toDesignSystem(raw: Record<string, unknown>, sourceMap: Map<string, SourceLocation>, sections: string[], documentSections: Array<{ heading: string; content: string }>): ParsedDesignSystem {
+  private toDesignSystem(
+    raw: Record<string, unknown>,
+    sourceMap: Map<string, SourceLocation>,
+    sections: string[],
+    documentSections: Array<{ heading: string; content: string }>,
+    externalReferences: ExternalReference[],
+  ): ParsedDesignSystem {
     const omittedRaw = raw['omitted'];
     let omitted: ParsedDesignSystem['omitted'] = undefined;
     if (Array.isArray(omittedRaw)) {
@@ -219,18 +232,17 @@ export class ParserHandler implements ParserSpec {
       typography: raw['typography'] as Record<string, Record<string, string | number>> | undefined,
       rounded: raw['rounded'] as Record<string, string> | undefined,
       spacing: raw['spacing'] as Record<string, string> | undefined,
+      motion: raw['motion'] as Record<string, Record<string, string>> | undefined,
       components: raw['components'] as Record<string, Record<string, string>> | undefined,
       sourceMap,
       sections,
       documentSections,
       rawValues: raw,
+      externalReferences,
     };
   }
 
   private extractHeadingText(children: PhrasingContent[]): string {
-    return children
-      .map(c => 'value' in c ? c.value : '')
-      .join('')
-      .trim();
+    return extractNodeText({ children }).trim();
   }
 }

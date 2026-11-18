@@ -15,6 +15,11 @@
 // ── Primary API ────────────────────────────────────────────────────
 export { lint } from './lint.js';
 export type { LintReport, LintOptions } from './lint.js';
+export {
+  parseExternalReference,
+  extractExternalReferencesFromMarkdown,
+  type ExternalReference,
+} from './parser/external-refs.js';
 
 
 // ── Result types ───────────────────────────────────────────────────
@@ -27,7 +32,12 @@ export type {
   ComponentDef,
 } from './model/spec.js';
 export type { Finding, Severity } from './linter/spec.js';
-export type { TailwindEmitterResult, TailwindThemeExtend } from './tailwind/spec.js';
+export type {
+  TailwindEmitterResult,
+  TailwindThemeExtend,
+  TailwindColorGroup,
+  TailwindColorValue,
+} from './tailwind/spec.js';
 export type { TailwindV4EmitterResult, TailwindV4ThemeData } from './tailwind/v4/spec.js';
 export type { DtcgEmitterResult, DtcgTokenFile } from './dtcg/spec.js';
 export type { CssVarsEmitterResult, CssVarDeclaration } from './css-vars/spec.js';

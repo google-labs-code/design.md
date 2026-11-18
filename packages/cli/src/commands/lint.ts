@@ -50,9 +50,10 @@ export default defineCommand({
       }
       throw error;
     }
+    const lintOptions = args.file === '-' ? undefined : { filePath: args.file };
     const report = args.cvd
-      ? lint(content, { rules: [...DEFAULT_RULE_DESCRIPTORS, colorBlindContrastRule] })
-      : lint(content);
+      ? lint(content, { ...lintOptions, rules: [...DEFAULT_RULE_DESCRIPTORS, colorBlindContrastRule] })
+      : lint(content, lintOptions);
 
     const output = {
       findings: report.findings,

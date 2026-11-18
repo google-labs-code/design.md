@@ -116,12 +116,22 @@ description: <string>      # optional
 omitted: <string[] | OmittedSection[]> # optional, list of sections to intentionally omit
 colors:
   <token-name>: <Color>
+  <group-name>:            # optional nested group
+    <token-name>: <Color>
 typography:
   <token-name>: <Typography>
+  <group-name>:            # optional nested group
+    <token-name>: <Typography>
 rounded:
   <scale-level>: <Dimension>
+  <group-name>:            # optional nested group
+    <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+  <group-name>:            # optional nested group
+    <scale-level>: <Dimension | number>
+motion:
+  <token-name>: <Motion>
 components:
   <component-name>:
     <token-name>: <string | token reference>
@@ -133,8 +143,10 @@ components:
 |:-----|:-------|:--------|
 | Color | Any CSS color (hex, `rgb()`, `oklch()`, named, etc.) | `"#1A1C1E"`, `"oklch(62% 0.18 250)"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
-| Token Reference | `{path.to.token}` | `{colors.primary}` |
+| Duration | number + `ms` | `100ms`, `250ms` |
+| Token Reference | `{path.to.token}` | `{colors.primary}`, `{colors.light.surface}`, `{typography.sm.headline-lg}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
+| Motion | object with `duration`, `delay`, `timingFunction` | `duration: 100ms`, `timingFunction: ease-out` |
 
 ### Section Order
 
@@ -148,8 +160,10 @@ Sections use `##` headings. They can be omitted, but those present must appear i
 | 4 | Layout | Layout & Spacing |
 | 5 | Elevation & Depth | Elevation |
 | 6 | Shapes | |
-| 7 | Components | |
-| 8 | Do's and Don'ts | |
+| 7 | Motion & Micro-interaction | Motion & Micro-interactions, Motion |
+| 8 | Voice & Content Strategy | |
+| 9 | Components | |
+| 10 | Do's and Don'ts | |
 
 ### Component Tokens
 
@@ -170,6 +184,15 @@ Valid component properties: `backgroundColor`, `textColor`, `typography`, `round
 
 Variants (hover, active, pressed) are expressed as separate component entries with a related key name.
 
+The components section may use external references (`@<path>[#<fragment>]` in inline code spans) to point to further elaboration of the component kit, such as component templates in HTML or component source code in JSX:
+
+```markdown
+## Components
+
+- **Buttons** → `@components/button.html` — `button-primary`, `button-secondary`, `button-tertiary`, `button-icon`
+- **Cards** → `@components/card.html` — `card-elevated`, `card-outlined`
+```
+
 ### Consumer Behavior for Unknown Content
 
 | Scenario | Behavior |
@@ -177,7 +200,12 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 | Unknown section heading | Preserve; do not error |
 | Unknown color token name | Accept if value is valid |
 | Unknown typography token name | Accept as valid typography |
+| Unknown motion token name | Accept as valid motion |
+| Grouped token sub-map | Flatten to dot-separated token path |
+| Flat and grouped token name collision | Error; reject the conflicting token |
 | Unknown component property | Accept with warning |
+| External `@`-reference in prose | Preserve; resolve referenced file on demand |
+| External `@`-reference fragment for unsupported file type | Ignore fragment and use whole file; do not treat as broken |
 | Duplicate section heading | Error; reject the file |
 | Duplicate top-level YAML key | Error; reject the file |
 
@@ -322,7 +350,7 @@ The linter runs eleven rules against a parsed DESIGN.md. Each rule produces find
 
 | Rule | Severity | What it checks |
 |:-----|:---------|:---------------|
-| `broken-ref` | error | Token references (`{colors.primary}`) that don't resolve to any defined token |
+| `broken-ref` | error | Unresolved token references (`{colors.primary}`), unknown component sub-tokens, and broken or out-of-bounds external `@`-references |
 | `missing-primary` | warning | Colors are defined but no `primary` color exists — agents will auto-generate one |
 | `contrast-ratio` | warning | Component `backgroundColor`/`textColor` pairs below WCAG AA minimum (4.5:1) |
 | `orphaned-tokens` | warning | Color tokens defined but never referenced by any component |

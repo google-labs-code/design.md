@@ -102,7 +102,7 @@ describe('ModelHandler', () => {
               secondary: '#f0f0f0'
             }
           }
-        }
+        } as any
       }));
 
       expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
@@ -122,7 +122,7 @@ describe('ModelHandler', () => {
               }
             }
           }
-        }
+        } as any
       }));
 
       expect(result.findings.filter(f => f.severity === 'error').length).toBe(0);
@@ -476,6 +476,28 @@ describe('ModelHandler', () => {
       expect(headline?.fontWeight).toBe(700);
     });
 
+    it('keeps unquoted YAML numeric lineHeight as a unitless multiplier', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': { fontFamily: 'Inter', fontSize: '16px', fontWeight: 400, lineHeight: 1.6 },
+        },
+      }));
+      const body = result.designSystem.typography.get('body-md');
+      expect(body?.lineHeight?.value).toBe(1.6);
+      expect(body?.lineHeight?.unit).toBe('');
+      expect(result.findings.filter((f) => f.path?.includes('lineHeight') === true)).toHaveLength(0);
+    });
+
+    it('rejects unquoted YAML numeric fontSize because a unit is required', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': { fontFamily: 'Inter', fontSize: 16, fontWeight: 400 },
+        },
+      }));
+      expect(result.designSystem.typography.get('body-md')?.fontSize).toBeUndefined();
+      expect(result.findings.some((f) => f.path === 'typography.body-md.fontSize' && f.severity === 'error')).toBe(true);
+    });
+
     it('warns about unrecognized typography sub-properties that are silently dropped', () => {
       const result = handler.execute(makeParsed({
         typography: {
@@ -488,6 +510,117 @@ describe('ModelHandler', () => {
       // The recognized property is still resolved, and known props never warn.
       expect(result.designSystem.typography.get('headline')?.fontFamily).toBe('Inter');
       expect(result.findings.some(f => f.path === 'typography.headline.fontFamily')).toBe(false);
+    });
+
+    it('successfully parses grouped typography declarations across responsive breakpoints', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'body-md': {
+            fontFamily: 'Public Sans',
+            fontSize: '16px',
+            fontWeight: 400,
+            lineHeight: 1.6,
+          },
+          sm: {
+            'headline-lg': {
+              fontFamily: 'Public Sans',
+              fontSize: '32px',
+              fontWeight: 700,
+              lineHeight: 1.15,
+            },
+          },
+          lg: {
+            'headline-lg': {
+              fontFamily: 'Public Sans',
+              fontSize: '48px',
+              fontWeight: 700,
+              lineHeight: 1.1,
+            },
+          },
+        },
+      }));
+
+      expect(result.findings.filter(f => f.severity === 'error')).toHaveLength(0);
+      expect(result.findings.filter(f => f.severity === 'warning')).toHaveLength(0);
+      expect(result.designSystem.typography.has('body-md')).toBe(true);
+      expect(result.designSystem.typography.has('sm.headline-lg')).toBe(true);
+      expect(result.designSystem.typography.has('lg.headline-lg')).toBe(true);
+      expect(result.designSystem.typography.get('sm.headline-lg')?.fontSize?.value).toBe(32);
+      expect(result.designSystem.typography.get('lg.headline-lg')?.fontSize?.value).toBe(48);
+      expect(result.designSystem.symbolTable.has('typography.sm.headline-lg')).toBe(true);
+    });
+
+    it('emits diagnostic for duplicate token path in typography', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          sm: {
+            'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+          },
+          'sm.headline-lg': { fontFamily: 'Public Sans', fontSize: '36px' },
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('typography.sm.headline-lg');
+      expect(errors[0]!.message).toBe("Duplicate token path 'typography.sm.headline-lg' detected.");
+    });
+
+    it('emits diagnostic when grouped typography token flattens to an existing token name', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          'sm-headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+          sm: {
+            'headline-lg': { fontFamily: 'Public Sans', fontSize: '36px' },
+          },
+        },
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors.length).toBe(1);
+      expect(errors[0]!.path).toBe('typography.sm.headline-lg');
+      expect(errors[0]!.message).toBe("Grouped typography token flattens to 'sm-headline-lg', which is already defined.");
+    });
+
+    it('emits an error when a typography group contains a non-token child instead of parsing the group as a token', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          sm: {
+            'headline-lg': { fontFamily: 'Public Sans', fontSize: '32px' },
+            note: 'compact',
+          },
+        } as any,
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.path).toBe('typography.sm.note');
+      expect(result.designSystem.typography.has('sm')).toBe(false);
+      expect(result.designSystem.typography.has('sm.headline-lg')).toBe(true);
+    });
+
+    it('emits an error for an empty typography group instead of parsing it as a single token', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          lg: {},
+        } as any,
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.path).toBe('typography.lg');
+      expect(result.designSystem.typography.has('lg')).toBe(false);
+    });
+
+    it('emits an error when a typography entry mixes token properties and nested objects', () => {
+      const result = handler.execute(makeParsed({
+        typography: {
+          sm: {
+            fontFamily: 'Public Sans',
+            'headline-lg': { fontSize: '32px' },
+          },
+        } as any,
+      }));
+      const errors = result.findings.filter(f => f.severity === 'error');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]!.path).toBe('typography.sm');
+      expect(result.designSystem.typography.has('sm')).toBe(false);
     });
   });
 
@@ -758,34 +891,38 @@ describe('ModelHandler', () => {
   describe('token nesting depth limit', () => {
     it('emits error when token nesting depth exceeds 20', () => {
       // 22 levels: Level 1..21 are objects, Level 22 is a leaf.
-      // forEachLeaf will be called for Level 22 with depth 21.
-      let obj: any = '#ffffff';
+      let colorsObj: Record<string, unknown> | string = '#ffffff';
+      let typoObj: Record<string, unknown> = { fontFamily: 'Public Sans', fontSize: '32px' };
       for (let i = 22; i >= 1; i--) {
-        obj = { [`level${i}`]: obj };
+        colorsObj = { [`level${i}`]: colorsObj };
+        typoObj = { [`level${i}`]: typoObj };
       }
 
       const result = handler.execute(makeParsed({
-        colors: obj,
+        colors: colorsObj as any,
+        typography: typoObj as any,
       }));
-      expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(true);
-      expect(result.findings.find((f) => f.message.includes('nesting depth'))?.path).toBe('colors');
+      expect(result.findings.some((f) => f.path === 'colors' && f.message.includes('nesting depth'))).toBe(true);
+      expect(result.findings.some((f) => f.path === 'typography' && f.message.includes('nesting depth'))).toBe(true);
     });
 
     it('allows nesting up to depth 20', () => {
       // 21 levels: Level 1..20 are objects, Level 21 is a leaf.
-      // forEachLeaf will be called for Level 21 with depth 20.
-      let obj: any = '#ffffff';
+      let colorsObj: Record<string, unknown> | string = '#ffffff';
+      let typoObj: Record<string, unknown> = { fontFamily: 'Public Sans', fontSize: '32px' };
       for (let i = 21; i >= 1; i--) {
-        obj = { [`level${i}`]: obj };
+        colorsObj = { [`level${i}`]: colorsObj };
+        typoObj = { [`level${i}`]: typoObj };
       }
 
       const result = handler.execute(makeParsed({
-        colors: obj,
+        colors: colorsObj as any,
+        typography: typoObj as any,
       }));
       expect(result.findings.some((f) => f.message.includes('nesting depth'))).toBe(false);
-      // Construct the expected path: level1.level2...level21
       const path = Array.from({ length: 21 }, (_, i) => `level${i + 1}`).join('.');
       expect(result.designSystem.colors.has(path)).toBe(true);
+      expect(result.designSystem.typography.has(path)).toBe(true);
     });
   });
 
@@ -802,6 +939,49 @@ describe('ModelHandler', () => {
       expect(result.findings.some(f => f.path === 'colors.deep' && f.severity === 'error')).toBe(true);
       // Other valid tokens are unaffected.
       expect(result.designSystem.colors.get('ok')?.hex).toBe('#ffffff');
+    });
+  });
+
+  describe('motion validation', () => {
+    it('resolves valid motion tokens into designSystem.motion and symbolTable', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          'state-change': {
+            duration: '100ms',
+            delay: '0ms',
+            timingFunction: 'ease-out',
+          },
+          'surface-enter': {
+            duration: '250ms',
+            delay: '0ms',
+            timingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+          },
+        },
+      }));
+      expect(result.findings).toEqual([]);
+      expect(result.designSystem.motion?.size).toBe(2);
+      expect(result.designSystem.motion?.get('state-change')).toEqual({
+        type: 'motion',
+        duration: '100ms',
+        delay: '0ms',
+        timingFunction: 'ease-out',
+      });
+      expect(result.designSystem.symbolTable.has('motion.surface-enter')).toBe(true);
+    });
+
+    it('emits error for invalid duration or timingFunction and warning for unknown property', () => {
+      const result = handler.execute(makeParsed({
+        motion: {
+          'bad-motion': {
+            duration: '2s',
+            timingFunction: 'invalid-easing',
+            extraProp: 'foo',
+          },
+        },
+      }));
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.duration' && f.severity === 'error')).toBe(true);
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.timingFunction' && f.severity === 'error')).toBe(true);
+      expect(result.findings.some(f => f.path === 'motion.bad-motion.extraProp' && f.severity === 'warning')).toBe(true);
     });
   });
 });
