@@ -56,11 +56,18 @@ const CSS_NAMED_COLORS: Record<string, string> = {
 };
 
 /**
+ * Maximum nesting depth for recursive color-mix() resolution. Guards against
+ * stack exhaustion from pathologically nested, attacker-supplied color values.
+ */
+const MAX_COLOR_MIX_DEPTH = 32;
+
+/**
  * Parse a CSS color string into its sRGB representation + WCAG relative luminance.
  * Returns null if the color is invalid.
  */
-export function parseCssColor(colorStr: string): ParsedColorResult | null {
+export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | null {
   if (typeof colorStr !== 'string') return null;
+  if (depth > MAX_COLOR_MIX_DEPTH) return null;
   const clean = colorStr.trim().toLowerCase();
   if (!clean) return null;
 
@@ -202,8 +209,8 @@ export function parseCssColor(colorStr: string): ParsedColorResult | null {
       const parsed2 = parseColorWithWeight(subArgs[2]!);
       if (!parsed1 || !parsed2) return null;
 
-      const c1 = parseCssColor(parsed1.colorStr);
-      const c2 = parseCssColor(parsed2.colorStr);
+      const c1 = parseCssColor(parsed1.colorStr, depth + 1);
+      const c2 = parseCssColor(parsed2.colorStr, depth + 1);
       if (!c1 || !c2) return null;
 
       // Normalize weights
@@ -306,10 +313,10 @@ function parseHue(s: string): number {
   let val = 0;
   if (lower.endsWith('deg')) {
     val = parseFloat(lower.slice(0, -3));
-  } else if (lower.endsWith('rad')) {
-    val = (parseFloat(lower.slice(0, -3)) * 180) / Math.PI;
   } else if (lower.endsWith('grad')) {
     val = (parseFloat(lower.slice(0, -4)) * 360) / 400;
+  } else if (lower.endsWith('rad')) {
+    val = (parseFloat(lower.slice(0, -3)) * 180) / Math.PI;
   } else if (lower.endsWith('turn')) {
     val = parseFloat(lower.slice(0, -4)) * 360;
   } else {
@@ -437,19 +444,17 @@ function parseColorWithWeight(subArg: string): { colorStr: string; weight: numbe
     return { colorStr: parts[0]!, weight: null };
   }
 
-  // Identify which item is the percentage
+  // CSS color-mix weights are percentages only; a bare number is not a valid weight.
   const p0 = parts[0]!;
   const p1 = parts[1]!;
 
-  const isP0Weight = p0.endsWith('%') || (!isNaN(Number(p0)) && p0 !== '');
-  const isP1Weight = p1.endsWith('%') || (!isNaN(Number(p1)) && p1 !== '');
+  const isP0Weight = p0.endsWith('%');
+  const isP1Weight = p1.endsWith('%');
 
   if (isP0Weight && !isP1Weight) {
-    const w = p0.endsWith('%') ? parseFloat(p0.slice(0, -1)) : parseFloat(p0) * 100;
-    return { colorStr: p1, weight: w };
+    return { colorStr: p1, weight: parseFloat(p0.slice(0, -1)) };
   } else if (isP1Weight && !isP0Weight) {
-    const w = p1.endsWith('%') ? parseFloat(p1.slice(0, -1)) : parseFloat(p1) * 100;
-    return { colorStr: p0, weight: w };
+    return { colorStr: p0, weight: parseFloat(p1.slice(0, -1)) };
   }
 
   return null;

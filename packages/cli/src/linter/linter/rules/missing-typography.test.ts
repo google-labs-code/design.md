@@ -41,6 +41,14 @@ describe('missingTypography', () => {
     expect(missingTypography(state)).toEqual([]);
   });
 
+  it('returns empty when typography is listed as omitted', () => {
+    const state = buildState({
+      omitted: [{ section: 'typography' }],
+      colors: { primary: '#ff0000' },
+    });
+    expect(missingTypography(state)).toEqual([]);
+  });
+
   it('returns empty when no colors defined (nothing to compare against)', () => {
     const state = buildState({});
     expect(missingTypography(state)).toEqual([]);

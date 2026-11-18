@@ -1,6 +1,6 @@
 {
   "name": "@google/design.md",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "description": "Bridging design systems and code: a linter and exporter for the DESIGN.md format",
   "keywords": [
     "design.md"
@@ -19,6 +19,9 @@
   ],
   "private": false,
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "bin": {
     "design.md": "./dist/index.js",
     "designmd": "./dist/index.js"
@@ -38,7 +41,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "bun build src/index.ts src/linter/index.ts --outdir dist --target node && npx tsc --project tsconfig.build.json --emitDeclarationOnly --skipLibCheck && cp src/linter/spec-config.yaml dist/linter/ && cp src/linter/spec-config.yaml dist/ && cp ../../docs/spec.md dist/linter/",
+    "build": "bun build src/index.ts src/linter/index.ts --outdir dist --target node && npx tsc --project tsconfig.build.json --emitDeclarationOnly --skipLibCheck && cp src/linter/spec-config.yaml dist/linter/ && cp src/linter/spec-config.yaml dist/ && cp ../../docs/spec.md dist/linter/ && cp ../../docs/spec.md dist/",
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "lint": "tsc --noEmit --skipLibCheck",
@@ -54,7 +57,7 @@
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
     "yaml": "^2.7.1",
-    "zod": "^3.24.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bun": "latest",

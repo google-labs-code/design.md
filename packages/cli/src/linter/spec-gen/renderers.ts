@@ -19,7 +19,7 @@
  * Each function returns a ready-to-embed markdown string.
  */
 
-import type { SpecConfig, TypographyPropertyDef, SectionDef, ComponentSubTokenDef } from '../spec-config.js';
+import type { SpecConfig, TypographyPropertyDef, MotionPropertyDef, SectionDef, ComponentSubTokenDef, TypeDef } from '../spec-config.js';
 
 // ── YAML code block helpers ─────────────────────────────────────
 
@@ -61,6 +61,41 @@ export function frontmatterExample(config: SpecConfig): string {
   ]);
 }
 
+/** Interleaved YAML code block example (overview section). */
+export function interleavedExample(config: SpecConfig): string {
+  const [typoName, typoProps] = Object.entries(config.EXAMPLES.typography)[0]!;
+  return [
+    '````markdown',
+    '---',
+    `version: ${config.SPEC_VERSION}`,
+    'name: Daylight Prestige',
+    'description: Editorial design system with high-contrast neutrals.',
+    '---',
+    '',
+    '## Colors',
+    '',
+    'The palette is rooted in high-contrast neutrals and a single accent color.',
+    '',
+    ...yamlBlock([
+      'colors:',
+      ...yamlEntries(
+        Object.fromEntries(Object.entries(config.EXAMPLES.colors).slice(0, 3)) as Record<string, string>
+      ),
+    ]).split('\n'),
+    '',
+    '## Typography',
+    '',
+    'The typography strategy leverages Public Sans for headlines and narrative.',
+    '',
+    ...yamlBlock([
+      'typography:',
+      `  ${typoName}:`,
+      ...yamlObject(typoProps as Record<string, string | number>),
+    ]).split('\n'),
+    '````',
+  ].join('\n');
+}
+
 /** Colors YAML example. */
 export function colorsExample(config: SpecConfig): string {
   return yamlBlock(['colors:', ...yamlEntries(config.EXAMPLES.colors)]);
@@ -86,6 +121,16 @@ export function componentsExample(config: SpecConfig): string {
   return yamlBlock(lines);
 }
 
+/** Motion YAML example. */
+export function motionExample(config: SpecConfig): string {
+  const lines = ['motion:'];
+  for (const [name, props] of Object.entries(config.EXAMPLES.motion ?? {})) {
+    lines.push(`  ${name}:`);
+    lines.push(...yamlObject(props as Record<string, string | number>));
+  }
+  return yamlBlock(lines);
+}
+
 /** Typography property list (for the schema section). */
 export function typographyPropertyList(config: SpecConfig): string {
   return config.TYPOGRAPHY_PROPERTIES.map((p: TypographyPropertyDef) =>
@@ -93,6 +138,40 @@ export function typographyPropertyList(config: SpecConfig): string {
       ? `- \`${p.name}\` (${p.type}) - ${p.description}`
       : `- \`${p.name}\` (${p.type})`
   ).join('\n');
+}
+
+/** Motion property list (for the schema section). */
+export function motionPropertyList(config: SpecConfig): string {
+  return config.MOTION_PROPERTIES.map((p: MotionPropertyDef) =>
+    p.description
+      ? `- \`${p.name}\` (${p.type}) - ${p.description}`
+      : `- \`${p.name}\` (${p.type})`
+  ).join('\n');
+}
+
+/** Primitive type definitions (Color, Dimension, etc.) for the schema section. */
+export function typeDefinitions(config: SpecConfig, typeName?: string): string {
+  const types = config.PRIMITIVE_TYPES || config.SPEC_TYPES;
+  const entries = typeName
+    ? Object.entries(types).filter(([n]) => n === typeName)
+    : Object.entries(types);
+  return entries.map(([name, def]: [string, TypeDef]) => {
+    let block = `**${name}**: ${def.description}`;
+    if (def.formats?.length) {
+      block += '\n\n' + def.formats.map((f: string) => `- ${f}`).join('\n');
+    }
+    if (name === 'Dimension' || def.units?.length) {
+      const units = def.units?.length ? def.units : config.STANDARD_UNITS;
+      block += ` Valid units are: ${units.join(', ')}.`;
+    }
+    if (def.note) {
+      block += '\n\n' + def.note.trim();
+    }
+    if (def.recommendation) {
+      block += '\n\n' + def.recommendation.trim();
+    }
+    return block;
+  }).join('\n\n');
 }
 
 /** Numbered section order list with aliases. */

@@ -4,7 +4,7 @@ A format specification for describing a visual identity to coding agents. DESIGN
 
 ## The Format
 
-A DESIGN.md file combines machine-readable design tokens (YAML front matter) with human-readable design rationale (markdown prose). Tokens give agents exact values. Prose tells them *why* those values exist and how to apply them.
+A DESIGN.md file combines machine-readable design tokens (YAML front matter or interleaved YAML code blocks) with human-readable design rationale (markdown prose). Tokens give agents exact values. Prose tells them *why* those values exist and how to apply them.
 
 ```md
 ---
@@ -66,7 +66,7 @@ npx @google/design.md lint DESIGN.md
       "message": "textColor (#ffffff) on backgroundColor (#1A1C1E) has contrast ratio 15.42:1 — passes WCAG AA."
     }
   ],
-  "summary": { "errors": 0, "warnings": 1, "info": 1 }
+  "summary": { "errors": 0, "warnings": 1, "infos": 1 }
 }
 ```
 
@@ -80,7 +80,15 @@ npx @google/design.md diff DESIGN.md DESIGN-v2.md
 {
   "tokens": {
     "colors": { "added": ["accent"], "removed": [], "modified": ["tertiary"] },
-    "typography": { "added": [], "removed": [], "modified": [] }
+    "typography": { "added": [], "removed": [], "modified": [] },
+    "rounded": { "added": [], "removed": [], "modified": [] },
+    "spacing": { "added": [], "removed": [], "modified": [] },
+    "components": { "added": [], "removed": [], "modified": [] }
+  },
+  "findings": {
+    "before": { "errors": 0, "warnings": 1, "infos": 1 },
+    "after": { "errors": 0, "warnings": 1, "infos": 1 },
+    "delta": { "errors": 0, "warnings": 0 }
   },
   "regression": false
 }
@@ -94,7 +102,7 @@ The full DESIGN.md spec lives at [`docs/spec.md`](docs/spec.md). What follows is
 
 A DESIGN.md file has two layers:
 
-1. **YAML front matter** — Machine-readable design tokens, delimited by `---` fences at the top of the file.
+1. **YAML Design tokens** — Machine-readable design tokens, delimited by `---` fences at the top of the file or interleaved as fenced ` ```yaml ` code blocks within each `##` section.
 2. **Markdown body** — Human-readable design rationale organized into `##` sections.
 
 The tokens are the normative values. The prose provides context for how to apply them.
@@ -105,6 +113,7 @@ The tokens are the normative values. The prose provides context for how to apply
 version: <string>          # optional, current: "alpha"
 name: <string>
 description: <string>      # optional
+omitted: <string[] | OmittedSection[]> # optional, list of sections to intentionally omit
 colors:
   <token-name>: <Color>
 typography:
@@ -113,6 +122,8 @@ rounded:
   <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+motion:
+  <token-name>: <Motion>
 components:
   <component-name>:
     <token-name>: <string | token reference>
@@ -124,8 +135,10 @@ components:
 |:-----|:-------|:--------|
 | Color | Any CSS color (hex, `rgb()`, `oklch()`, named, etc.) | `"#1A1C1E"`, `"oklch(62% 0.18 250)"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
+| Duration | number + `ms` | `100ms`, `250ms` |
 | Token Reference | `{path.to.token}` | `{colors.primary}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
+| Motion | object with `duration`, `delay`, `timingFunction` | `duration: 100ms`, `timingFunction: ease-out` |
 
 ### Section Order
 
@@ -140,8 +153,10 @@ Sections use `##` headings. They can be omitted, but those present must appear i
 | 5 | Elevation & Depth | Elevation |
 | 6 | Shapes | |
 | 7 | Iconography | |
-| 8 | Components | |
-| 9 | Do's and Don'ts | |
+| 8 | Motion & Micro-interaction | Motion & Micro-interactions, Motion |
+| 9 | Voice & Content Strategy | |
+| 10 | Components | |
+| 11 | Do's and Don'ts | |
 
 ### Component Tokens
 
@@ -169,8 +184,10 @@ Variants (hover, active, pressed) are expressed as separate component entries wi
 | Unknown section heading | Preserve; do not error |
 | Unknown color token name | Accept if value is valid |
 | Unknown typography token name | Accept as valid typography |
+| Unknown motion token name | Accept as valid motion |
 | Unknown component property | Accept with warning |
 | Duplicate section heading | Error; reject the file |
+| Duplicate top-level YAML key | Error; reject the file |
 
 ## CLI Reference
 
@@ -289,6 +306,8 @@ npx @google/design.md export --format dtcg DESIGN.md > tokens.json
 | `tailwind` | JSON | Alias for `json-tailwind` |
 | `dtcg` | JSON | W3C Design Tokens Format Module |
 
+Exit code `0` on a successful export (regardless of any lint findings in the source — run `lint` to gate on those), `1` on an invalid `--format` or an emitter error, and `2` if the input file cannot be read.
+
 ### `spec`
 
 Output the DESIGN.md format specification (useful for injecting spec context into agent prompts).
@@ -307,7 +326,7 @@ npx @google/design.md spec --rules-only --format json
 
 ## Linting Rules
 
-The linter runs nine rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
+The linter runs eleven rules against a parsed DESIGN.md. Each rule produces findings at a fixed severity level.
 
 | Rule | Severity | What it checks |
 |:-----|:---------|:---------------|
@@ -320,6 +339,8 @@ The linter runs nine rules against a parsed DESIGN.md. Each rule produces findin
 | `missing-typography` | warning | Colors are defined but no typography tokens exist — agents will use default fonts |
 | `section-order` | warning | Sections appear out of the canonical order defined by the spec |
 | `unknown-key` | warning | A top-level YAML key looks like a typo of a known schema key (e.g. `colours:` → `colors:`); custom extension keys stay silent |
+| `token-like-ignored` | warning | An unknown top-level key has token-like values (e.g. hex colors, font families, dimensions) suggesting it was dropped or misspelled |
+| `omitted-rules` | info | Validates the `omitted` configuration mapping for unknown or redundant sections |
 
 ### Programmatic API
 

@@ -100,7 +100,13 @@ function dimToString(dim: ResolvedDimension): string {
 /**
  * Wrap a string value in double quotes, escaping embedded `\` and `"`.
  * Produces a CSS-safe string literal suitable for font-family values.
+ * Line terminators (newline, carriage return, form feed) are illegal raw inside
+ * a CSS string and could break the value out of the quoted token, so they are
+ * emitted as CSS hex escapes (e.g. `\a `).
  */
 function cssStringLiteral(value: string): string {
-  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  return `"${value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/[\n\r\f]/g, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"`;
 }

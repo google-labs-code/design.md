@@ -5,7 +5,7 @@
 
 DESIGN.md is a self-contained, plain-text representation of a design system. It defines the visual identity of a brand and product, thereby ensuring that these stylistic choices can be followed across design sessions and between different AI agents and tools.  As a human-readable, open-format document, it serves as a living source of truth that both humans and AI can understand and refine.
 
-A DESIGN.md file contains two parts: An optional YAML frontmatter, and a markdown body. The YAML front matter contains machine-readable design tokens. The markdown body sections provide human-readable design rationale and guidance. Prose may use descriptive color names (e.g., "Midnight Forest Green") that correspond to systematic token names (e.g., `primary`). The tokens are the normative values; the prose provides context for how to apply them.
+A DESIGN.md file contains two parts: human-readable markdown prose and machine-readable YAML design tokens. The markdown body sections provide human-readable design rationale and guidance. Prose may use descriptive color names (e.g., "Midnight Forest Green") that correspond to systematic token names (e.g., `primary`). The tokens are the normative values; the prose provides context for how to apply them.
 
 # Design Tokens
 
@@ -14,9 +14,14 @@ DESIGN.md may embed design tokens in a structured format. The system that we use
 
 These tokens are easily converted from or to `tokens.json`, Figma variables, and Tailwind theme configs.
 
-Design tokens are embedded as YAML front matter at the beginning of the file. The front matter block must begin with a line containing exactly `---` and end with a line containing exactly `---`. The YAML content between these delimiters is parsed according to the schema defined below.
+Design tokens may be embedded into `DESIGN.md` in two ways:
 
-Example:
+1. **YAML Front Matter:** Placed at the beginning of the file. The front matter block must begin with a line containing exactly `---` and end with a line containing exactly `---`.
+2. **Interleaved YAML Code Blocks:** Distributed throughout the document as fenced ` ```yaml ` code blocks placed within the relevant markdown section.
+
+Both approaches may be used together in the same document, for example, placing document metadata like `name` and `description` in the front matter, while placing section tokens like `colors` and `typography` in fenced code blocks inside their respective sections. When multiple YAML blocks are present, all blocks are parsed and merged into a single design token tree. Each top-level schema key may be defined at most once across the entire document; defining the same top-level key in multiple blocks is an error.
+
+Front Matter Example:
 
 ```yaml
 ---
@@ -36,14 +41,50 @@ typography:
 ---
 ```
 
+Interleaved YAML Code Block Example:
+
+````markdown
+---
+version: alpha
+name: Daylight Prestige
+description: Editorial design system with high-contrast neutrals.
+---
+
+## Colors
+
+The palette is rooted in high-contrast neutrals and a single accent color.
+
+```yaml
+colors:
+  primary: "#1A1C1E"
+  secondary: "#6C7278"
+  tertiary: "#B8422E"
+```
+
+## Typography
+
+The typography strategy leverages Public Sans for headlines and narrative.
+
+```yaml
+typography:
+  h1:
+    fontFamily: Public Sans
+    fontSize: 48px
+    fontWeight: 600
+    lineHeight: 1.1
+    letterSpacing: -0.02em
+```
+````
+
 ## Schema
 
-Below is the schema for the design tokens defined in the front matter:
+Below is the schema for the design tokens:
 
 ```yaml
 version: <string>          # optional, current version: "alpha"
 name: <string>
 description: <string>      # optional
+omitted: <string[]|OmittedSection[]> # optional
 colors:
   <token-name>: <Color>
 typography:
@@ -52,6 +93,8 @@ rounded:
   <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+motion:
+  <token-name>: <Motion>
 components:
   <component-name>:
     <token-name>: <string|token reference>
@@ -61,11 +104,11 @@ The `<scale-level>` placeholder represents a named level in a sizing or spacing 
 
 **Color**: A color value is any valid CSS color string. Supported formats include:
 
-* Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
-* Named colors: `red`, `cornflowerblue`, `transparent`
-* Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`
-* Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`
-* Mixing: `color-mix(in srgb, ...)`
+- Hex: `#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`
+- Named colors: `red`, `cornflowerblue`, `transparent`
+- Functional: `rgb()`, `rgba()`, `hsl()`, `hsla()`, `hwb()`
+- Wide-gamut: `oklch()`, `oklab()`, `lch()`, `lab()`
+- Mixing: `color-mix(in srgb, ...)`
 
 All color values are internally converted to sRGB for WCAG contrast checking. The original format is preserved for display and export.
 
@@ -83,6 +126,25 @@ Hex notation (`#RRGGBB`) remains the recommended default for simplicity and broa
 
 **Dimension**: A dimension value is a string with a unit suffix. Valid units are: px, em, rem.
 
+**Duration**: A duration value is a string with a `ms` unit suffix (e.g., `100ms`, `250ms`).
+
+**Motion**: A motion token is an object that maps a purpose-driven motion name to its timing properties:
+
+- `duration` (Duration) - The length of time a transition takes to complete (e.g., `100ms`, `250ms`).
+- `delay` (Duration) - The time to wait before a transition starts (e.g., `0ms`, `50ms`).
+- `timingFunction` (string) - A CSS easing function such as `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `steps(...)`, or `cubic-bezier(...)`.
+
+**Omitted**: An array of sections that are intentionally omitted from the design system. This suppresses linter warnings for missing sections (e.g. colors, typography, spacing, rounded, motion, components). Each entry can be:
+
+* A string representing the section name (e.g., `spacing`)
+* An object of the form `{ section: string, reason?: string }` mapping a section to a documented reason for its omission:
+  ```yaml
+  omitted:
+    - spacing
+    - section: rounded
+      reason: "No rounded corners defined in brand book"
+  ```
+
 **Token References**: A token reference must be wrapped in curly braces, and contain an object path to another value in the YAML tree. For most token groups, the reference must point to a primitive value (e.g., `colors.primary-60`), not a group (e.g., `colors`). Within the `components` section, references to composite values (e.g., `{typography.label-md}`) are permitted.
 
 # Sections
@@ -98,8 +160,10 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 5. **Elevation & Depth** (also: "Elevation")
 6. **Shapes**
 7. **Iconography**
-8. **Components**
-9. **Do's and Don'ts**
+8. **Motion & Micro-interaction** (also: "Motion & Micro-interactions", "Motion")
+9. **Voice & Content Strategy**
+10. **Components**
+11. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -304,6 +368,71 @@ in controls, and use semantic color only for status. Do not mix icon sets unless
 a missing symbol is redrawn to match the same stroke, corner, and optical size.
 ```
 
+## Motion & Micro-interaction
+
+Also known as "Motion & Micro-interactions" or "Motion".
+
+This section describes how the interface moves. It pairs prose choreography rules with structured `motion` tokens so transitions feel consistent and respect user motion preferences:
+
+* **What moves**: State changes on interactive elements, surfaces entering and leaving, and content loading, as well as what deliberately does not move.
+* **Duration rhythm**: Small, local changes are faster than large structural transitions.
+* **Easing intent**: Elements entering the screen decelerate, elements leaving accelerate, and elements staying on screen use a symmetric curve.
+* **Restraint**: Honor `prefers-reduced-motion` and avoid animating properties that force layout recalculation (prefer `transform` and `opacity`).
+
+Example:
+
+```markdown
+## Motion & Micro-interaction
+
+Motion is quick and understated. Interactive feedback lands within a tenth of a second so the interface feels immediate, while surfaces that enter the screen take longer and decelerate. Nothing loops, and nothing moves purely for decoration. Honor `prefers-reduced-motion`.
+```
+
+### Design Tokens
+
+The `motion` section defines purpose-named motion tokens (such as `state-change`, `surface-enter`, and `surface-exit`) rather than raw speed labels. Each entry maps a semantic motion name to its timing properties (`duration`, `delay`, and `timingFunction`).
+
+It is a map\<string, Motion>.
+
+```yaml
+motion:
+  state-change:
+    duration: 100ms
+    delay: 0ms
+    timingFunction: ease-out
+  surface-enter:
+    duration: 250ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.2, 0, 0, 1)
+  surface-exit:
+    duration: 150ms
+    delay: 0ms
+    timingFunction: cubic-bezier(0.3, 0, 1, 1)
+```
+
+## Voice & Content Strategy
+
+This section defines how the product writes. Interface copy is part of the design system: inconsistent tense, capitalization, or terminology degrades visual cohesion just as clearly as inconsistent spacing does. This section is prose-only and covers:
+
+* **Tone of voice**: Two or three adjectives describing the brand voice, with a short explanation of what they sound like in practice and what they rule out.
+* **Capitalization**: Sentence case or title case, applied consistently across headings, buttons, form labels, and menu items.
+* **Terminology**: The product's canonical names for its own concepts and the synonyms to avoid.
+* **Button and action labels**: The grammar of interactive labels (e.g., verb phrases naming the outcome rather than generic labels like "OK" or "Submit").
+* **Empty, loading, and error states**: What an empty list says, what an error message says, and whether an error suggests a specific next action.
+* **Numbers, dates, and units**: Conventions for date/time formats, relative time, number rounding, and unit spacing.
+
+Example:
+
+```markdown
+## Voice & Content Strategy
+
+- **Tone of voice:** Precise, calm, and utilitarian. Avoid exclamation marks, marketing hyperbole, and conversational filler.
+- **Capitalization:** Sentence case applied consistently across all headings, buttons, form labels, and menu items.
+- **Terminology:** Use "Workspace" (never "Project" or "Repo") and "Member" (never "User" or "Collaborator"). Pick one word per concept and keep it.
+- **Button and action labels:** Use a verb phrase naming the outcome (e.g., "Save changes", "Create workspace"), never vague labels like "OK" or "Submit".
+- **Empty, loading, and error states:** Empty states explain what belongs in the list and provide a direct creation CTA. Error messages state what failed and suggest a specific next action.
+- **Numbers, dates, and units:** Format dates as `YYYY-MM-DD` in tables, use relative time ("3m ago") in activity feeds, and separate numeric values from units with a space (`16 px`).
+```
+
 ## Components
 
 This section provides style guidance for component atoms within the design system. The following are common component types. Design systems are encouraged to define additional components relevant to their domain.
@@ -371,15 +500,19 @@ The following names are commonly used across design systems. They are not requir
 
 **Rounded:** `none`, `sm`, `md`, `lg`, `xl`, `full`
 
+**Motion:** `state-change`, `surface-enter`, `surface-exit`
+
 # Consumer Behavior for Unknown Content
 
 When a DESIGN.md consumer encounters content not defined by this spec:
 
 | Scenario | Behavior | Example |
 |---|---|---|
-| Unknown section heading | Preserve; do not error | `## Motion` |
+| Unknown section heading | Preserve; do not error | `## Accessibility` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
+| Unknown motion token name | Accept as valid motion | `page-transition` |
 | Unknown spacing value | Accept; store as string if not a valid dimension | `grid-columns: '5'` |
 | Unknown component property | Accept with warning | `borderColor` |
 | Duplicate section heading | Error; reject the file | Two `## Colors` headings |
+| Duplicate top-level YAML key | Error; reject the file | `colors` defined in both front matter and a code block |

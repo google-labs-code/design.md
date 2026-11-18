@@ -111,4 +111,12 @@ describe('unknownKey', () => {
     const findings = unknownKey(state);
     expect(findings.map(f => f.path).sort()).toEqual(['colours', 'typografy']);
   });
+
+  it('stays silent (and cheap) for very long keys via the length short-circuit', () => {
+    const state = buildState({
+      sourceMap: new Map([['a'.repeat(50000), loc]]),
+    });
+    const findings = unknownKey(state);
+    expect(findings.length).toBe(0);
+  });
 });

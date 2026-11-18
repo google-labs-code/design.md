@@ -37,15 +37,22 @@ export interface SourceLocation {
   block: 'frontmatter' | number;
 }
 
+export interface OmittedSection {
+  section: string;
+  reason?: string;
+}
+
 /** Raw, unresolved parsed output — mirrors the YAML schema */
 export interface ParsedDesignSystem {
   version?: string | undefined;
   name?: string | undefined;
   description?: string | undefined;
+  omitted?: OmittedSection[] | undefined;
   colors?: Record<string, any> | undefined;
   typography?: Record<string, Record<string, any>> | undefined;
   rounded?: Record<string, any> | undefined;
   spacing?: Record<string, any> | undefined;
+  motion?: Record<string, Record<string, any>> | undefined;
   components?: Record<string, Record<string, any>> | undefined;
   sourceMap: Map<string, SourceLocation>;
   /** Markdown heading names found in the document (e.g., 'Colors', 'Typography') */
@@ -61,10 +68,12 @@ export const SCHEMA_KEYS = [
   'version',
   'name',
   'description',
+  'omitted',
   'colors',
   'typography',
   'rounded',
   'spacing',
+  'motion',
   'components',
 ] as const;
 

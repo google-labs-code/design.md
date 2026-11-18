@@ -53,6 +53,7 @@ jobs:
         npm install $GITHUB_WORKSPACE/packages/cli/google-design.md-*.tgz
         echo -e '---\ncolors:\n  primary: "#0000ff"\n---' > DESIGN.md
         npx design.md lint DESIGN.md
+        npx design.md spec > /dev/null
         node -e "import('@google/design.md/linter').then(m => console.log('OK:', Object.keys(m).length, 'exports'))"
 
   npm-registry-smoke-windows:

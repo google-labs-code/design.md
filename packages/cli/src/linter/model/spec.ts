@@ -13,10 +13,11 @@
 // limitations under the License.
 
 import { z } from 'zod';
-import type { ParsedDesignSystem } from '../parser/spec.js';
+import type { ParsedDesignSystem, OmittedSection } from '../parser/spec.js';
 import {
   STANDARD_UNITS as _STANDARD_UNITS,
   VALID_TYPOGRAPHY_PROPS as _VALID_TYPOGRAPHY_PROPS,
+  VALID_MOTION_PROPS as _VALID_MOTION_PROPS,
   VALID_COMPONENT_SUB_TOKENS as _VALID_COMPONENT_SUB_TOKENS,
 } from '../spec-config.js';
 import { parseCssColor } from './color-parser.js';
@@ -28,6 +29,7 @@ export interface Finding {
   severity: Severity;
   path?: string;
   message: string;
+  rule?: string;
 }
 
 // ── RESOLVED VALUE TYPES ───────────────────────────────────────────
@@ -61,20 +63,30 @@ export interface ResolvedTypography {
   fontVariation?: string | undefined;
 }
 
-export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | string | number | boolean;
+export interface ResolvedMotion {
+  type: 'motion';
+  duration?: string | undefined;
+  delay?: string | undefined;
+  timingFunction?: string | undefined;
+}
+
+export type ResolvedValue = ResolvedColor | ResolvedDimension | ResolvedTypography | ResolvedMotion | string | number | boolean;
 
 // ── Re-exported from spec-config (single source of truth) ─────────
 export const VALID_TYPOGRAPHY_PROPS = _VALID_TYPOGRAPHY_PROPS;
+export const VALID_MOTION_PROPS = _VALID_MOTION_PROPS;
 export const VALID_COMPONENT_SUB_TOKENS = _VALID_COMPONENT_SUB_TOKENS;
 
 // ── STATE ──────────────────────────────────────────────────────────
 export interface DesignSystemState {
   name?: string | undefined;
   description?: string | undefined;
+  omitted?: OmittedSection[] | undefined;
   colors: Map<string, ResolvedColor>;
   typography: Map<string, ResolvedTypography>;
   rounded: Map<string, ResolvedDimension>;
   spacing: Map<string, ResolvedDimension>;
+  motion?: Map<string, ResolvedMotion> | undefined;
   components: Map<string, ComponentDef>;
   /** Flat lookup: "colors.primary" → ResolvedColor */
   symbolTable: Map<string, ResolvedValue>;
@@ -142,12 +154,20 @@ const CSS_UNITS = new Set([
 ]);
 
 /**
+ * Upper bound on a dimension string's length. Real CSS dimensions are a handful
+ * of characters; capping the length keeps validation linear and prevents
+ * pathological regex backtracking on oversized, attacker-supplied values.
+ */
+const MAX_DIMENSION_LENGTH = 64;
+
+/**
  * Parse a dimension string into its numeric value and unit suffix.
  * Accepts an optional leading sign and optional decimal (`.5rem` is valid).
  * Returns null for non-dimension strings (bare numbers, keywords like `auto`).
  */
 export function parseDimensionParts(raw: string): { value: number; unit: string } | null {
   if (typeof raw !== 'string') return null;
+  if (raw.length > MAX_DIMENSION_LENGTH) return null;
   const match = raw.match(/^(-?\d*\.?\d+)([a-zA-Z%]+)$/);
   if (!match) return null;
   const value = parseFloat(match[1]!);

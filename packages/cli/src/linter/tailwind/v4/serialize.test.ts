@@ -93,4 +93,10 @@ describe('serializeToCss', () => {
     const out = serializeToCss(data);
     expect(out).toContain('--font-body: "Google Sans Display";');
   });
+
+  it('ends with exactly one trailing newline (for stdout.write export path)', () => {
+    const out = serializeToCss({ colors: { primary: '#000000', 'on-primary': '#ffffff' } });
+    expect(out.endsWith('\n')).toBe(true);
+    expect(out.endsWith('\n\n')).toBe(false);
+  });
 });

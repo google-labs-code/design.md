@@ -21,6 +21,7 @@ export interface RuleFinding {
   message: string;
   /** Optional override of the descriptor's default severity. */
   severity?: Severity;
+  rule?: string;
 }
 
 /** A pure lint rule: takes immutable state, returns findings. No side effects. */

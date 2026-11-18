@@ -79,6 +79,15 @@ describe('parseDimensionParts', () => {
     expect(parseDimensionParts('auto')).toBeNull();
     expect(parseDimensionParts('inherit')).toBeNull();
   });
+
+  it('returns null for oversized values without pathological backtracking', () => {
+    // Length-capped: an absurdly long value is rejected immediately rather than
+    // triggering quadratic regex backtracking.
+    expect(parseDimensionParts('1'.repeat(100000))).toBeNull();
+    expect(parseDimensionParts('1'.repeat(100000) + 'px')).toBeNull();
+    // Legitimate dimensions well under the cap still parse.
+    expect(parseDimensionParts('999999.999999px')).toEqual({ value: 999999.999999, unit: 'px' });
+  });
 });
 
 describe('isTokenReference', () => {
@@ -93,5 +102,39 @@ describe('isTokenReference', () => {
     expect(isTokenReference('colors.primary')).toBe(false);
     expect(isTokenReference('{}')).toBe(false);
     expect(isTokenReference('{ colors.primary }')).toBe(false);
+  });
+});
+
+describe('omitted model metadata', () => {
+  const { ModelHandler } = require('./handler.js');
+  const handler = new ModelHandler();
+
+  function makeParsed(overrides: any = {}): any {
+    return {
+      sourceMap: new Map(),
+      ...overrides,
+    };
+  }
+
+  it('passes omitted through to the design system state', () => {
+    const result = handler.execute(makeParsed({
+      omitted: [{ section: 'spacing' }, { section: 'rounded' }],
+    }));
+
+    expect(result.designSystem.omitted).toEqual([
+      { section: 'spacing' },
+      { section: 'rounded' },
+    ]);
+  });
+
+  it('treats omitted as a known top-level key', () => {
+    const result = handler.execute(makeParsed({
+      omitted: [{ section: 'typography' }],
+      sourceMap: new Map([
+        ['omitted', { line: 1, column: 0, block: 'frontmatter' }],
+      ]),
+    }));
+
+    expect(result.designSystem.unknownKeys).toEqual([]);
   });
 });

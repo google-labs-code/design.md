@@ -20,12 +20,15 @@ import type { RuleDescriptor, RuleFinding } from './types.js';
  */
 export function missingSections(state: DesignSystemState): RuleFinding[] {
   const findings: RuleFinding[] = [];
+  const omitted = new Set((state.omitted ?? []).map(section => section.section.toLowerCase()));
   const sections = [
     { map: state.spacing, name: 'spacing', fallback: 'Layout spacing will fall back to agent defaults.' },
     { map: state.rounded, name: 'rounded', fallback: 'Corner rounding will fall back to agent defaults.' },
   ];
 
   for (const { map, name, fallback } of sections) {
+    if (omitted.has(name)) continue;
+
     if (map.size === 0 && state.colors.size > 0) {
       findings.push({
         path: name,
