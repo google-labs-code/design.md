@@ -116,12 +116,20 @@ description: <string>      # optional
 omitted: <string[] | OmittedSection[]> # optional, list of sections to intentionally omit
 colors:
   <token-name>: <Color>
+  <group-name>:            # optional nested group
+    <token-name>: <Color>
 typography:
   <token-name>: <Typography>
+  <group-name>:            # optional nested group
+    <token-name>: <Typography>
 rounded:
   <scale-level>: <Dimension>
+  <group-name>:            # optional nested group
+    <scale-level>: <Dimension>
 spacing:
   <scale-level>: <Dimension | number>
+  <group-name>:            # optional nested group
+    <scale-level>: <Dimension | number>
 motion:
   <token-name>: <Motion>
 components:
@@ -136,7 +144,7 @@ components:
 | Color | Any CSS color (hex, `rgb()`, `oklch()`, named, etc.) | `"#1A1C1E"`, `"oklch(62% 0.18 250)"` |
 | Dimension | number + unit (`px`, `em`, `rem`) | `48px`, `-0.02em` |
 | Duration | number + `ms` | `100ms`, `250ms` |
-| Token Reference | `{path.to.token}` | `{colors.primary}` |
+| Token Reference | `{path.to.token}` | `{colors.primary}`, `{colors.light.surface}`, `{typography.sm.headline-lg}` |
 | Typography | object with `fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, `fontFeature`, `fontVariation` | See example above |
 | Motion | object with `duration`, `delay`, `timingFunction` | `duration: 100ms`, `timingFunction: ease-out` |
 
@@ -193,6 +201,8 @@ The components section may use external references (`@<path>[#<fragment>]` in in
 | Unknown color token name | Accept if value is valid |
 | Unknown typography token name | Accept as valid typography |
 | Unknown motion token name | Accept as valid motion |
+| Grouped token sub-map | Flatten to dot-separated token path |
+| Flat and grouped token name collision | Error; reject the conflicting token |
 | Unknown component property | Accept with warning |
 | External `@`-reference in prose | Preserve; resolve referenced file on demand |
 | External `@`-reference fragment for unsupported file type | Ignore fragment and use whole file; do not treat as broken |

@@ -14,6 +14,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { TailwindV4EmitterHandler } from './handler.js';
+import { serializeToCss } from './serialize.js';
 import { ModelHandler } from '../../model/handler.js';
 import type { ParsedDesignSystem } from '../../parser/spec.js';
 
@@ -142,20 +143,76 @@ describe('TailwindV4EmitterHandler', () => {
     });
   });
 
+  describe('grouped tokens', () => {
+    it('collapses dot-separated group paths to hyphenated @theme custom properties', () => {
+      const state = buildState({
+        colors: {
+          primary: '#647D66',
+          light: { surface: '#FAFDF7', 'on-surface': '#1A1C19' },
+        },
+        typography: {
+          sm: {
+            'headline-lg': {
+              fontFamily: 'Public Sans',
+              fontSize: '32px',
+              fontWeight: 600,
+              lineHeight: '40px',
+            },
+          },
+        },
+        rounded: { control: { pill: '9999px' } },
+        spacing: { sm: { gutter: '16px' } },
+      });
+
+      const result = emitter.execute(state);
+      if (!result.success) throw new Error(`Expected success, got ${result.error.message}`);
+      const theme = result.data.theme;
+
+      expect(theme.colors?.['light-surface']).toBe('#fafdf7');
+      expect(theme.colors?.['light-on-surface']).toBe('#1a1c19');
+      expect(theme.fontFamily?.['sm-headline-lg']).toBe('"Public Sans"');
+      expect(theme.fontSize?.['sm-headline-lg']).toBe('32px');
+      expect(theme.lineHeight?.['sm-headline-lg']).toBe('40px');
+      expect(theme.fontWeight?.['sm-headline-lg']).toBe('600');
+      expect(theme.borderRadius?.['control-pill']).toBe('9999px');
+      expect(theme.spacing?.['sm-gutter']).toBe('16px');
+
+      const css = serializeToCss(theme);
+      expect(css).toContain('  --color-light-surface: #fafdf7;');
+      expect(css).toContain('  --font-sm-headline-lg: "Public Sans";');
+      expect(css).toContain('  --text-sm-headline-lg: 32px;');
+      expect(css).toContain('  --radius-control-pill: 9999px;');
+      expect(css).toContain('  --spacing-sm-gutter: 16px;');
+    });
+  });
+
   describe('invalid token names', () => {
-    it('fails when a color token name contains a dot', () => {
+    it('fails when a dotted token name contains an empty segment', () => {
       const state = buildState({
         colors: { primary: '#000000' },
       });
-      // Inject an invalid name directly into the Map to simulate an invalid token
-      state.colors.set('primary.surface', {
+      state.colors.set('primary..surface', {
         type: 'color', hex: '#ffffff', r: 255, g: 255, b: 255, luminance: 1,
       });
       const result = emitter.execute(state);
       expect(result.success).toBe(false);
       if (result.success) return;
       expect(result.error.code).toBe('INVALID_TOKEN_NAME');
-      expect(result.error.message).toContain('primary.surface');
+      expect(result.error.message).toContain('primary..surface');
+    });
+
+    it('fails when two programmatic keys flatten to the same CSS identifier', () => {
+      const state = buildState({});
+      state.colors.set('primary-light', {
+        type: 'color', hex: '#111111', r: 17, g: 17, b: 17, luminance: 0,
+      });
+      state.colors.set('primary.light', {
+        type: 'color', hex: '#222222', r: 34, g: 34, b: 34, luminance: 0,
+      });
+      const result = emitter.execute(state);
+      expect(result.success).toBe(false);
+      if (result.success) return;
+      expect(result.error.code).toBe('TOKEN_NAME_COLLISION');
     });
 
     it('allows Tailwind-style dimension token names that start with a digit', () => {

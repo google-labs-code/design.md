@@ -17,8 +17,18 @@ import type { Config } from 'tailwindcss';
 import type { DesignSystemState } from '../model/spec.js';
 
 // ── TAILWIND CONFIG SCHEMA ──────────────────────────────────────────
+export interface TailwindColorGroup {
+  [key: string]: string | TailwindColorGroup;
+}
+
+export type TailwindColorValue = string | TailwindColorGroup;
+
+export const TailwindColorValueSchema: z.ZodType<TailwindColorValue> = z.lazy(() =>
+  z.union([z.string(), z.record(z.string(), TailwindColorValueSchema)]),
+);
+
 export const TailwindThemeExtendSchema = z.object({
-  colors: z.record(z.string(), z.string()).optional(),
+  colors: z.record(z.string(), TailwindColorValueSchema).optional(),
   fontFamily: z.record(z.string(), z.array(z.string())).optional(),
   fontSize: z.record(z.string(), z.tuple([z.string(), z.record(z.string(), z.string())])).optional(),
   borderRadius: z.record(z.string(), z.string()).optional(),

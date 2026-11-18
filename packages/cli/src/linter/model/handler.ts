@@ -67,7 +67,7 @@ export class ModelHandler implements ModelSpec {
           if (typeof raw === 'string' && isTokenReference(raw)) {
             // Store raw reference for later resolution
             symbolTable.set(`colors.${name}`, raw);
-          } else if (isValidColor(raw)) {
+          } else if (typeof raw === 'string' && isValidColor(raw)) {
             const resolved = parseColor(raw);
             colors.set(name, resolved);
             symbolTable.set(`colors.${name}`, resolved);
@@ -75,21 +75,26 @@ export class ModelHandler implements ModelSpec {
             findings.push({
               severity: 'error',
               path: `colors.${name}`,
-              message: `'${raw}' is not a valid color. Expected a CSS color value (e.g., #ffffff, rgb(0 0 0), oklch(0.5 0.2 240)).`,
+              message: `'${String(raw)}' is not a valid color. Expected a CSS color value (e.g., #ffffff, rgb(0 0 0), oklch(0.5 0.2 240)).`,
             });
             // Store as-is for fallback
-            symbolTable.set(`colors.${name}`, raw);
+            if (typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean') {
+              symbolTable.set(`colors.${name}`, raw);
+            }
           }
-        }, '', 0, findings, 'colors');
+        }, findings, 'colors');
       }
 
       // Typography
       if (input.typography) {
-        for (const [name, props] of Object.entries(input.typography)) {
+        const isCollision = buildCollisionGuard('typography', findings);
+        forEachTypographyLeaf(input.typography, (name, props) => {
+          if (isCollision(name)) return;
+
           const resolved = parseTypography(props, `typography.${name}`, findings);
           typography.set(name, resolved);
           symbolTable.set(`typography.${name}`, resolved);
-        }
+        }, findings);
       }
 
       // Rounded
@@ -121,7 +126,7 @@ export class ModelHandler implements ModelSpec {
               symbolTable.set(`rounded.${name}`, raw);
             }
           }
-        }, '', 0, findings, 'rounded');
+        }, findings, 'rounded');
       }
 
       // Spacing
@@ -130,14 +135,14 @@ export class ModelHandler implements ModelSpec {
         forEachLeaf(input.spacing, (name, raw) => {
           if (isCollision(name)) return;
 
-          if (isParseableDimension(raw)) {
+          if (typeof raw === 'string' && isParseableDimension(raw)) {
             const resolved = parseDimension(raw);
             spacing.set(name, resolved);
             symbolTable.set(`spacing.${name}`, resolved);
-          } else {
+          } else if (typeof raw === 'string' || typeof raw === 'number' || typeof raw === 'boolean') {
             symbolTable.set(`spacing.${name}`, raw);
           }
-        }, '', 0, findings, 'spacing');
+        }, findings, 'spacing');
       }
 
       // Motion
@@ -356,7 +361,7 @@ function parseDimension(raw: any): ResolvedDimension {
 /**
  * Parse a typography properties object into a ResolvedTypography.
  */
-function parseTypography(props: Record<string, string | number>, path: string, findings: Finding[]): ResolvedTypography {
+function parseTypography(props: Record<string, unknown>, path: string, findings: Finding[]): ResolvedTypography {
   const result: ResolvedTypography = { type: 'typography' };
 
   if (typeof props['fontFamily'] === 'string') {
@@ -543,37 +548,123 @@ export function contrastRatio(a: ResolvedColor, b: ResolvedColor): number {
   return (L1 + 0.05) / (L2 + 0.05);
 }
 
-/**
- * Recursively iterate over an object and call a function for each leaf node.
- * Leaf node paths are dot-separated (e.g. "background.light").
- */
-function forEachLeaf(
-  obj: Record<string, any>,
-  fn: (path: string, value: any) => void,
+type ClassifiedNode<T> =
+  | { readonly kind: 'group'; readonly children: Record<string, unknown> }
+  | { readonly kind: 'leaf'; readonly value: T }
+  | { readonly kind: 'skip' };
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function describeValueType(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+function traverseTokenTree<T>(
+  obj: Record<string, unknown>,
+  classify: (value: unknown, fullPath: string) => ClassifiedNode<T>,
+  onLeaf: (path: string, value: T) => void,
+  findings: Finding[],
+  rootPath: string,
   prefix = '',
   depth = 0,
-  findings?: Finding[],
-  rootPath?: string
-) {
+): void {
   if (depth > MAX_TOKEN_NESTING_DEPTH) {
-    if (findings && rootPath) {
-      // Check if we've already reported this rootPath to avoid spamming
-      if (!findings.some((f) => f.path === rootPath && f.message.includes('nesting depth'))) {
-        findings.push({
-          severity: 'error',
-          path: rootPath,
-          message: `Token nesting depth exceeds maximum allowed depth of ${MAX_TOKEN_NESTING_DEPTH}.`,
-        });
-      }
+    if (!findings.some((f) => f.path === rootPath && f.message.includes('nesting depth'))) {
+      findings.push({
+        severity: 'error',
+        path: rootPath,
+        message: `Token nesting depth exceeds maximum allowed depth of ${MAX_TOKEN_NESTING_DEPTH}.`,
+      });
     }
     return;
   }
   for (const [key, value] of Object.entries(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      forEachLeaf(value, fn, fullPath, depth + 1, findings, rootPath);
-    } else {
-      fn(fullPath, value);
+    const classified = classify(value, fullPath);
+    if (classified.kind === 'group') {
+      traverseTokenTree(
+        classified.children,
+        classify,
+        onLeaf,
+        findings,
+        rootPath,
+        fullPath,
+        depth + 1,
+      );
+    } else if (classified.kind === 'leaf') {
+      onLeaf(fullPath, classified.value);
     }
   }
+}
+
+function forEachLeaf(
+  obj: Record<string, unknown>,
+  fn: (path: string, value: unknown) => void,
+  findings: Finding[],
+  rootPath: string,
+): void {
+  traverseTokenTree(
+    obj,
+    (value) => (isPlainObject(value) ? { kind: 'group', children: value } : { kind: 'leaf', value }),
+    fn,
+    findings,
+    rootPath,
+  );
+}
+
+function classifyTypographyNode(
+  value: unknown,
+  fullPath: string,
+  findings: Finding[],
+): ClassifiedNode<Record<string, unknown>> {
+  if (!isPlainObject(value)) {
+    findings.push({
+      severity: 'error',
+      path: `typography.${fullPath}`,
+      message: `Invalid typography entry at 'typography.${fullPath}': expected a token object or group, got ${describeValueType(value)}.`,
+    });
+    return { kind: 'skip' };
+  }
+
+  const entries = Object.entries(value);
+  if (entries.length === 0) {
+    findings.push({
+      severity: 'error',
+      path: `typography.${fullPath}`,
+      message: `Empty typography entry at 'typography.${fullPath}'. Expected typography properties or nested tokens.`,
+    });
+    return { kind: 'skip' };
+  }
+
+  const hasTypographyProp = entries.some(([key]) => TYPOGRAPHY_PROP_SET.has(key));
+  const hasObjectChild = entries.some(([, child]) => isPlainObject(child));
+
+  if (hasTypographyProp && hasObjectChild) {
+    findings.push({
+      severity: 'error',
+      path: `typography.${fullPath}`,
+      message: `'typography.${fullPath}' mixes typography properties and nested objects; entries must be either a typography token or a group of tokens.`,
+    });
+    return { kind: 'skip' };
+  }
+
+  return hasObjectChild ? { kind: 'group', children: value } : { kind: 'leaf', value };
+}
+
+function forEachTypographyLeaf(
+  obj: Record<string, unknown>,
+  fn: (path: string, value: Record<string, unknown>) => void,
+  findings: Finding[],
+): void {
+  traverseTokenTree(
+    obj,
+    (value, fullPath) => classifyTypographyNode(value, fullPath, findings),
+    fn,
+    findings,
+    'typography',
+  );
 }

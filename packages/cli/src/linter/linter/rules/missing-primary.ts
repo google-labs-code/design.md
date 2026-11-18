@@ -15,11 +15,20 @@
 import type { DesignSystemState } from '../../model/spec.js';
 import type { RuleDescriptor, RuleFinding } from './types.js';
 
+function hasPrimaryColor(colors: ReadonlyMap<string, unknown>): boolean {
+  for (const name of colors.keys()) {
+    if (name.split('.').includes('primary')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Missing primary color — warns when colors are defined but no 'primary' exists.
  */
 export function missingPrimary(state: DesignSystemState): RuleFinding[] {
-  if (state.colors.size > 0 && !state.colors.has('primary')) {
+  if (state.colors.size > 0 && !hasPrimaryColor(state.colors)) {
     return [{
       path: 'colors',
       message: "No 'primary' color defined. The agent will auto-generate key colors, reducing your control over the palette.",

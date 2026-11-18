@@ -23,6 +23,17 @@ const DEFAULT_LETTER_SPACING: Readonly<DtcgDimensionValue> = Object.freeze({ val
 /** Root font size assumed when converting between px and rem. */
 const ROOT_FONT_SIZE_PX = 16;
 
+const UNSAFE_OBJECT_KEYS: ReadonlySet<string> = new Set([
+  '__proto__',
+  'constructor',
+  'prototype',
+]);
+
+interface DtcgEmitError {
+  code: string;
+  message: string;
+}
+
 /**
  * Pure function mapping DesignSystemState → DTCG tokens.json (W3C Design Tokens Format Module 2025.10).
  * No side effects.
@@ -38,17 +49,21 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
       file.$description = state.description || state.name;
     }
 
-    const colorGroup = this.mapColors(state);
-    if (colorGroup) file['color'] = colorGroup;
+    const colorResult = this.mapColors(state);
+    if (colorResult.error) return { success: false, error: colorResult.error };
+    if (colorResult.group) file['color'] = colorResult.group;
 
-    const spacingGroup = this.mapDimensionGroup(state.spacing);
-    if (spacingGroup) file['spacing'] = spacingGroup;
+    const spacingResult = this.mapDimensionGroup('spacing', state.spacing);
+    if (spacingResult.error) return { success: false, error: spacingResult.error };
+    if (spacingResult.group) file['spacing'] = spacingResult.group;
 
-    const roundedGroup = this.mapDimensionGroup(state.rounded);
-    if (roundedGroup) file['rounded'] = roundedGroup;
+    const roundedResult = this.mapDimensionGroup('rounded', state.rounded);
+    if (roundedResult.error) return { success: false, error: roundedResult.error };
+    if (roundedResult.group) file['rounded'] = roundedResult.group;
 
-    const typographyGroup = this.mapTypography(state, warnings);
-    if (typographyGroup) file['typography'] = typographyGroup;
+    const typographyResult = this.mapTypography(state, warnings);
+    if (typographyResult.error) return { success: false, error: typographyResult.error };
+    if (typographyResult.group) file['typography'] = typographyResult.group;
 
     return {
       success: true,
@@ -57,15 +72,16 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     };
   }
 
-  private mapColors(state: DesignSystemState): DtcgGroup | null {
-    if (state.colors.size === 0) return null;
+  private mapColors(state: DesignSystemState): { group: DtcgGroup | null; error?: DtcgEmitError } {
+    if (state.colors.size === 0) return { group: null };
     const group: DtcgGroup = { $type: 'color' };
     for (const [name, color] of state.colors) {
-      group[name] = {
+      const error = insertDtcgToken(group, 'color', name, {
         $value: this.colorToValue(color),
-      } as DtcgToken;
+      });
+      if (error) return { group: null, error };
     }
-    return group;
+    return { group };
   }
 
   private colorToValue(color: ResolvedColor): DtcgColorValue {
@@ -80,31 +96,39 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
     };
   }
 
-  private mapDimensionGroup(dims: Map<string, ResolvedDimension>): DtcgGroup | null {
-    if (dims.size === 0) return null;
+  private mapDimensionGroup(
+    category: 'spacing' | 'rounded',
+    dims: Map<string, ResolvedDimension>,
+  ): { group: DtcgGroup | null; error?: DtcgEmitError } {
+    if (dims.size === 0) return { group: null };
     const group: DtcgGroup = { $type: 'dimension' };
     for (const [name, dim] of dims) {
-      group[name] = {
+      const error = insertDtcgToken(group, category, name, {
         $value: this.dimToValue(dim),
-      } as DtcgToken;
+      });
+      if (error) return { group: null, error };
     }
-    return group;
+    return { group };
   }
 
   private dimToValue(dim: ResolvedDimension): DtcgDimensionValue {
     return { value: dim.value, unit: dim.unit };
   }
 
-  private mapTypography(state: DesignSystemState, warnings: DtcgEmitterWarning[]): DtcgGroup | null {
-    if (state.typography.size === 0) return null;
+  private mapTypography(
+    state: DesignSystemState,
+    warnings: DtcgEmitterWarning[],
+  ): { group: DtcgGroup | null; error?: DtcgEmitError } {
+    if (state.typography.size === 0) return { group: null };
     const group: DtcgGroup = {};
     for (const [name, typo] of state.typography) {
-      group[name] = {
+      const error = insertDtcgToken(group, 'typography', name, {
         $type: 'typography',
         $value: this.typographyToValue(typo, `typography.${name}`, warnings),
-      } as DtcgToken;
+      });
+      if (error) return { group: null, error };
     }
-    return group;
+    return { group };
   }
 
   private typographyToValue(
@@ -169,4 +193,60 @@ export class DtcgEmitterHandler implements DtcgEmitterSpec {
   private round(n: number): number {
     return Math.round(n * 1000) / 1000;
   }
+}
+
+function isInvalidDtcgSegment(segment: string): boolean {
+  return (
+    segment.length === 0 ||
+    segment.startsWith('$') ||
+    segment.includes('{') ||
+    segment.includes('}') ||
+    UNSAFE_OBJECT_KEYS.has(segment)
+  );
+}
+
+function insertDtcgToken(
+  root: DtcgGroup,
+  category: string,
+  name: string,
+  token: DtcgToken,
+): DtcgEmitError | null {
+  const segments = name.split('.');
+  for (const segment of segments) {
+    if (isInvalidDtcgSegment(segment)) {
+      return {
+        code: 'INVALID_TOKEN_NAME',
+        message: `Token '${category}.${name}' contains an invalid DTCG name segment '${segment}'.`,
+      };
+    }
+  }
+
+  let current = root;
+  for (let i = 0; i < segments.length - 1; i++) {
+    const segment = segments[i]!;
+    if (!Object.hasOwn(current, segment)) {
+      const childGroup: DtcgGroup = {};
+      current[segment] = childGroup;
+      current = childGroup;
+      continue;
+    }
+    const existing = current[segment];
+    if (!existing || typeof existing !== 'object' || '$value' in existing) {
+      return {
+        code: 'TOKEN_GROUP_COLLISION',
+        message: `Cannot create DTCG group '${category}.${segments.slice(0, i + 1).join('.')}': a token already exists at that path.`,
+      };
+    }
+    current = existing;
+  }
+
+  const leafKey = segments[segments.length - 1]!;
+  if (Object.hasOwn(current, leafKey)) {
+    return {
+      code: 'TOKEN_GROUP_COLLISION',
+      message: `Cannot create DTCG token '${category}.${name}': a token or group already exists at that path.`,
+    };
+  }
+  current[leafKey] = token;
+  return null;
 }
