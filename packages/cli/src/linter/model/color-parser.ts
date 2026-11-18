@@ -117,8 +117,8 @@ export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | 
       // Supports hsl(120, 100%, 50%) and hsl(120deg 100% 50% / 0.5)
       if (args.length !== 3 && args.length !== 4) return null;
       const h = parseHue(args[0]!);
-      const s = parsePercentOrNumber(args[1]!, 1);
-      const l = parsePercentOrNumber(args[2]!, 1);
+      const s = parsePercentChannel(args[1]!);
+      const l = parsePercentChannel(args[2]!);
       const a = args.length === 4 ? parseAlpha(args[3]) : 1;
 
       if (isNaN(h) || isNaN(s) || isNaN(l) || isNaN(a)) return null;
@@ -130,8 +130,8 @@ export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | 
       // Supports hwb(120 0% 0% / 0.5)
       if (args.length !== 3 && args.length !== 4) return null;
       const h = parseHue(args[0]!);
-      const w = parsePercentOrNumber(args[1]!, 1);
-      const b = parsePercentOrNumber(args[2]!, 1);
+      const w = parsePercentChannel(args[1]!);
+      const b = parsePercentChannel(args[2]!);
       const a = args.length === 4 ? parseAlpha(args[3]) : 1;
 
       if (isNaN(h) || isNaN(w) || isNaN(b) || isNaN(a)) return null;
@@ -143,8 +143,9 @@ export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | 
       // lab(l a b / alpha)
       if (args.length !== 3 && args.length !== 4) return null;
       const l = parsePercentOrNumber(args[0]!, 100); // L is typically 0-100
-      const aVal = parseFloat(args[1]!);
-      const bVal = parseFloat(args[2]!);
+      // CSS Color 4: 100% maps to 125 on lab()'s a and b axes.
+      const aVal = parsePercentOrNumber(args[1]!, 125);
+      const bVal = parsePercentOrNumber(args[2]!, 125);
       const a = args.length === 4 ? parseAlpha(args[3]) : 1;
 
       if (isNaN(l) || isNaN(aVal) || isNaN(bVal) || isNaN(a)) return null;
@@ -156,7 +157,8 @@ export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | 
       // lch(l c h / alpha)
       if (args.length !== 3 && args.length !== 4) return null;
       const l = parsePercentOrNumber(args[0]!, 100);
-      const c = parseFloat(args[1]!);
+      // CSS Color 4: 100% maps to 150 on lch()'s chroma axis.
+      const c = parsePercentOrNumber(args[1]!, 150);
       const h = parseHue(args[2]!);
       const a = args.length === 4 ? parseAlpha(args[3]) : 1;
 
@@ -169,8 +171,9 @@ export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | 
       // oklab(l a b / alpha) - L is 0-1 or 0%-100%
       if (args.length !== 3 && args.length !== 4) return null;
       const l = parsePercentOrNumber(args[0]!, 1);
-      const aVal = parseFloat(args[1]!);
-      const bVal = parseFloat(args[2]!);
+      // CSS Color 4: 100% maps to 0.4 on oklab()'s a and b axes.
+      const aVal = parsePercentOrNumber(args[1]!, 0.4);
+      const bVal = parsePercentOrNumber(args[2]!, 0.4);
       const a = args.length === 4 ? parseAlpha(args[3]) : 1;
 
       if (isNaN(l) || isNaN(aVal) || isNaN(bVal) || isNaN(a)) return null;
@@ -182,7 +185,8 @@ export function parseCssColor(colorStr: string, depth = 0): ParsedColorResult | 
       // oklch(l c h / alpha)
       if (args.length !== 3 && args.length !== 4) return null;
       const l = parsePercentOrNumber(args[0]!, 1);
-      const c = parseFloat(args[1]!);
+      // CSS Color 4: 100% maps to 0.4 on oklch()'s chroma axis.
+      const c = parsePercentOrNumber(args[1]!, 0.4);
       const h = parseHue(args[2]!);
       const a = args.length === 4 ? parseAlpha(args[3]) : 1;
 
@@ -333,6 +337,16 @@ function parsePercentOrNumber(s: string, refMax: number): number {
     return (parseFloat(trim.slice(0, -1)) / 100) * refMax;
   }
   return parseFloat(trim);
+}
+
+/**
+ * Parse an hsl()/hwb() saturation, lightness, whiteness or blackness channel
+ * into a 0-1 fraction. CSS Color 4 interprets a bare `<number>` on these
+ * channels exactly as the equivalent `<percentage>`, so `60` means `60%`.
+ */
+function parsePercentChannel(s: string): number {
+  const trim = s.trim();
+  return parseFloat(trim.endsWith('%') ? trim.slice(0, -1) : trim) / 100;
 }
 
 function parseAlpha(s: string | undefined): number {
