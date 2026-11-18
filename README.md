@@ -152,10 +152,11 @@ Sections use `##` headings. They can be omitted, but those present must appear i
 | 4 | Layout | Layout & Spacing |
 | 5 | Elevation & Depth | Elevation |
 | 6 | Shapes | |
-| 7 | Motion & Micro-interaction | Motion & Micro-interactions, Motion |
-| 8 | Voice & Content Strategy | |
-| 9 | Components | |
-| 10 | Do's and Don'ts | |
+| 7 | Iconography | |
+| 8 | Motion & Micro-interaction | Motion & Micro-interactions, Motion |
+| 9 | Voice & Content Strategy | |
+| 10 | Components | |
+| 11 | Do's and Don'ts | |
 
 ### Component Tokens
 

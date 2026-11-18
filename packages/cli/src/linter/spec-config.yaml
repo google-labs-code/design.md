@@ -61,6 +61,7 @@ sections:
     aliases:
       - Elevation
   - canonical: Shapes
+  - canonical: Iconography
   - canonical: Motion & Micro-interaction
     aliases:
       - Motion & Micro-interactions

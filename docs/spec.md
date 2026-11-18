@@ -159,10 +159,11 @@ Every `DESIGN.md` follows the same structure. Sections can be omitted if they're
 4. **Layout** (also: "Layout & Spacing")
 5. **Elevation & Depth** (also: "Elevation")
 6. **Shapes**
-7. **Motion & Micro-interaction** (also: "Motion & Micro-interactions", "Motion")
-8. **Voice & Content Strategy**
-9. **Components**
-10. **Do's and Don'ts**
+7. **Iconography**
+8. **Motion & Micro-interaction** (also: "Motion & Micro-interactions", "Motion")
+9. **Voice & Content Strategy**
+10. **Components**
+11. **Do's and Don'ts**
 
 ### Prose and Tokens
 
@@ -348,6 +349,25 @@ rounded:
   full: 9999px
 ```
 
+## Iconography
+
+This section describes how icons support the visual language. It should name the
+icon library or custom system and explain why it fits the product, then define
+the style variant, stroke or weight conventions, sizing scale, color rules, and
+whether multiple icon sets may be mixed.
+
+Example:
+
+```markdown
+## Iconography
+
+Use Heroicons for its broad coverage and crisp UI semantics. Icons are outlined
+by default with a 1.5px stroke; filled variants are reserved for selected or
+high-emphasis states. Sizes follow 16px, 20px, and 24px steps, inherit text color
+in controls, and use semantic color only for status. Do not mix icon sets unless
+a missing symbol is redrawn to match the same stroke, corner, and optical size.
+```
+
 ## Motion & Micro-interaction
 
 Also known as "Motion & Micro-interactions" or "Motion".
@@ -488,7 +508,7 @@ When a DESIGN.md consumer encounters content not defined by this spec:
 
 | Scenario | Behavior | Example |
 |---|---|---|
-| Unknown section heading | Preserve; do not error | `## Iconography` |
+| Unknown section heading | Preserve; do not error | `## Accessibility` |
 | Unknown color token name | Accept if value is valid | `surface-container-high: '#ede7dd'` |
 | Unknown typography token name | Accept as valid typography | `telemetry-data` |
 | Unknown motion token name | Accept as valid motion | `page-transition` |
