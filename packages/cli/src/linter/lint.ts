@@ -22,12 +22,12 @@ import { brokenRefRule } from './linter/rules/broken-ref.js';
 import { TailwindEmitterHandler } from './tailwind/handler.js';
 import type { DesignSystemState } from './model/spec.js';
 import type { Finding } from './linter/spec.js';
-import type { LintRule } from './linter/rules/types.js';
+import type { LintRule, RuleDescriptor } from './linter/rules/types.js';
 import type { TailwindEmitterResult } from './tailwind/spec.js';
 
 export interface LintOptions {
   /** Custom lint rules. Defaults to DEFAULT_RULES if omitted. */
-  rules?: LintRule[];
+  rules?: LintRule[] | RuleDescriptor[];
   /** File path of the DESIGN.md file, used to derive the base directory for external @-references. */
   filePath?: string;
   /** Explicit base directory for resolving external @-references. Overrides filePath if both are provided. */

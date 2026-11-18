@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { defineCommand } from 'citty';
-import { lint } from '../linter/index.js';
+import { colorBlindContrastRule, DEFAULT_RULE_DESCRIPTORS, lint } from '../linter/index.js';
 import { readInput, formatOutput, FileReadError } from '../utils.js';
 
 export default defineCommand({
@@ -32,6 +32,11 @@ export default defineCommand({
       description: 'Output format: json or text',
       default: 'json',
     },
+    cvd: {
+      type: 'boolean',
+      description: 'Also run the opt-in color-blind (CVD) contrast check',
+      default: false,
+    },
   },
   async run({ args }) {
     let content: string;
@@ -45,7 +50,10 @@ export default defineCommand({
       }
       throw error;
     }
-    const report = lint(content, args.file === '-' ? undefined : { filePath: args.file });
+    const lintOptions = args.file === '-' ? undefined : { filePath: args.file };
+    const report = args.cvd
+      ? lint(content, { ...lintOptions, rules: [...DEFAULT_RULE_DESCRIPTORS, colorBlindContrastRule] })
+      : lint(content, lintOptions);
 
     const output = {
       findings: report.findings,
