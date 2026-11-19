@@ -78,7 +78,7 @@ export class TailwindV4EmitterHandler implements TailwindV4EmitterSpec {
     const fontWeight: Record<string, string> = {};
     for (const [name, typo] of state.typography) {
       const cssKey = toCssKey(name);
-      if (typo.fontFamily) fontFamily[cssKey] = cssStringLiteral(typo.fontFamily);
+      if (typo.fontFamily) fontFamily[cssKey] = cssFontFamilyList(typo.fontFamily);
       if (typo.fontSize) fontSize[cssKey] = dimToString(typo.fontSize);
       if (typo.lineHeight) lineHeight[cssKey] = dimToString(typo.lineHeight);
       if (typo.letterSpacing) letterSpacing[cssKey] = dimToString(typo.letterSpacing);
@@ -121,6 +121,54 @@ function mapDimensions(dims: Map<string, ResolvedDimension>): Record<string, str
 
 function dimToString(dim: ResolvedDimension): string {
   return `${dim.value}${dim.unit}`;
+}
+
+/** CSS generic font families (CSS Fonts 4 §4.1.1); these must stay unquoted keywords. */
+const GENERIC_FONT_FAMILIES = new Set([
+  'serif', 'sans-serif', 'cursive', 'fantasy', 'monospace', 'system-ui', 'math',
+  'emoji', 'fangsong', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'ui-rounded',
+]);
+
+/**
+ * Convert a DESIGN.md fontFamily value (e.g. `Inter, sans-serif`) into a CSS
+ * font-family list. A CSS string is always a single family name, so each
+ * family in a fallback stack is quoted on its own and generic families are
+ * left as bare keywords. Commas inside a quoted family name are preserved.
+ */
+function cssFontFamilyList(value: string): string {
+  const families = splitFontFamilies(value);
+  if (families.length === 0) return cssStringLiteral(value);
+  return families
+    .map((family) => {
+      const quoted = /^(["'])([\s\S]*)\1$/.exec(family);
+      if (quoted) return cssStringLiteral(quoted[2]!);
+      const generic = family.toLowerCase();
+      return GENERIC_FONT_FAMILIES.has(generic) ? generic : cssStringLiteral(family);
+    })
+    .join(', ');
+}
+
+/** Split a font-family list on top-level commas, ignoring commas inside quotes. */
+function splitFontFamilies(value: string): string[] {
+  const families: string[] = [];
+  let current = '';
+  let quote: string | null = null;
+  for (const ch of value) {
+    if (quote) {
+      if (ch === quote) quote = null;
+      current += ch;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+    } else if (ch === ',') {
+      families.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  families.push(current);
+  return families.map((f) => f.trim()).filter((f) => f.length > 0);
 }
 
 /**
