@@ -33,6 +33,17 @@ export function contrastCheck(state: DesignSystemState): RuleFinding[] {
     const textColor = resolveToColor(textValue);
     if (!bgColor || !textColor) continue;
 
+    // A translucent background shows whatever surface sits beneath it, and
+    // the component does not say what that is, so the ratio cannot be judged.
+    if (bgColor.a !== undefined && bgColor.a < 1) {
+      findings.push({
+        path: `components.${compName}`,
+        severity: 'info',
+        message: `backgroundColor (${bgColor.hex}) is translucent, so the contrast of textColor (${textColor.hex}) depends on the surface beneath it and was not checked.`,
+      });
+      continue;
+    }
+
     const ratio = contrastRatio(bgColor, textColor);
     if (ratio < WCAG_AA_MINIMUM) {
       findings.push({
