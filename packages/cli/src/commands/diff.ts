@@ -62,6 +62,10 @@ export default defineCommand({
         typography: diffMaps(beforeReport.designSystem.typography, afterReport.designSystem.typography),
         rounded: diffMaps(beforeReport.designSystem.rounded, afterReport.designSystem.rounded),
         spacing: diffMaps(beforeReport.designSystem.spacing, afterReport.designSystem.spacing),
+        motion: diffMaps(
+          beforeReport.designSystem.motion ?? new Map(),
+          afterReport.designSystem.motion ?? new Map(),
+        ),
         components: diffMaps(
           serializeComponents(beforeReport.designSystem.components),
           serializeComponents(afterReport.designSystem.components),
