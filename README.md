@@ -83,6 +83,7 @@ npx @google/design.md diff DESIGN.md DESIGN-v2.md
     "typography": { "added": [], "removed": [], "modified": [] },
     "rounded": { "added": [], "removed": [], "modified": [] },
     "spacing": { "added": [], "removed": [], "modified": [] },
+    "motion": { "added": [], "removed": [], "modified": [] },
     "components": { "added": [], "removed": [], "modified": [] }
   },
   "findings": {
