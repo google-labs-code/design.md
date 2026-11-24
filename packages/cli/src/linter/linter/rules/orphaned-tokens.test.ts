@@ -132,4 +132,36 @@ describe('orphanedTokens', () => {
     const findings = orphanedTokens(state);
     expect(findings).toEqual([]);
   });
+
+  it('does not flag unreferenced numeric palette scales', () => {
+    const state = buildState({
+      colors: {
+        primary: '#1A1C1E',
+        'green-50': '#e7f6ee',
+        'green-900': '#04361d',
+      },
+      components: {
+        button: { backgroundColor: '{colors.primary}' },
+      },
+    });
+
+    const findings = orphanedTokens(state);
+    expect(findings.find(d => d.path === 'colors.green-50')).toBeUndefined();
+    expect(findings.find(d => d.path === 'colors.green-900')).toBeUndefined();
+  });
+
+  it('still flags a lone numeric-suffix custom token', () => {
+    const state = buildState({
+      colors: {
+        primary: '#1A1C1E',
+        'brand-100': '#e7f6ee',
+      },
+      components: {
+        button: { backgroundColor: '{colors.primary}' },
+      },
+    });
+
+    const findings = orphanedTokens(state);
+    expect(findings.find(d => d.path === 'colors.brand-100')).toBeDefined();
+  });
 });
