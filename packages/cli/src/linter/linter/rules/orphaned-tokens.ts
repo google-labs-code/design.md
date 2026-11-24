@@ -54,11 +54,37 @@ const MD3_STANDARD_FAMILIES = new Set([
 ]);
 
 /**
+ * Identify numeric palette scales such as `green-50`, `green-500`, and
+ * `green-900`. Require at least two shades with the same prefix so isolated
+ * custom tokens like `brand-100` continue to be reported as orphaned.
+ */
+function numericPaletteFamilies(names: Iterable<string>): Set<string> {
+  const counts = new Map<string, number>();
+
+  for (const name of names) {
+    const match = /^(.+)-(\d{2,3})$/.exec(name);
+    if (!match) continue;
+
+    const family = match[1];
+    counts.set(family, (counts.get(family) ?? 0) + 1);
+  }
+
+  return new Set(
+    [...counts.entries()]
+      .filter(([, count]) => count >= 2)
+      .map(([family]) => family),
+  );
+}
+/**
  * Orphaned tokens — tokens defined but never referenced by any component or
  * any sibling token in the same MD3 family.
  */
 export function orphanedTokens(state: DesignSystemState): RuleFinding[] {
   if (state.components.size === 0) return [];
+
+  const paletteFamilies = numericPaletteFamilies(
+    [...state.colors.keys()],
+  );
 
   const referencedPaths = new Set<string>();
   for (const [, comp] of state.components) {
@@ -88,6 +114,8 @@ export function orphanedTokens(state: DesignSystemState): RuleFinding[] {
   for (const [name] of state.colors) {
     const path = `colors.${name}`;
     if (referencedPaths.has(path)) continue;
+    const paletteFamily = /^(.+)-\d{2,3}$/.exec(name)?.[1];
+    if (paletteFamily && paletteFamilies.has(paletteFamily)) continue;
     const family = colorFamily(name);
     if (referencedFamilies.has(family)) continue;
     if (MD3_STANDARD_FAMILIES.has(family)) continue;
